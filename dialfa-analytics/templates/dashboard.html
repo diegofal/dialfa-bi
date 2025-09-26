@@ -1,0 +1,487 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - Dialfa BI{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col">
+        <h1 class="h2">
+            <i class="bi bi-speedometer2"></i>
+            Business Intelligence Dashboard
+        </h1>
+        <p class="text-muted">Real-time insights into your business performance</p>
+    </div>
+</div>
+
+<!-- Key Metrics Cards -->
+<div class="row mb-4">
+    <div class="col-md-3 mb-3">
+        <div class="card metric-card h-100" style="background: linear-gradient(135deg, var(--primary-color), #0056b3);">
+            <div class="card-body text-white">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="card-title mb-0">Total Outstanding</h6>
+                        <h2 class="mb-0" id="total-outstanding">Loading...</h2>
+                        <small class="opacity-75">Accounts Receivable</small>
+                    </div>
+                    <div class="opacity-75">
+                        <i class="bi bi-currency-dollar" style="font-size: 2rem;"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3 mb-3">
+        <div class="card metric-card h-100" style="background: linear-gradient(135deg, var(--danger-color), #c82333);">
+            <div class="card-body text-white">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="card-title mb-0">Overdue Amount</h6>
+                        <h2 class="mb-0" id="total-overdue">Loading...</h2>
+                        <small class="opacity-75">Requires Attention</small>
+                    </div>
+                    <div class="opacity-75">
+                        <i class="bi bi-exclamation-triangle" style="font-size: 2rem;"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3 mb-3">
+        <div class="card metric-card h-100" style="background: linear-gradient(135deg, var(--success-color), #218838);">
+            <div class="card-body text-white">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="card-title mb-0">Active Customers</h6>
+                        <h2 class="mb-0" id="unique-customers">Loading...</h2>
+                        <small class="opacity-75">With Balances</small>
+                    </div>
+                    <div class="opacity-75">
+                        <i class="bi bi-people" style="font-size: 2rem;"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3 mb-3">
+        <div class="card metric-card h-100" style="background: linear-gradient(135deg, var(--info-color), #138496);">
+            <div class="card-body text-white">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="card-title mb-0">Average Balance</h6>
+                        <h2 class="mb-0" id="avg-balance">Loading...</h2>
+                        <small class="opacity-75">Per Customer</small>
+                    </div>
+                    <div class="opacity-75">
+                        <i class="bi bi-graph-up" style="font-size: 2rem;"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Charts Row -->
+<div class="row mb-4">
+    <!-- Cash Flow Chart -->
+    <div class="col-lg-8 mb-4">
+        <div class="card h-100">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">
+                    <i class="bi bi-graph-up"></i>
+                    Cash Flow Trend
+                </h5>
+                <div class="btn-group btn-group-sm" role="group">
+                    <button type="button" class="btn btn-outline-primary active" onclick="loadCashFlowChart(6)">6M</button>
+                    <button type="button" class="btn btn-outline-primary" onclick="loadCashFlowChart(12)">12M</button>
+                </div>
+            </div>
+            <div class="card-body">
+                <div id="cash-flow-chart" class="chart-container"></div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Top Customers -->
+    <div class="col-lg-4 mb-4">
+        <div class="card h-100">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="bi bi-star"></i>
+                    Top Customers
+                </h5>
+            </div>
+            <div class="card-body">
+                <div id="top-customers-list">
+                    <div class="loading">
+                        <div class="spinner-border" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Second Row Charts -->
+<div class="row mb-4">
+    <!-- Sales Trend -->
+    <div class="col-lg-6 mb-4">
+        <div class="card h-100">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="bi bi-graph-up-arrow"></i>
+                    Monthly Sales Trend
+                </h5>
+            </div>
+            <div class="card-body">
+                <div id="sales-trend-chart" class="chart-container"></div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Inventory by Category -->
+    <div class="col-lg-6 mb-4">
+        <div class="card h-100">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="bi bi-pie-chart"></i>
+                    Inventory by Category
+                </h5>
+            </div>
+            <div class="card-body">
+                <div id="category-chart" class="chart-container"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Credit Risk Analysis Table -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">
+                    <i class="bi bi-shield-exclamation"></i>
+                    Credit Risk Analysis
+                </h5>
+                <a href="/financial" class="btn btn-outline-primary btn-sm">
+                    View All <i class="bi bi-arrow-right"></i>
+                </a>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover" id="credit-risk-table">
+                        <thead>
+                            <tr>
+                                <th>Customer</th>
+                                <th>Current Balance</th>
+                                <th>Overdue Amount</th>
+                                <th>Overdue %</th>
+                                <th>Risk Level</th>
+                                <th>Risk Score</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td colspan="6" class="text-center">
+                                    <div class="spinner-border" role="status">
+                                        <span class="visually-hidden">Loading...</span>
+                                    </div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Load dashboard data when page loads
+document.addEventListener('DOMContentLoaded', function() {
+    loadDashboardData();
+    loadCharts();
+    loadCreditRiskTable();
+});
+
+function loadDashboardData() {
+    fetch('/api/dashboard/overview')
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success') {
+                updateMetricCards(data.financial, data.inventory, data.sales);
+            } else {
+                console.error('Error loading dashboard data:', data.error);
+            }
+        })
+        .catch(error => {
+            console.error('Error loading dashboard data:', error);
+            showError('total-outstanding', 'Failed to load data');
+        });
+}
+
+function updateMetricCards(financial, inventory, sales) {
+    // Financial metrics
+    if (financial) {
+        document.getElementById('total-outstanding').textContent = formatCurrency(financial.total_outstanding);
+        document.getElementById('total-overdue').textContent = formatCurrency(financial.total_overdue);
+        document.getElementById('unique-customers').textContent = financial.unique_customers || 0;
+        document.getElementById('avg-balance').textContent = formatCurrency(financial.avg_balance);
+    }
+}
+
+function loadCharts() {
+    console.log('Loading charts...');
+    fetch('/api/dashboard/charts')
+        .then(response => {
+            console.log('Charts response status:', response.status);
+            return response.json();
+        })
+        .then(data => {
+            console.log('Charts data received:', data);
+            if (data.status === 'success') {
+                console.log('Creating charts with data...');
+                createCashFlowChart(data.cash_flow);
+                createTopCustomersList(data.top_customers);
+                createSalesTrendChart(data.sales_trend);
+                createCategoryChart(data.category_analysis);
+            } else {
+                console.error('Error loading charts:', data.error);
+                showError('cash-flow-chart', data.error);
+            }
+        })
+        .catch(error => {
+            console.error('Error loading charts:', error);
+            showError('cash-flow-chart', 'Failed to load chart data');
+        });
+}
+
+function createCashFlowChart(data) {
+    console.log('Creating cash flow chart with data:', data);
+    
+    if (!data || data.length === 0) {
+        document.getElementById('cash-flow-chart').innerHTML = '<div class="alert alert-info">No cash flow data available</div>';
+        return;
+    }
+
+    // Check if Plotly is available
+    if (typeof Plotly === 'undefined') {
+        console.error('Plotly is not loaded');
+        document.getElementById('cash-flow-chart').innerHTML = '<div class="alert alert-danger">Chart library not loaded</div>';
+        return;
+    }
+
+    try {
+        const trace = {
+            x: data.map(d => `${d.Year}-${d.Month.toString().padStart(2, '0')}`),
+            y: data.map(d => d.ActualPayments),
+            type: 'scatter',
+            mode: 'lines+markers',
+            name: 'Cash Flow',
+            line: { 
+                color: '#033663',
+                width: 3
+            },
+            marker: {
+                size: 8,
+                color: '#033663'
+            }
+        };
+
+        const layout = {
+            title: '',
+            xaxis: { 
+                title: 'Month',
+                showgrid: true,
+                gridcolor: '#e9ecef'
+            },
+            yaxis: { 
+                title: 'Amount ($)',
+                tickformat: '$,.0f',
+                showgrid: true,
+                gridcolor: '#e9ecef'
+            },
+            margin: { t: 20, r: 40, b: 60, l: 80 },
+            plot_bgcolor: 'rgba(0,0,0,0)',
+            paper_bgcolor: 'rgba(0,0,0,0)'
+        };
+
+        Plotly.newPlot('cash-flow-chart', [trace], layout, {responsive: true});
+        console.log('Cash flow chart created successfully');
+    } catch (error) {
+        console.error('Error creating cash flow chart:', error);
+        document.getElementById('cash-flow-chart').innerHTML = '<div class="alert alert-danger">Error creating chart: ' + error.message + '</div>';
+    }
+}
+
+function createTopCustomersList(customers) {
+    if (!customers || customers.length === 0) {
+        document.getElementById('top-customers-list').innerHTML = '<div class="alert alert-info">No customer data available</div>';
+        return;
+    }
+
+    let html = '<div class="list-group list-group-flush">';
+    customers.forEach((customer, index) => {
+        const riskClass = customer.RiskLevel === 'HIGH RISK' ? 'danger' : 
+                         customer.RiskLevel === 'MEDIUM RISK' ? 'warning' : 'success';
+        
+        html += `
+            <div class="list-group-item d-flex justify-content-between align-items-center">
+                <div>
+                    <h6 class="mb-1">${customer.Name}</h6>
+                    <small class="text-muted">${formatCurrency(customer.OutstandingBalance)}</small>
+                </div>
+                <span class="badge bg-${riskClass}">${customer.RiskLevel || 'LOW RISK'}</span>
+            </div>
+        `;
+    });
+    html += '</div>';
+    
+    document.getElementById('top-customers-list').innerHTML = html;
+}
+
+function createSalesTrendChart(data) {
+    if (!data || data.length === 0) {
+        document.getElementById('sales-trend-chart').innerHTML = '<div class="alert alert-info">No sales trend data available</div>';
+        return;
+    }
+
+    const trace = {
+        x: data.map(d => d.MonthYearLabel || `${d.MonthName} ${d.Year}`),
+        y: data.map(d => d.MonthlyRevenue),
+        type: 'bar',
+        name: 'Monthly Revenue',
+        marker: {
+            color: '#28a745'
+        }
+    };
+
+    const layout = {
+        title: '',
+        xaxis: { title: 'Month' },
+        yaxis: { 
+            title: 'Revenue ($)',
+            tickformat: '$,.0f'
+        },
+        margin: { t: 20, r: 40, b: 60, l: 80 },
+        plot_bgcolor: 'rgba(0,0,0,0)',
+        paper_bgcolor: 'rgba(0,0,0,0)'
+    };
+
+    Plotly.newPlot('sales-trend-chart', [trace], layout, {responsive: true});
+}
+
+function createCategoryChart(data) {
+    if (!data || data.length === 0) {
+        document.getElementById('category-chart').innerHTML = '<div class="alert alert-info">No category data available</div>';
+        return;
+    }
+
+    const trace = {
+        labels: data.map(d => d.Category),
+        values: data.map(d => d.TotalValue),
+        type: 'pie',
+        textinfo: 'label+percent',
+        textposition: 'outside',
+        marker: {
+            colors: ['#033663', '#28a745', '#ffc107', '#dc3545', '#17a2b8']
+        }
+    };
+
+    const layout = {
+        title: '',
+        margin: { t: 20, r: 40, b: 20, l: 40 },
+        plot_bgcolor: 'rgba(0,0,0,0)',
+        paper_bgcolor: 'rgba(0,0,0,0)'
+    };
+
+    Plotly.newPlot('category-chart', [trace], layout, {responsive: true});
+}
+
+function loadCreditRiskTable() {
+    fetch('/financial/api/credit-risk')
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success') {
+                updateCreditRiskTable(data.data.slice(0, 10)); // Show top 10
+            } else {
+                console.error('Error loading credit risk data:', data.error);
+            }
+        })
+        .catch(error => {
+            console.error('Error loading credit risk data:', error);
+            document.getElementById('credit-risk-table').querySelector('tbody').innerHTML = 
+                '<tr><td colspan="6" class="text-center text-danger">Error loading data</td></tr>';
+        });
+}
+
+function updateCreditRiskTable(data) {
+    const tbody = document.getElementById('credit-risk-table').querySelector('tbody');
+    
+    if (!data || data.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6" class="text-center">No credit risk data available</td></tr>';
+        return;
+    }
+
+    let html = '';
+    data.forEach(row => {
+        const riskClass = row.RiskLevel === 'HIGH RISK' ? 'danger' : 
+                         row.RiskLevel === 'MEDIUM RISK' ? 'warning' : 'success';
+        
+        html += `
+            <tr>
+                <td><strong>${row.Name}</strong></td>
+                <td>${formatCurrency(row.CurrentBalance)}</td>
+                <td>${formatCurrency(row.OverdueAmount)}</td>
+                <td>${formatPercentage(row.OverduePercentage)}</td>
+                <td><span class="badge bg-${riskClass}">${row.RiskLevel}</span></td>
+                <td>
+                    <div class="progress" style="height: 20px;">
+                        <div class="progress-bar bg-${riskClass}" role="progressbar" 
+                             style="width: ${row.RiskScore || 0}%" 
+                             aria-valuenow="${row.RiskScore || 0}" 
+                             aria-valuemin="0" 
+                             aria-valuemax="100">
+                            ${row.RiskScore || 0}
+                        </div>
+                    </div>
+                </td>
+            </tr>
+        `;
+    });
+    
+    tbody.innerHTML = html;
+}
+
+function loadCashFlowChart(months) {
+    // Update active button
+    document.querySelectorAll('.btn-group .btn').forEach(btn => btn.classList.remove('active'));
+    event.target.classList.add('active');
+    
+    // Reload chart with new timeframe
+    showLoading('cash-flow-chart');
+    
+    fetch(`/financial/api/cash-flow?months=${months}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success') {
+                createCashFlowChart(data.data);
+            } else {
+                showError('cash-flow-chart', data.error);
+            }
+        })
+        .catch(error => {
+            console.error('Error loading cash flow chart:', error);
+            showError('cash-flow-chart', 'Failed to load chart');
+        });
+}
+</script>
+{% endblock %}
