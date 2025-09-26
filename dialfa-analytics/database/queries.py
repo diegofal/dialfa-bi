@@ -215,6 +215,42 @@ class SalesQueries:
     GROUP BY dm.debtor_no, dm.name
     ORDER BY TotalRevenue DESC
     """
+    
+    XERP_MONTHLY_SALES_TREND = """
+    DECLARE @FromDate DATETIME
+    SET @FromDate = DATEADD(MONTH, -12, GETDATE())
+
+    SELECT 
+      CAST(
+        CONCAT(
+          DATEPART(YEAR, ord_date),
+          RIGHT('00' + CAST(DATEPART(MONTH, ord_date) AS VARCHAR), 2),
+          '01'
+        ) AS DATETIME
+      ) as MonthYear,
+      DATEPART(YEAR, ord_date) as Year,
+      DATEPART(MONTH, ord_date) as Month,
+      DATENAME(MONTH, ord_date) as MonthName,
+      SUM(
+        CASE 
+          WHEN dt.Type = 10 THEN (total * 1.21)
+          WHEN dt.Type = 11 THEN (total * -1.21)
+          ELSE total
+        END
+      ) as MonthlyRevenue,
+      COUNT(DISTINCT dm.debtor_no) as UniqueCustomers,
+      COUNT(*) as TransactionCount
+    FROM [0_debtor_trans] dt
+      INNER JOIN [0_sales_orders] so ON so.ID = dt.order_
+      INNER JOIN [0_debtors_master] dm ON dm.debtor_no = so.debtor_no
+    WHERE dt.Type IN (10, 11)
+      AND ord_date >= @FromDate
+    GROUP BY DATEPART(YEAR, ord_date),
+             DATEPART(MONTH, ord_date),
+             DATENAME(MONTH, ord_date)
+    ORDER BY DATEPART(YEAR, ord_date) DESC,
+             DATEPART(MONTH, ord_date) DESC
+    """
 
 class CrossSystemQueries:
     """Cross-system comparison queries"""

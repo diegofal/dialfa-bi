@@ -38,9 +38,9 @@ class SalesAnalytics:
             return {}
     
     def get_monthly_trends(self):
-        """Get monthly sales trends"""
+        """Get monthly sales trends from xERP database"""
         try:
-            df = self.db.execute_query(self.queries.MONTHLY_SALES_TREND, 'SPISA')
+            df = self.db.execute_query(self.queries.XERP_MONTHLY_SALES_TREND, 'xERP')
             df = clean_dataframe(df)
             
             if not df.empty:
@@ -48,8 +48,13 @@ class SalesAnalytics:
                 df['FormattedRevenue'] = df['MonthlyRevenue'].apply(format_currency)
                 df['MonthYearLabel'] = df.apply(lambda x: f"{x['MonthName']} {x['Year']}", axis=1)
                 
-                # Fill NaN growth rates
+                # Calculate month-over-month growth manually since xERP query doesn't include it
+                df = df.sort_values(['Year', 'Month'])
+                df['MonthOverMonthGrowth'] = df['MonthlyRevenue'].pct_change() * 100
                 df['MonthOverMonthGrowth'] = df['MonthOverMonthGrowth'].fillna(0)
+                
+                # Sort back to descending order for display
+                df = df.sort_values(['Year', 'Month'], ascending=[False, False])
                 
             return df.to_dict('records')
         except Exception as e:

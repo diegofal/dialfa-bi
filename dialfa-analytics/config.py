@@ -49,3 +49,8 @@ class Config:
     MEDIUM_RISK_THRESHOLD = 0.2  # 20% overdue
     SLOW_MOVING_DAYS = 180  # Days without sales
     DEAD_STOCK_DAYS = 365  # Days without sales
+    
+    # Currency and Tax Configuration
+    DEFAULT_CURRENCY = 'ARS'  # Argentine Pesos
+    TAX_RATE = 0.21  # 21% IVA (Value Added Tax)
+    CURRENCY_SYMBOL = '$'  # Peso symbol
