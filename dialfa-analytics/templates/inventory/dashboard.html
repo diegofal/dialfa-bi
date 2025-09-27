@@ -270,21 +270,42 @@
                     <div class="col-md-3">
                         <div class="text-center p-3 border rounded">
                             <h4 class="text-danger mb-1" id="total-dead-stock-value">$0</h4>
-                            <p class="mb-0 small text-muted">Dead Stock Value</p>
+                            <p class="mb-0 small text-muted">
+                                Dead Stock Value
+                                <i class="bi bi-question-circle text-muted ms-1" 
+                                   data-bs-toggle="tooltip" 
+                                   data-bs-placement="top" 
+                                   title="Valor total del inventario sin movimiento por más de 365 días. Este capital está 'muerto' y genera solo costos sin retorno. Acción urgente: liquidar mediante descuentos o promociones."
+                                   style="cursor: help;"></i>
+                            </p>
                             <p class="mb-0 small text-danger" id="dead-stock-carrying-cost">Monthly Cost: $0</p>
                         </div>
                     </div>
                     <div class="col-md-3">
                         <div class="text-center p-3 border rounded">
                             <h4 class="text-warning mb-1" id="total-low-stock-impact">$0</h4>
-                            <p class="mb-0 small text-muted">Low Stock Risk</p>
+                            <p class="mb-0 small text-muted">
+                                Low Stock Risk
+                                <i class="bi bi-question-circle text-muted ms-1" 
+                                   data-bs-toggle="tooltip" 
+                                   data-bs-placement="top" 
+                                   title="Riesgo de pérdida de ventas por productos con stock bajo. Incluye productos con menos de 1 mes de inventario según la demanda histórica. Acción: reabastecer urgentemente."
+                                   style="cursor: help;"></i>
+                            </p>
                             <p class="mb-0 small text-warning" id="potential-stockout-cost">Potential Lost Sales</p>
                         </div>
                     </div>
                     <div class="col-md-3">
                         <div class="text-center p-3 border rounded">
                             <h4 class="text-info mb-1" id="total-overstock-value">$0</h4>
-                            <p class="mb-0 small text-muted">Overstock Value</p>
+                            <p class="mb-0 small text-muted">
+                                Overstock Value
+                                <i class="bi bi-question-circle text-muted ms-1" 
+                                   data-bs-toggle="tooltip" 
+                                   data-bs-placement="top" 
+                                   title="Valor del inventario excesivo (más de 6 meses de suministro). Capital inmovilizado que genera costos de almacenamiento. Acción: reducir pedidos futuros y considerar promociones."
+                                   style="cursor: help;"></i>
+                            </p>
                             <p class="mb-0 small text-info" id="overstock-carrying-cost">Excess Carrying Cost</p>
                         </div>
                     </div>
@@ -408,6 +429,11 @@
                 <h5 class="card-title mb-0">
                     <i class="bi bi-graph-up"></i>
                     Stock Turnover Rate
+                    <i class="bi bi-question-circle text-light ms-2" 
+                       data-bs-toggle="tooltip" 
+                       data-bs-placement="top" 
+                       title="Mide cuántas veces por año se rota completamente el inventario. 4.2x significa que el inventario se convierte en ventas 4.2 veces al año. Meta ideal: 6x+ para mejor eficiencia de capital y flujo de caja."
+                       style="cursor: help;"></i>
                 </h5>
             </div>
             <div class="card-body text-center">
@@ -426,6 +452,11 @@
                 <h5 class="card-title mb-0">
                     <i class="bi bi-calculator"></i>
                     Carrying Cost
+                    <i class="bi bi-question-circle text-light ms-2" 
+                       data-bs-toggle="tooltip" 
+                       data-bs-placement="top" 
+                       title="Costo mensual de mantener el inventario actual. Incluye almacenamiento, seguros, servicios, costo de oportunidad del capital y riesgo de obsolescencia. Equivale al 2% del valor total del inventario por mes."
+                       style="cursor: help;"></i>
                 </h5>
             </div>
             <div class="card-body text-center">
@@ -444,15 +475,188 @@
                 <h5 class="card-title mb-0">
                     <i class="bi bi-exclamation-diamond"></i>
                     Optimization Potential
+                    <i class="bi bi-question-circle text-light ms-2" 
+                       data-bs-toggle="tooltip" 
+                       data-bs-placement="top" 
+                       title="Ahorro potencial total por optimización de inventario. Suma del valor de inventario muerto + exceso de stock. Representa capital que puede liberarse mediante liquidación, descuentos o mejor gestión de demanda. ¡USD 9.2M es una oportunidad enorme!"
+                       style="cursor: help;"></i>
                 </h5>
             </div>
             <div class="card-body text-center">
-                <h2 id="optimization-potential" class="text-success">Loading...</h2>
+                <h2 id="optimization-potential-card" class="text-success">Loading...</h2>
                 <p class="text-muted">Potential savings</p>
                 <div class="progress">
                     <div id="optimization-progress" class="progress-bar bg-success" role="progressbar" style="width: 0%"></div>
                 </div>
                 <small class="text-muted">From dead stock reduction</small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Stock Variation Over Time Analysis -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="bi bi-graph-up-arrow"></i>
+                    Stock Variation & Velocity Analysis
+                </h5>
+            </div>
+            <div class="card-body">
+                <!-- Stock Velocity KPIs -->
+                <div class="row mb-4">
+                    <div class="col-md-3">
+                        <div class="card border-primary">
+                            <div class="card-body text-center">
+                                <i class="bi bi-speedometer2 text-primary mb-2" style="font-size: 2rem;"></i>
+                                <h4 id="overall-turnover-rate" class="text-primary">Loading...</h4>
+                                <p class="card-text">
+                                    Overall Turnover Rate
+                                    <i class="bi bi-question-circle text-muted ms-1" 
+                                       data-bs-toggle="tooltip" 
+                                       data-bs-placement="top" 
+                                       title="Indica cuántas veces al año se convierte el inventario en ventas. Un valor alto significa mejor eficiencia de capital. Meta: 6x por año. Cálculo: (Ventas Anuales ÷ Valor Promedio de Inventario) × 100"
+                                       style="cursor: help;"></i>
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card border-success">
+                            <div class="card-body text-center">
+                                <i class="bi bi-arrow-up-circle text-success mb-2" style="font-size: 2rem;"></i>
+                                <h4 id="high-velocity-products" class="text-success">Loading...</h4>
+                                <p class="card-text">
+                                    High Velocity Products
+                                    <i class="bi bi-question-circle text-muted ms-1" 
+                                       data-bs-toggle="tooltip" 
+                                       data-bs-placement="top" 
+                                       title="Productos que rotan 4+ veces por año. Son los más rentables y eficientes en términos de capital. Requieren reabastecimiento frecuente pero generan flujo de caja constante."
+                                       style="cursor: help;"></i>
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card border-warning">
+                            <div class="card-body text-center">
+                                <i class="bi bi-arrow-down-circle text-warning mb-2" style="font-size: 2rem;"></i>
+                                <h4 id="low-velocity-products" class="text-warning">Loading...</h4>
+                                <p class="card-text">
+                                    Low Velocity Products
+                                    <i class="bi bi-question-circle text-muted ms-1" 
+                                       data-bs-toggle="tooltip" 
+                                       data-bs-placement="top" 
+                                       title="Productos que rotan menos de 2 veces por año. Consumen capital y espacio de almacén. Considerar descuentos, promociones o descontinuar según demanda."
+                                       style="cursor: help;"></i>
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card border-danger">
+                            <div class="card-body text-center">
+                                <i class="bi bi-pause-circle text-danger mb-2" style="font-size: 2rem;"></i>
+                                <h4 id="no-movement-products" class="text-danger">Loading...</h4>
+                                <p class="card-text">
+                                    No Movement
+                                    <i class="bi bi-question-circle text-muted ms-1" 
+                                       data-bs-toggle="tooltip" 
+                                       data-bs-placement="top" 
+                                       title="Productos sin ventas en los últimos 12 meses. Inventario muerto que genera costos de almacenamiento sin retorno. Acción urgente: liquidar o descartar."
+                                       style="cursor: help;"></i>
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Charts Row -->
+                <div class="row mb-4">
+                    <div class="col-md-8">
+                        <div class="card">
+                            <div class="card-header">
+                                <h6 class="card-title mb-0">
+                                    <i class="bi bi-bar-chart"></i>
+                                    Monthly Stock Movement Trends
+                                </h6>
+                            </div>
+                            <div class="card-body">
+                                <div id="stock-movement-chart" class="chart-container"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card">
+                            <div class="card-header">
+                                <h6 class="card-title mb-0">
+                                    <i class="bi bi-pie-chart"></i>
+                                    Velocity Distribution
+                                </h6>
+                            </div>
+                            <div class="card-body">
+                                <div id="velocity-distribution-chart" class="chart-container"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Stock Velocity Summary Table -->
+                <div class="row">
+                    <div class="col-12">
+                        <div class="card">
+                            <div class="card-header d-flex justify-content-between align-items-center">
+                                <h6 class="card-title mb-0">
+                                    <i class="bi bi-table"></i>
+                                    Top Products by Velocity & Turnover
+                                </h6>
+                                <div class="btn-group btn-group-sm" role="group">
+                                    <button type="button" class="btn btn-outline-primary active" data-filter="all">All</button>
+                                    <button type="button" class="btn btn-outline-success" data-filter="high">High Velocity</button>
+                                    <button type="button" class="btn btn-outline-warning" data-filter="low">Low Velocity</button>
+                                    <button type="button" class="btn btn-outline-danger" data-filter="dead">Dead Stock</button>
+                                </div>
+                            </div>
+                            <div class="card-body">
+                                <div class="table-responsive" style="max-height: 400px;">
+                                    <table class="table table-sm table-hover">
+                                        <thead class="table-dark sticky-top">
+                                            <tr>
+                                                <th>Product</th>
+                                                <th>Category</th>
+                                                <th>Current Stock</th>
+                                                <th>Annual Sales</th>
+                                                <th>Turnover %</th>
+                                                <th>Trend</th>
+                                                <th>Months of Stock</th>
+                                                <th>Status</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="velocity-summary-tbody">
+                                            <tr>
+                                                <td colspan="8" class="text-center">Loading...</td>
+                                            </tr>
+                                        </tbody>
+                                        <tfoot id="velocity-summary-footer" class="table-secondary" style="display: none;">
+                                            <tr>
+                                                <th><strong>SUMMARY</strong></th>
+                                                <th><span class="badge bg-secondary" id="velocity-categories-count">0</span> Categories</th>
+                                                <th><span id="velocity-total-stock">0</span> units</th>
+                                                <th><span id="velocity-total-sales">$0</span></th>
+                                                <th><span id="velocity-avg-turnover">0%</span></th>
+                                                <th><span class="badge bg-info" id="velocity-positive-trends">0</span> ↗</th>
+                                                <th><span id="velocity-avg-months">0</span> months</th>
+                                                <th><span class="badge bg-success" id="velocity-healthy-count">0</span> Healthy</th>
+                                            </tr>
+                                        </tfoot>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -503,6 +707,12 @@
 <script>
 // Load inventory data when page loads
 document.addEventListener('DOMContentLoaded', function() {
+    // Initialize Bootstrap tooltips
+    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+    var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl);
+    });
+    
     loadInventoryData();
     loadCategoryChart();
     loadStockHealthChart();
@@ -511,6 +721,7 @@ document.addEventListener('DOMContentLoaded', function() {
     loadTopStockAnalysis();
     loadInventoryInsights();
     loadRecommendedActions();
+    loadStockVariationAnalysis();
 });
 
 function loadInventoryData() {
@@ -829,6 +1040,7 @@ function updateFinancialImpactSummary(allItems) {
     document.getElementById('total-dead-stock-value').textContent = formatUSD(deadStockValue);
     document.getElementById('dead-stock-carrying-cost').textContent = 'Monthly Cost: ' + formatUSD(deadStockCarryingCost);
     document.getElementById('optimization-potential').textContent = formatUSD(optimizationPotential);
+    document.getElementById('optimization-potential-card').textContent = formatUSD(optimizationPotential);
     
     // Update insights and recommendations
     updateFinancialInsights(deadStock, slowMoving, deadStockValue, optimizationPotential);
@@ -1030,6 +1242,267 @@ function markForPromotion(productName) {
 
 function markForDiscount(productName) {
     alert(`Marking ${productName} for discount - Feature coming soon!`);
+}
+
+// Stock Variation Analysis Functions
+function loadStockVariationAnalysis() {
+    loadStockVariationKPIs();
+    loadStockMovementChart();
+    loadVelocityDistributionChart();
+    loadVelocitySummaryTable();
+    setupVelocityTableFilters();
+}
+
+function loadStockVariationKPIs() {
+    fetch('/inventory/api/stock-variation-kpis')
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success') {
+                const kpis = data.data;
+                
+                // Update KPI cards
+                document.getElementById('overall-turnover-rate').textContent = kpis.formatted.overall_turnover_percentage;
+                document.getElementById('high-velocity-products').textContent = kpis.velocity_distribution.high_velocity;
+                document.getElementById('low-velocity-products').textContent = kpis.velocity_distribution.low_velocity;
+                document.getElementById('no-movement-products').textContent = kpis.velocity_distribution.no_movement;
+                
+                // Update optimization potential card with the actual KPI data
+                if (document.getElementById('optimization-potential-card')) {
+                    document.getElementById('optimization-potential-card').textContent = kpis.formatted.optimization_potential;
+                    
+                    // Update progress bar (assuming 10M is max potential)
+                    const progressPercentage = (kpis.financial_impact.optimization_potential / 10000000) * 100;
+                    document.getElementById('optimization-progress').style.width = Math.min(progressPercentage, 100) + '%';
+                }
+                
+                console.log('Stock Variation KPIs loaded:', kpis);
+            }
+        })
+        .catch(error => console.error('Error loading stock variation KPIs:', error));
+}
+
+function loadStockMovementChart() {
+    fetch('/inventory/api/stock-variation-over-time')
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success') {
+                createStockMovementChart(data.data);
+            }
+        })
+        .catch(error => console.error('Error loading stock movement data:', error));
+}
+
+function createStockMovementChart(data) {
+    if (!data || data.length === 0) {
+        document.getElementById('stock-movement-chart').innerHTML = '<div class="alert alert-info">No stock movement data available</div>';
+        return;
+    }
+
+    // Group data by month for aggregated view
+    const monthlyData = {};
+    data.forEach(item => {
+        const monthKey = `${item.Year}-${item.Month.toString().padStart(2, '0')}`;
+        if (!monthlyData[monthKey]) {
+            monthlyData[monthKey] = {
+                monthYear: `${item.MonthName} ${item.Year}`,
+                totalSales: 0,
+                totalValue: 0,
+                productCount: 0
+            };
+        }
+        monthlyData[monthKey].totalSales += item.QuantitySold || 0;
+        monthlyData[monthKey].totalValue += item.MonthlySalesValue || 0;
+        monthlyData[monthKey].productCount += 1;
+    });
+
+    const chartData = Object.values(monthlyData).sort((a, b) => a.monthYear.localeCompare(b.monthYear));
+
+    const trace1 = {
+        x: chartData.map(d => d.monthYear),
+        y: chartData.map(d => d.totalSales),
+        type: 'bar',
+        name: 'Units Sold',
+        marker: { color: '#007bff' },
+        yaxis: 'y'
+    };
+
+    const trace2 = {
+        x: chartData.map(d => d.monthYear),
+        y: chartData.map(d => d.totalValue),
+        type: 'scatter',
+        mode: 'lines+markers',
+        name: 'Sales Value (USD)',
+        line: { color: '#28a745' },
+        yaxis: 'y2'
+    };
+
+    const layout = {
+        title: '',
+        xaxis: { title: 'Month' },
+        yaxis: { 
+            title: 'Units Sold',
+            side: 'left'
+        },
+        yaxis2: {
+            title: 'Sales Value (USD)',
+            side: 'right',
+            overlaying: 'y',
+            tickformat: '$,.0f'
+        },
+        margin: { t: 20, r: 60, b: 60, l: 60 },
+        legend: { x: 0, y: 1 }
+    };
+
+    Plotly.newPlot('stock-movement-chart', [trace1, trace2], layout, {responsive: true});
+}
+
+function loadVelocityDistributionChart() {
+    fetch('/inventory/api/stock-variation-kpis')
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success') {
+                createVelocityDistributionChart(data.data.velocity_distribution);
+            }
+        })
+        .catch(error => console.error('Error loading velocity distribution:', error));
+}
+
+function createVelocityDistributionChart(velocityData) {
+    const trace = {
+        labels: ['High Velocity', 'Medium Velocity', 'Low Velocity', 'No Movement'],
+        values: [
+            velocityData.high_velocity,
+            velocityData.medium_velocity,
+            velocityData.low_velocity,
+            velocityData.no_movement
+        ],
+        type: 'pie',
+        marker: {
+            colors: ['#28a745', '#ffc107', '#fd7e14', '#dc3545']
+        },
+        textinfo: 'label+percent+value',
+        textposition: 'outside'
+    };
+
+    const layout = {
+        title: '',
+        margin: { t: 20, r: 20, b: 20, l: 20 },
+        showlegend: false
+    };
+
+    Plotly.newPlot('velocity-distribution-chart', [trace], layout, {responsive: true});
+}
+
+function loadVelocitySummaryTable() {
+    fetch('/inventory/api/stock-velocity-summary')
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success') {
+                populateVelocitySummaryTable(data.data);
+                updateVelocitySummaryFooter(data.data);
+            }
+        })
+        .catch(error => console.error('Error loading velocity summary:', error));
+}
+
+function populateVelocitySummaryTable(data) {
+    const tbody = document.getElementById('velocity-summary-tbody');
+    
+    if (!data || data.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="8" class="text-center">No velocity data available</td></tr>';
+        return;
+    }
+
+    // Sort by annual sales value descending, limit to top 50
+    const sortedData = data.sort((a, b) => b.AnnualSalesValue - a.AnnualSalesValue).slice(0, 50);
+
+    let html = '';
+    sortedData.forEach(item => {
+        const statusClass = getStatusClass(item.StockHealthStatus);
+        const trendIcon = getTrendIcon(item.TrendPercentage);
+        
+        html += `
+            <tr class="velocity-row" data-status="${item.StockHealthStatus}">
+                <td><strong>${item.ProductName}</strong></td>
+                <td><span class="badge bg-secondary">${item.Category}</span></td>
+                <td>${item.CurrentStock.toLocaleString()}</td>
+                <td>${item.FormattedAnnualSalesValue}</td>
+                <td>${item.FormattedTurnoverPercentage}</td>
+                <td>${item.FormattedTrendPercentage} ${trendIcon}</td>
+                <td>${item.FormattedMonthsOfStock}</td>
+                <td><span class="badge bg-${statusClass}">${item.StockHealthStatus}</span></td>
+            </tr>
+        `;
+    });
+    
+    tbody.innerHTML = html;
+    document.getElementById('velocity-summary-footer').style.display = 'table-footer-group';
+}
+
+function updateVelocitySummaryFooter(data) {
+    const categories = new Set(data.map(item => item.Category)).size;
+    const totalStock = data.reduce((sum, item) => sum + item.CurrentStock, 0);
+    const totalSales = data.reduce((sum, item) => sum + item.AnnualSalesValue, 0);
+    const avgTurnover = data.reduce((sum, item) => sum + item.AnnualTurnoverPercentage, 0) / data.length;
+    const positiveTrends = data.filter(item => item.TrendPercentage > 5).length;
+    const avgMonths = data.reduce((sum, item) => sum + (item.MonthsOfStock < 999 ? item.MonthsOfStock : 0), 0) / data.filter(item => item.MonthsOfStock < 999).length;
+    const healthyCount = data.filter(item => item.StockHealthStatus === 'HEALTHY').length;
+
+    document.getElementById('velocity-categories-count').textContent = categories;
+    document.getElementById('velocity-total-stock').textContent = totalStock.toLocaleString();
+    document.getElementById('velocity-total-sales').textContent = formatUSD(totalSales);
+    document.getElementById('velocity-avg-turnover').textContent = `${avgTurnover.toFixed(1)}%`;
+    document.getElementById('velocity-positive-trends').textContent = positiveTrends;
+    document.getElementById('velocity-avg-months').textContent = avgMonths.toFixed(1);
+    document.getElementById('velocity-healthy-count').textContent = healthyCount;
+}
+
+function setupVelocityTableFilters() {
+    const filterButtons = document.querySelectorAll('[data-filter]');
+    
+    filterButtons.forEach(button => {
+        button.addEventListener('click', function() {
+            // Update active button
+            filterButtons.forEach(btn => btn.classList.remove('active'));
+            this.classList.add('active');
+            
+            // Filter table rows
+            const filter = this.getAttribute('data-filter');
+            const rows = document.querySelectorAll('.velocity-row');
+            
+            rows.forEach(row => {
+                const status = row.getAttribute('data-status');
+                if (filter === 'all') {
+                    row.style.display = '';
+                } else if (filter === 'high' && status === 'HEALTHY') {
+                    row.style.display = '';
+                } else if (filter === 'low' && (status === 'LOW_STOCK' || status === 'OVERSTOCK')) {
+                    row.style.display = '';
+                } else if (filter === 'dead' && status === 'DEAD_STOCK') {
+                    row.style.display = '';
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+        });
+    });
+}
+
+function getStatusClass(status) {
+    switch(status) {
+        case 'HEALTHY': return 'success';
+        case 'LOW_STOCK': return 'warning';
+        case 'OVERSTOCK': return 'info';
+        case 'DEAD_STOCK': return 'danger';
+        case 'OUT_OF_STOCK': return 'dark';
+        default: return 'secondary';
+    }
+}
+
+function getTrendIcon(trendPercentage) {
+    if (trendPercentage > 5) return '📈';
+    if (trendPercentage < -5) return '📉';
+    return '➡️';
 }
 </script>
 {% endblock %}

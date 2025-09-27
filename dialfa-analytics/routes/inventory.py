@@ -123,3 +123,44 @@ def inventory_kpis():
     except Exception as e:
         logger.error(f"Inventory KPIs error: {e}")
         return jsonify({'error': str(e), 'status': 'error'}), 500
+
+@inventory_bp.route('/api/stock-variation-over-time')
+def stock_variation_over_time():
+    """Get detailed stock variation analysis over time"""
+    try:
+        variation_data = current_app.inventory_analytics.get_stock_variation_over_time()
+        return jsonify({
+            'data': variation_data,
+            'total_records': len(variation_data),
+            'status': 'success'
+        })
+    except Exception as e:
+        logger.error(f"Stock variation over time error: {e}")
+        return jsonify({'error': str(e), 'status': 'error'}), 500
+
+@inventory_bp.route('/api/stock-velocity-summary')
+def stock_velocity_summary():
+    """Get comprehensive stock velocity and turnover analysis"""
+    try:
+        velocity_data = current_app.inventory_analytics.get_stock_velocity_summary()
+        return jsonify({
+            'data': velocity_data,
+            'total_records': len(velocity_data),
+            'status': 'success'
+        })
+    except Exception as e:
+        logger.error(f"Stock velocity summary error: {e}")
+        return jsonify({'error': str(e), 'status': 'error'}), 500
+
+@inventory_bp.route('/api/stock-variation-kpis')
+def stock_variation_kpis():
+    """Get key performance indicators from stock variation analysis"""
+    try:
+        kpis = current_app.inventory_analytics.get_stock_variation_kpis()
+        return jsonify({
+            'data': kpis,
+            'status': 'success'
+        })
+    except Exception as e:
+        logger.error(f"Stock variation KPIs error: {e}")
+        return jsonify({'error': str(e), 'status': 'error'}), 500

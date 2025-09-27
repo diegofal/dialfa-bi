@@ -255,6 +255,137 @@ class InventoryQueries:
     GROUP BY c.IdCategoria, c.Descripcion
     ORDER BY TotalValue DESC
     """
+    
+    STOCK_VARIATION_OVER_TIME = """
+    WITH MonthlyStockMovement AS (
+        SELECT 
+            a.IdArticulo,
+            a.descripcion as ProductName,
+            c.Descripcion as Category,
+            a.cantidad as CurrentStock,
+            a.preciounitario as UnitPrice,
+            YEAR(np.FechaEmision) as Year,
+            MONTH(np.FechaEmision) as Month,
+            DATENAME(MONTH, np.FechaEmision) as MonthName,
+            SUM(npi.Cantidad) as QuantitySold,
+            COUNT(npi.IdNotaPedido) as OrderCount,
+            AVG(npi.Cantidad) as AvgOrderSize,
+            SUM(npi.Cantidad * a.preciounitario) as SalesValue
+        FROM Articulos a
+        INNER JOIN Categorias c ON a.IdCategoria = c.IdCategoria
+        LEFT JOIN NotaPedido_Items npi ON a.IdArticulo = npi.IdArticulo
+        LEFT JOIN NotaPedidos np ON npi.IdNotaPedido = np.IdNotaPedido
+        WHERE np.FechaEmision >= DATEADD(MONTH, -12, GETDATE())
+        AND np.FechaEmision > '2020-01-01'
+        AND a.Discontinuado = 0
+        GROUP BY a.IdArticulo, a.descripcion, c.Descripcion, a.cantidad, a.preciounitario,
+                 YEAR(np.FechaEmision), MONTH(np.FechaEmision), DATENAME(MONTH, np.FechaEmision)
+    ),
+    StockTurnoverAnalysis AS (
+        SELECT 
+            *,
+            -- Calculate stock turnover rate (monthly sales / current stock)
+            CASE 
+                WHEN CurrentStock > 0 THEN QuantitySold / NULLIF(CurrentStock, 0)
+                ELSE 0
+            END as TurnoverRate,
+            -- Calculate days of stock remaining
+            CASE 
+                WHEN QuantitySold > 0 THEN (CurrentStock / NULLIF(QuantitySold, 0)) * 30
+                ELSE 999
+            END as DaysOfStockRemaining,
+            -- Calculate velocity category
+            CASE 
+                WHEN QuantitySold = 0 THEN 'No Movement'
+                WHEN (QuantitySold / NULLIF(CurrentStock, 0)) >= 0.5 THEN 'High Velocity'
+                WHEN (QuantitySold / NULLIF(CurrentStock, 0)) >= 0.2 THEN 'Medium Velocity'
+                WHEN (QuantitySold / NULLIF(CurrentStock, 0)) >= 0.1 THEN 'Low Velocity'
+                ELSE 'Very Low Velocity'
+            END as VelocityCategory
+        FROM MonthlyStockMovement
+    )
+    SELECT 
+        *,
+        -- Add financial impact metrics
+        CurrentStock * UnitPrice as StockValue,
+        SalesValue as MonthlySalesValue,
+        (CurrentStock * UnitPrice) * 0.02 as MonthlyCarryingCost,
+        -- Add reorder recommendations
+        CASE 
+            WHEN DaysOfStockRemaining < 30 AND QuantitySold > 0 THEN 'URGENT REORDER'
+            WHEN DaysOfStockRemaining < 60 AND QuantitySold > 0 THEN 'REORDER SOON'
+            WHEN DaysOfStockRemaining > 180 THEN 'OVERSTOCK RISK'
+            ELSE 'NORMAL'
+        END as StockStatus
+    FROM StockTurnoverAnalysis
+    ORDER BY Year DESC, Month DESC, SalesValue DESC
+    """
+    
+    STOCK_VELOCITY_SUMMARY = """
+    WITH VelocityAnalysis AS (
+        SELECT 
+            a.IdArticulo,
+            a.descripcion as ProductName,
+            c.Descripcion as Category,
+            a.cantidad as CurrentStock,
+            a.preciounitario as UnitPrice,
+            -- Last 3 months sales
+            COALESCE(SUM(CASE WHEN np.FechaEmision >= DATEADD(MONTH, -3, GETDATE()) THEN npi.Cantidad END), 0) as Last3MonthsSales,
+            -- Last 6 months sales  
+            COALESCE(SUM(CASE WHEN np.FechaEmision >= DATEADD(MONTH, -6, GETDATE()) THEN npi.Cantidad END), 0) as Last6MonthsSales,
+            -- Last 12 months sales
+            COALESCE(SUM(CASE WHEN np.FechaEmision >= DATEADD(MONTH, -12, GETDATE()) THEN npi.Cantidad END), 0) as Last12MonthsSales,
+            -- Average monthly sales
+            COALESCE(SUM(npi.Cantidad) / NULLIF(DATEDIFF(MONTH, MIN(np.FechaEmision), GETDATE()), 0), 0) as AvgMonthlySales,
+            -- Last sale date
+            MAX(np.FechaEmision) as LastSaleDate
+        FROM Articulos a
+        INNER JOIN Categorias c ON a.IdCategoria = c.IdCategoria
+        LEFT JOIN NotaPedido_Items npi ON a.IdArticulo = npi.IdArticulo
+        LEFT JOIN NotaPedidos np ON npi.IdNotaPedido = np.IdNotaPedido
+        WHERE a.Discontinuado = 0
+        AND (np.FechaEmision IS NULL OR (np.FechaEmision >= DATEADD(YEAR, -2, GETDATE()) AND np.FechaEmision <= GETDATE()))
+        GROUP BY a.IdArticulo, a.descripcion, c.Descripcion, a.cantidad, a.preciounitario
+    )
+    SELECT 
+        *,
+        -- Stock turnover metrics
+        CASE 
+            WHEN CurrentStock > 0 AND AvgMonthlySales > 0 THEN CurrentStock / AvgMonthlySales
+            ELSE 999
+        END as MonthsOfStock,
+        
+        CASE 
+            WHEN AvgMonthlySales > 0 THEN (Last12MonthsSales / 12.0) / NULLIF(CurrentStock, 0) * 100
+            ELSE 0
+        END as AnnualTurnoverPercentage,
+        
+        -- Trend analysis (comparing recent vs historical performance)
+        CASE 
+            WHEN Last6MonthsSales > 0 AND Last12MonthsSales > 0 THEN 
+                ((Last3MonthsSales / 3.0) - ((Last12MonthsSales - Last3MonthsSales) / 9.0)) / 
+                NULLIF(((Last12MonthsSales - Last3MonthsSales) / 9.0), 0) * 100
+            ELSE 0
+        END as TrendPercentage,
+        
+        -- Stock health classification
+        CASE 
+            WHEN CurrentStock = 0 THEN 'OUT_OF_STOCK'
+            WHEN AvgMonthlySales = 0 AND CurrentStock > 0 THEN 'DEAD_STOCK'
+            WHEN CurrentStock / NULLIF(AvgMonthlySales, 0) < 1 THEN 'LOW_STOCK'
+            WHEN CurrentStock / NULLIF(AvgMonthlySales, 0) > 6 THEN 'OVERSTOCK'
+            ELSE 'HEALTHY'
+        END as StockHealthStatus,
+        
+        -- Financial metrics
+        CurrentStock * UnitPrice as StockValue,
+        Last12MonthsSales * UnitPrice as AnnualSalesValue,
+        (CurrentStock * UnitPrice) * 0.02 as MonthlyCarryingCost
+        
+    FROM VelocityAnalysis
+    WHERE CurrentStock >= 0
+    ORDER BY AnnualSalesValue DESC, StockValue DESC
+    """
 
 class SalesQueries:
     """Sales analysis SQL queries"""

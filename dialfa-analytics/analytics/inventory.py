@@ -13,6 +13,7 @@ class InventoryAnalytics:
     def __init__(self, db_manager):
         self.db = db_manager
         self.logger = logging.getLogger(__name__)
+        from database.queries import InventoryQueries
         self.queries = InventoryQueries()
     
     def get_summary(self):
@@ -300,3 +301,127 @@ class InventoryAnalytics:
         except Exception as e:
             self.logger.error(f"Error getting stock alerts: {e}")
             return []
+    
+    def get_stock_variation_over_time(self):
+        """Get detailed stock variation analysis over time"""
+        try:
+            df = self.db.execute_query(self.queries.STOCK_VARIATION_OVER_TIME, 'SPISA')
+            df = clean_dataframe(df)
+            
+            # Add formatted currency columns
+            df['FormattedUnitPrice'] = df['UnitPrice'].apply(lambda x: format_currency(x, 'USD', 'SPISA'))
+            df['FormattedStockValue'] = df['StockValue'].apply(lambda x: format_currency(x, 'USD', 'SPISA'))
+            df['FormattedSalesValue'] = df['MonthlySalesValue'].apply(lambda x: format_currency(x, 'USD', 'SPISA'))
+            df['FormattedCarryingCost'] = df['MonthlyCarryingCost'].apply(lambda x: format_currency(x, 'USD', 'SPISA'))
+            
+            # Add percentage formatting
+            df['FormattedTurnoverRate'] = df['TurnoverRate'].apply(lambda x: f"{x:.1%}" if pd.notna(x) else "0.0%")
+            
+            return df.to_dict('records')
+        except Exception as e:
+            self.logger.error(f"Error getting stock variation over time: {e}")
+            return []
+    
+    def get_stock_velocity_summary(self):
+        """Get comprehensive stock velocity and turnover analysis"""
+        try:
+            df = self.db.execute_query(self.queries.STOCK_VELOCITY_SUMMARY, 'SPISA')
+            df = clean_dataframe(df)
+            
+            # Handle NaT (Not a Time) values in LastSaleDate
+            if 'LastSaleDate' in df.columns:
+                df['LastSaleDate'] = df['LastSaleDate'].fillna(pd.Timestamp('1900-01-01'))
+            
+            # Add formatted currency columns
+            df['FormattedUnitPrice'] = df['UnitPrice'].apply(lambda x: format_currency(x, 'USD', 'SPISA'))
+            df['FormattedStockValue'] = df['StockValue'].apply(lambda x: format_currency(x, 'USD', 'SPISA'))
+            df['FormattedAnnualSalesValue'] = df['AnnualSalesValue'].apply(lambda x: format_currency(x, 'USD', 'SPISA'))
+            df['FormattedCarryingCost'] = df['MonthlyCarryingCost'].apply(lambda x: format_currency(x, 'USD', 'SPISA'))
+            
+            # Add percentage formatting
+            df['FormattedTurnoverPercentage'] = df['AnnualTurnoverPercentage'].apply(lambda x: f"{x:.1f}%" if pd.notna(x) else "0.0%")
+            df['FormattedTrendPercentage'] = df['TrendPercentage'].apply(lambda x: f"{x:+.1f}%" if pd.notna(x) else "0.0%")
+            
+            # Format months of stock
+            df['FormattedMonthsOfStock'] = df['MonthsOfStock'].apply(lambda x: f"{x:.1f}" if x < 999 else "∞")
+            
+            return df.to_dict('records')
+        except Exception as e:
+            self.logger.error(f"Error getting stock velocity summary: {e}")
+            return []
+    
+    def get_stock_variation_kpis(self):
+        """Get key performance indicators from stock variation analysis"""
+        try:
+            # Get velocity summary data
+            velocity_data = self.get_stock_velocity_summary()
+            
+            if not velocity_data:
+                return {}
+            
+            df = pd.DataFrame(velocity_data)
+            
+            # Calculate aggregate KPIs
+            total_products = len(df)
+            total_stock_value = df['StockValue'].sum()
+            total_annual_sales = df['AnnualSalesValue'].sum()
+            total_carrying_cost = df['MonthlyCarryingCost'].sum()
+            
+            # Stock health distribution
+            health_distribution = df['StockHealthStatus'].value_counts().to_dict()
+            
+            # Velocity distribution
+            high_velocity = len(df[df['AnnualTurnoverPercentage'] >= 400])  # 4+ turns per year
+            medium_velocity = len(df[(df['AnnualTurnoverPercentage'] >= 200) & (df['AnnualTurnoverPercentage'] < 400)])  # 2-4 turns
+            low_velocity = len(df[(df['AnnualTurnoverPercentage'] > 0) & (df['AnnualTurnoverPercentage'] < 200)])  # <2 turns
+            no_movement = len(df[df['AnnualTurnoverPercentage'] == 0])
+            
+            # Financial impact metrics
+            dead_stock_value = df[df['StockHealthStatus'] == 'DEAD_STOCK']['StockValue'].sum()
+            overstock_value = df[df['StockHealthStatus'] == 'OVERSTOCK']['StockValue'].sum()
+            healthy_stock_value = df[df['StockHealthStatus'] == 'HEALTHY']['StockValue'].sum()
+            
+            # Turnover efficiency
+            overall_turnover = (total_annual_sales / total_stock_value * 100) if total_stock_value > 0 else 0
+            
+            # Trend analysis
+            positive_trend_products = len(df[df['TrendPercentage'] > 5])
+            negative_trend_products = len(df[df['TrendPercentage'] < -5])
+            
+            return {
+                'total_products': total_products,
+                'total_stock_value': total_stock_value,
+                'total_annual_sales': total_annual_sales,
+                'monthly_carrying_cost': total_carrying_cost,
+                'overall_turnover_percentage': overall_turnover,
+                'stock_health_distribution': health_distribution,
+                'velocity_distribution': {
+                    'high_velocity': high_velocity,
+                    'medium_velocity': medium_velocity,
+                    'low_velocity': low_velocity,
+                    'no_movement': no_movement
+                },
+                'financial_impact': {
+                    'dead_stock_value': dead_stock_value,
+                    'overstock_value': overstock_value,
+                    'healthy_stock_value': healthy_stock_value,
+                    'optimization_potential': dead_stock_value + overstock_value
+                },
+                'trend_analysis': {
+                    'positive_trend_products': positive_trend_products,
+                    'negative_trend_products': negative_trend_products,
+                    'stable_products': total_products - positive_trend_products - negative_trend_products
+                },
+                'formatted': {
+                    'total_stock_value': format_currency(total_stock_value, 'USD', 'SPISA'),
+                    'total_annual_sales': format_currency(total_annual_sales, 'USD', 'SPISA'),
+                    'monthly_carrying_cost': format_currency(total_carrying_cost, 'USD', 'SPISA'),
+                    'dead_stock_value': format_currency(dead_stock_value, 'USD', 'SPISA'),
+                    'overstock_value': format_currency(overstock_value, 'USD', 'SPISA'),
+                    'optimization_potential': format_currency(dead_stock_value + overstock_value, 'USD', 'SPISA'),
+                    'overall_turnover_percentage': f"{overall_turnover:.1f}%"
+                }
+            }
+        except Exception as e:
+            self.logger.error(f"Error calculating stock variation KPIs: {e}")
+            return {}
