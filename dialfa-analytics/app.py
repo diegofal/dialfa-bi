@@ -3,11 +3,13 @@ Dialfa Business Intelligence Dashboard
 Main Flask Application
 """
 
-from flask import Flask, render_template, jsonify, request, send_file
+from flask import Flask, render_template, jsonify, request, send_file, session
 import os
 from datetime import datetime
 import logging
 import traceback
+from flask_babel import Babel, _, get_locale
+from config import Config
 
 # Import our custom modules
 from database.connection import DatabaseManager
@@ -29,6 +31,35 @@ def create_app():
     # Configuration
     app.config['SECRET_KEY'] = 'dialfa-analytics-2025'
     app.config['DEBUG'] = True
+    app.config.from_object(Config)
+    
+    # Initialize Babel for internationalization
+    babel = Babel()
+    babel.init_app(app)
+    
+    def get_locale():
+        # 1. Check if language is set in session
+        if 'language' in session:
+            return session['language']
+        # 2. Check if language is in URL parameters
+        if request.args.get('lang'):
+            session['language'] = request.args.get('lang')
+            return session['language']
+        # 3. Use browser's preferred language
+        return request.accept_languages.best_match(app.config['LANGUAGES'].keys()) or app.config['BABEL_DEFAULT_LOCALE']
+    
+    babel.locale_selector_func = get_locale
+    
+    # Make get_locale and translation functions available in templates
+    @app.context_processor
+    def inject_conf_vars():
+        return {
+            'get_locale': get_locale,
+            'LANGUAGES': app.config['LANGUAGES']
+        }
+    
+    # Make Babel functions available in Jinja2 templates
+    app.jinja_env.globals.update(_=_, ngettext=lambda s, p, n: s if n == 1 else p)
     
     # Setup logging
     logging.basicConfig(
@@ -124,6 +155,13 @@ def create_app():
     def favicon():
         """Serve favicon"""
         return '', 204  # No content
+    
+    @app.route('/set_language/<language>')
+    def set_language(language=None):
+        """Set the language preference"""
+        if language in app.config['LANGUAGES']:
+            session['language'] = language
+        return jsonify({'status': 'success', 'language': session.get('language', 'es')})
     
     @app.errorhandler(404)
     def not_found(error):

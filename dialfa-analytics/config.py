@@ -54,3 +54,11 @@ class Config:
     DEFAULT_CURRENCY = 'ARS'  # Argentine Pesos
     TAX_RATE = 0.21  # 21% IVA (Value Added Tax)
     CURRENCY_SYMBOL = 'ARS'  # Show currency code explicitly
+    
+    # Internationalization Configuration
+    LANGUAGES = {
+        'en': 'English',
+        'es': 'Español'
+    }
+    BABEL_DEFAULT_LOCALE = 'es'
+    BABEL_DEFAULT_TIMEZONE = 'UTC'

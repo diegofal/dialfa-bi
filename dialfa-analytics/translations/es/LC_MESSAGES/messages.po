@@ -1,0 +1,183 @@
+# Spanish translations for Dialfa Analytics
+# Copyright (C) 2025 Dialfa
+# This file is distributed under the same license as the Dialfa Analytics project.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: Dialfa Analytics 1.0\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2025-09-27 19:35+0000\n"
+"PO-Revision-Date: 2025-09-27 19:35+0000\n"
+"Last-Translator: \n"
+"Language: es\n"
+"Language-Team: Spanish\n"
+"Plural-Forms: nplurals=2; plural=(n != 1)\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.17.0\n"
+
+# Navigation
+msgid "Dashboard"
+msgstr "Panel de Control"
+
+msgid "Financial"
+msgstr "Financiero"
+
+msgid "Inventory"
+msgstr "Inventario"
+
+msgid "Sales"
+msgstr "Ventas"
+
+# Dashboard titles
+msgid "Dialfa Business Intelligence"
+msgstr "Inteligencia de Negocios Dialfa"
+
+msgid "Financial Analytics"
+msgstr "Análisis Financiero"
+
+msgid "Inventory Analytics"
+msgstr "Análisis de Inventario"
+
+msgid "Sales Analytics"
+msgstr "Análisis de Ventas"
+
+# KPI Labels
+msgid "Stock Turnover Rate"
+msgstr "Tasa de Rotación de Inventario"
+
+msgid "Carrying Cost"
+msgstr "Costo de Almacenamiento"
+
+msgid "Optimization Potential"
+msgstr "Potencial de Optimización"
+
+msgid "Overall Turnover Rate"
+msgstr "Tasa de Rotación General"
+
+msgid "High Velocity Products"
+msgstr "Productos de Alta Velocidad"
+
+msgid "Low Velocity Products"
+msgstr "Productos de Baja Velocidad"
+
+msgid "No Movement"
+msgstr "Sin Movimiento"
+
+msgid "Dead Stock Value"
+msgstr "Valor de Inventario Muerto"
+
+msgid "Low Stock Risk"
+msgstr "Riesgo de Stock Bajo"
+
+msgid "Overstock Value"
+msgstr "Valor de Sobrestock"
+
+# Time periods
+msgid "Times per year"
+msgstr "Veces por año"
+
+msgid "Monthly cost"
+msgstr "Costo mensual"
+
+msgid "Potential savings"
+msgstr "Ahorros potenciales"
+
+msgid "Annual Savings"
+msgstr "Ahorros Anuales"
+
+# Tooltips
+msgid "Stock Turnover Rate Tooltip"
+msgstr "Mide cuántas veces por año se rota completamente el inventario. 4.2x significa que el inventario se convierte en ventas 4.2 veces al año. Meta ideal: 6x+ para mejor eficiencia de capital y flujo de caja."
+
+msgid "Carrying Cost Tooltip"
+msgstr "Costo mensual de mantener el inventario actual. Incluye almacenamiento, seguros, servicios, costo de oportunidad del capital y riesgo de obsolescencia. Equivale al 2% del valor total del inventario por mes."
+
+msgid "Optimization Potential Tooltip"
+msgstr "Ahorro potencial total por optimización de inventario. Suma del valor de inventario muerto + exceso de stock. Representa capital que puede liberarse mediante liquidación, descuentos o mejor gestión de demanda. ¡USD 9.2M es una oportunidad enorme!"
+
+msgid "Overall Turnover Rate Tooltip"
+msgstr "Indica cuántas veces al año se convierte el inventario en ventas. Un valor alto significa mejor eficiencia de capital. Meta: 6x por año. Cálculo: (Ventas Anuales ÷ Valor Promedio de Inventario) × 100"
+
+msgid "High Velocity Products Tooltip"
+msgstr "Productos que rotan 4+ veces por año. Son los más rentables y eficientes en términos de capital. Requieren reabastecimiento frecuente pero generan flujo de caja constante."
+
+msgid "Low Velocity Products Tooltip"
+msgstr "Productos que rotan menos de 2 veces por año. Consumen capital y espacio de almacén. Considerar descuentos, promociones o descontinuar según demanda."
+
+msgid "No Movement Tooltip"
+msgstr "Productos sin ventas en los últimos 12 meses. Inventario muerto que genera costos de almacenamiento sin retorno. Acción urgente: liquidar o descartar."
+
+msgid "Dead Stock Value Tooltip"
+msgstr "Valor total del inventario sin movimiento por más de 365 días. Este capital está 'muerto' y genera solo costos sin retorno. Acción urgente: liquidar mediante descuentos o promociones."
+
+msgid "Low Stock Risk Tooltip"
+msgstr "Riesgo de pérdida de ventas por productos con stock bajo. Incluye productos con menos de 1 mes de inventario según la demanda histórica. Acción: reabastecer urgentemente."
+
+msgid "Overstock Value Tooltip"
+msgstr "Valor del inventario excesivo (más de 6 meses de suministro). Capital inmovilizado que genera costos de almacenamiento. Acción: reducir pedidos futuros y considerar promociones."
+
+# Chart titles
+msgid "Stock Variation & Velocity Analysis"
+msgstr "Análisis de Variación y Velocidad de Stock"
+
+msgid "Monthly Stock Movement Trends"
+msgstr "Tendencias de Movimiento de Stock Mensual"
+
+msgid "Velocity Distribution"
+msgstr "Distribución de Velocidad"
+
+msgid "Top Products by Velocity & Turnover"
+msgstr "Principales Productos por Velocidad y Rotación"
+
+# Table headers
+msgid "Product"
+msgstr "Producto"
+
+msgid "Category"
+msgstr "Categoría"
+
+msgid "Current Stock"
+msgstr "Stock Actual"
+
+msgid "Annual Sales"
+msgstr "Ventas Anuales"
+
+msgid "Turnover %"
+msgstr "Rotación %"
+
+msgid "Trend"
+msgstr "Tendencia"
+
+msgid "Months of Stock"
+msgstr "Meses de Stock"
+
+msgid "Status"
+msgstr "Estado"
+
+# Buttons and actions
+msgid "All"
+msgstr "Todos"
+
+msgid "High Velocity"
+msgstr "Alta Velocidad"
+
+msgid "Low Velocity"
+msgstr "Baja Velocidad"
+
+msgid "Dead Stock"
+msgstr "Stock Muerto"
+
+msgid "Loading..."
+msgstr "Cargando..."
+
+# Language selector
+msgid "Language"
+msgstr "Idioma"
+
+msgid "English"
+msgstr "Inglés"
+
+msgid "Spanish"
+msgstr "Español"

@@ -1,0 +1,183 @@
+# English translations for Dialfa Analytics
+# Copyright (C) 2025 Dialfa
+# This file is distributed under the same license as the Dialfa Analytics project.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: Dialfa Analytics 1.0\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2025-09-27 19:35+0000\n"
+"PO-Revision-Date: 2025-09-27 19:35+0000\n"
+"Last-Translator: \n"
+"Language: en\n"
+"Language-Team: English\n"
+"Plural-Forms: nplurals=2; plural=(n != 1)\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.17.0\n"
+
+# Navigation
+msgid "Dashboard"
+msgstr "Dashboard"
+
+msgid "Financial"
+msgstr "Financial"
+
+msgid "Inventory"
+msgstr "Inventory"
+
+msgid "Sales"
+msgstr "Sales"
+
+# Dashboard titles
+msgid "Dialfa Business Intelligence"
+msgstr "Dialfa Business Intelligence"
+
+msgid "Financial Analytics"
+msgstr "Financial Analytics"
+
+msgid "Inventory Analytics"
+msgstr "Inventory Analytics"
+
+msgid "Sales Analytics"
+msgstr "Sales Analytics"
+
+# KPI Labels
+msgid "Stock Turnover Rate"
+msgstr "Stock Turnover Rate"
+
+msgid "Carrying Cost"
+msgstr "Carrying Cost"
+
+msgid "Optimization Potential"
+msgstr "Optimization Potential"
+
+msgid "Overall Turnover Rate"
+msgstr "Overall Turnover Rate"
+
+msgid "High Velocity Products"
+msgstr "High Velocity Products"
+
+msgid "Low Velocity Products"
+msgstr "Low Velocity Products"
+
+msgid "No Movement"
+msgstr "No Movement"
+
+msgid "Dead Stock Value"
+msgstr "Dead Stock Value"
+
+msgid "Low Stock Risk"
+msgstr "Low Stock Risk"
+
+msgid "Overstock Value"
+msgstr "Overstock Value"
+
+# Time periods
+msgid "Times per year"
+msgstr "Times per year"
+
+msgid "Monthly cost"
+msgstr "Monthly cost"
+
+msgid "Potential savings"
+msgstr "Potential savings"
+
+msgid "Annual Savings"
+msgstr "Annual Savings"
+
+# Tooltips
+msgid "Stock Turnover Rate Tooltip"
+msgstr "Measures how many times per year inventory is completely rotated. 4.2x means inventory converts to sales 4.2 times per year. Ideal target: 6x+ for better capital efficiency and cash flow."
+
+msgid "Carrying Cost Tooltip"
+msgstr "Monthly cost of maintaining current inventory. Includes storage, insurance, utilities, capital opportunity cost, and obsolescence risk. Equals 2% of total inventory value per month."
+
+msgid "Optimization Potential Tooltip"
+msgstr "Total potential savings from inventory optimization. Sum of dead stock value + excess stock. Represents capital that can be freed through liquidation, discounts, or better demand management. USD 9.2M is a huge opportunity!"
+
+msgid "Overall Turnover Rate Tooltip"
+msgstr "Indicates how many times per year inventory converts to sales. A high value means better capital efficiency. Target: 6x per year. Calculation: (Annual Sales ÷ Average Inventory Value) × 100"
+
+msgid "High Velocity Products Tooltip"
+msgstr "Products that rotate 4+ times per year. They are the most profitable and capital-efficient. Require frequent restocking but generate consistent cash flow."
+
+msgid "Low Velocity Products Tooltip"
+msgstr "Products that rotate less than 2 times per year. They consume capital and storage space. Consider discounts, promotions, or discontinuation based on demand."
+
+msgid "No Movement Tooltip"
+msgstr "Products with no sales in the last 12 months. Dead inventory that generates storage costs without return. Urgent action: liquidate or discard."
+
+msgid "Dead Stock Value Tooltip"
+msgstr "Total value of inventory with no movement for more than 365 days. This capital is 'dead' and only generates costs without return. Urgent action: liquidate through discounts or promotions."
+
+msgid "Low Stock Risk Tooltip"
+msgstr "Risk of lost sales due to low stock products. Includes products with less than 1 month of inventory based on historical demand. Action: restock urgently."
+
+msgid "Overstock Value Tooltip"
+msgstr "Value of excess inventory (more than 6 months supply). Immobilized capital that generates storage costs. Action: reduce future orders and consider promotions."
+
+# Chart titles
+msgid "Stock Variation & Velocity Analysis"
+msgstr "Stock Variation & Velocity Analysis"
+
+msgid "Monthly Stock Movement Trends"
+msgstr "Monthly Stock Movement Trends"
+
+msgid "Velocity Distribution"
+msgstr "Velocity Distribution"
+
+msgid "Top Products by Velocity & Turnover"
+msgstr "Top Products by Velocity & Turnover"
+
+# Table headers
+msgid "Product"
+msgstr "Product"
+
+msgid "Category"
+msgstr "Category"
+
+msgid "Current Stock"
+msgstr "Current Stock"
+
+msgid "Annual Sales"
+msgstr "Annual Sales"
+
+msgid "Turnover %"
+msgstr "Turnover %"
+
+msgid "Trend"
+msgstr "Trend"
+
+msgid "Months of Stock"
+msgstr "Months of Stock"
+
+msgid "Status"
+msgstr "Status"
+
+# Buttons and actions
+msgid "All"
+msgstr "All"
+
+msgid "High Velocity"
+msgstr "High Velocity"
+
+msgid "Low Velocity"
+msgstr "Low Velocity"
+
+msgid "Dead Stock"
+msgstr "Dead Stock"
+
+msgid "Loading..."
+msgstr "Loading..."
+
+# Language selector
+msgid "Language"
+msgstr "Language"
+
+msgid "English"
+msgstr "English"
+
+msgid "Spanish"
+msgstr "Spanish"

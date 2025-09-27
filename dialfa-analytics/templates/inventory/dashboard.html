@@ -1,13 +1,13 @@
 {% extends "base.html" %}
 
-{% block title %}Inventory Analytics - Dialfa BI{% endblock %}
+{% block title %}{{ _('Inventory Analytics') }} - Dialfa BI{% endblock %}
 
 {% block content %}
 <div class="row mb-4">
     <div class="col">
         <h1 class="h2">
             <i class="bi bi-boxes"></i>
-            Inventory Analytics
+            {{ _('Inventory Analytics') }}
         </h1>
         <p class="text-muted">Inventory optimization, stock analysis, and supply chain insights</p>
     </div>
@@ -428,17 +428,17 @@
             <div class="card-header">
                 <h5 class="card-title mb-0">
                     <i class="bi bi-graph-up"></i>
-                    Stock Turnover Rate
+                    {{ _('Stock Turnover Rate') }}
                     <i class="bi bi-question-circle text-light ms-2" 
                        data-bs-toggle="tooltip" 
                        data-bs-placement="top" 
-                       title="Mide cuántas veces por año se rota completamente el inventario. 4.2x significa que el inventario se convierte en ventas 4.2 veces al año. Meta ideal: 6x+ para mejor eficiencia de capital y flujo de caja."
+                       title="{{ _('Stock Turnover Rate Tooltip') }}"
                        style="cursor: help;"></i>
                 </h5>
             </div>
             <div class="card-body text-center">
-                <h2 id="turnover-rate" class="text-primary">Loading...</h2>
-                <p class="text-muted">Times per year</p>
+                <h2 id="turnover-rate" class="text-primary">{{ _('Loading...') }}</h2>
+                <p class="text-muted">{{ _('Times per year') }}</p>
                 <div class="progress">
                     <div id="turnover-progress" class="progress-bar bg-primary" role="progressbar" style="width: 0%"></div>
                 </div>
@@ -451,17 +451,17 @@
             <div class="card-header">
                 <h5 class="card-title mb-0">
                     <i class="bi bi-calculator"></i>
-                    Carrying Cost
+                    {{ _('Carrying Cost') }}
                     <i class="bi bi-question-circle text-light ms-2" 
                        data-bs-toggle="tooltip" 
                        data-bs-placement="top" 
-                       title="Costo mensual de mantener el inventario actual. Incluye almacenamiento, seguros, servicios, costo de oportunidad del capital y riesgo de obsolescencia. Equivale al 2% del valor total del inventario por mes."
+                       title="{{ _('Carrying Cost Tooltip') }}"
                        style="cursor: help;"></i>
                 </h5>
             </div>
             <div class="card-body text-center">
-                <h2 id="carrying-cost" class="text-warning">Loading...</h2>
-                <p class="text-muted">Monthly cost</p>
+                <h2 id="carrying-cost" class="text-warning">{{ _('Loading...') }}</h2>
+                <p class="text-muted">{{ _('Monthly cost') }}</p>
                 <div class="progress">
                     <div id="carrying-progress" class="progress-bar bg-warning" role="progressbar" style="width: 0%"></div>
                 </div>
@@ -474,17 +474,17 @@
             <div class="card-header">
                 <h5 class="card-title mb-0">
                     <i class="bi bi-exclamation-diamond"></i>
-                    Optimization Potential
+                    {{ _('Optimization Potential') }}
                     <i class="bi bi-question-circle text-light ms-2" 
                        data-bs-toggle="tooltip" 
                        data-bs-placement="top" 
-                       title="Ahorro potencial total por optimización de inventario. Suma del valor de inventario muerto + exceso de stock. Representa capital que puede liberarse mediante liquidación, descuentos o mejor gestión de demanda. ¡USD 9.2M es una oportunidad enorme!"
+                       title="{{ _('Optimization Potential Tooltip') }}"
                        style="cursor: help;"></i>
                 </h5>
             </div>
             <div class="card-body text-center">
-                <h2 id="optimization-potential-card" class="text-success">Loading...</h2>
-                <p class="text-muted">Potential savings</p>
+                <h2 id="optimization-potential-card" class="text-success">{{ _('Loading...') }}</h2>
+                <p class="text-muted">{{ _('Potential savings') }}</p>
                 <div class="progress">
                     <div id="optimization-progress" class="progress-bar bg-success" role="progressbar" style="width: 0%"></div>
                 </div>
@@ -848,6 +848,10 @@ function updateStockAlertSummaries(outOfStock, lowStock, overstock) {
     document.getElementById('out-of-stock-lost-sales').textContent = 'Est. Lost Sales: ' + formatUSD(outOfStockLostSales);
     document.getElementById('low-stock-value').textContent = 'Value at Risk: ' + formatUSD(lowStockValue);
     document.getElementById('overstock-value').textContent = 'Tied Capital: ' + formatUSD(overstockValue);
+    
+    // ALSO UPDATE Financial Impact Summary overstock value
+    document.getElementById('total-overstock-value').textContent = formatUSD(overstockValue);
+    document.getElementById('overstock-carrying-cost').textContent = 'Excess Carrying Cost: ' + formatUSD(overstockValue * 0.02); // 2% monthly carrying cost
 }
 
 function showStockAlertError(message) {

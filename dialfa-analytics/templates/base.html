@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="{{ get_locale() }}">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -74,27 +74,42 @@
                 <ul class="navbar-nav me-auto">
                     <li class="nav-item">
                         <a class="nav-link {% if request.endpoint == 'index' %}active{% endif %}" href="/">
-                            <i class="bi bi-speedometer2"></i> Dashboard
+                            <i class="bi bi-speedometer2"></i> {{ _('Dashboard') }}
                         </a>
                     </li>
                     <li class="nav-item">
                         <a class="nav-link {% if request.endpoint and 'financial' in request.endpoint %}active{% endif %}" href="/financial">
-                            <i class="bi bi-currency-dollar"></i> Financial
+                            <i class="bi bi-currency-dollar"></i> {{ _('Financial') }}
                         </a>
                     </li>
                     <li class="nav-item">
                         <a class="nav-link {% if request.endpoint and 'inventory' in request.endpoint %}active{% endif %}" href="/inventory">
-                            <i class="bi bi-boxes"></i> Inventory
+                            <i class="bi bi-boxes"></i> {{ _('Inventory') }}
                         </a>
                     </li>
                     <li class="nav-item">
                         <a class="nav-link {% if request.endpoint and 'sales' in request.endpoint %}active{% endif %}" href="/sales">
-                            <i class="bi bi-graph-up-arrow"></i> Sales
+                            <i class="bi bi-graph-up-arrow"></i> {{ _('Sales') }}
                         </a>
                     </li>
                 </ul>
                 
                 <ul class="navbar-nav">
+                    <!-- Language Selector -->
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" id="languageDropdown" role="button" data-bs-toggle="dropdown">
+                            <i class="bi bi-translate"></i> {{ _('Language') }}
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-end">
+                            <li><a class="dropdown-item" href="#" onclick="setLanguage('es')">
+                                <i class="bi bi-flag"></i> {{ _('Spanish') }}
+                            </a></li>
+                            <li><a class="dropdown-item" href="#" onclick="setLanguage('en')">
+                                <i class="bi bi-flag"></i> {{ _('English') }}
+                            </a></li>
+                        </ul>
+                    </li>
+                    
                     <li class="nav-item dropdown">
                         <a class="nav-link dropdown-toggle position-relative" href="#" id="alertsDropdown" role="button" data-bs-toggle="dropdown">
                             <i class="bi bi-bell"></i>
@@ -271,6 +286,19 @@
             } else {
                 badge.style.display = 'none';
             }
+        }
+        
+        // Language switching function
+        function setLanguage(language) {
+            fetch(`/set_language/${language}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        // Reload the page to apply new language
+                        window.location.reload();
+                    }
+                })
+                .catch(error => console.error('Error setting language:', error));
         }
     </script>
     
