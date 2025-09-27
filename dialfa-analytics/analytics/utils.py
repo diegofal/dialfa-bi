@@ -5,17 +5,24 @@ import pandas as pd
 import numpy as np
 from datetime import datetime, timedelta
 
-def format_currency(amount, currency_symbol='$'):
-    """Format amount as currency"""
+def format_currency(amount, currency_symbol='USD', database_source=None):
+    """Format amount as currency with explicit currency code based on database source"""
     if pd.isna(amount) or amount is None:
-        return f"{currency_symbol}0"
+        return f"{currency_symbol} 0"
+    
+    # Auto-detect currency based on database source ONLY if currency_symbol is the default 'USD'
+    if database_source and currency_symbol == 'USD':
+        if database_source.upper() == 'SPISA':
+            currency_symbol = 'USD'
+        elif database_source.upper() == 'XERP':
+            currency_symbol = 'ARS'
     
     if amount >= 1000000:
-        return f"{currency_symbol}{amount/1000000:.1f}M"
+        return f"{currency_symbol} {amount/1000000:.1f}M"
     elif amount >= 1000:
-        return f"{currency_symbol}{amount/1000:.1f}K"
+        return f"{currency_symbol} {amount/1000:.1f}K"
     else:
-        return f"{currency_symbol}{amount:,.2f}"
+        return f"{currency_symbol} {amount:,.2f}"
 
 def calculate_growth_rate(current, previous):
     """Calculate growth rate percentage"""

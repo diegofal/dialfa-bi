@@ -53,4 +53,4 @@ class Config:
     # Currency and Tax Configuration
     DEFAULT_CURRENCY = 'ARS'  # Argentine Pesos
     TAX_RATE = 0.21  # 21% IVA (Value Added Tax)
-    CURRENCY_SYMBOL = '$'  # Peso symbol
+    CURRENCY_SYMBOL = 'ARS'  # Show currency code explicitly

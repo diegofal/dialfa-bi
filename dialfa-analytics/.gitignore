@@ -285,3 +285,19 @@ test_*
 # Uncomment these if you don't want to track certain project-specific files
 # config.py  # Only if it contains sensitive data
 # setup.py   # Only if it's auto-generated
+
+# Project-specific temporary files
+test_charts.html
+remove_*.sql
+diagnose_*.py
+debug_*.py
+test_connection.py
+test_fixes.py
+
+# Runtime directories (keep structure but ignore contents)
+logs/*
+!logs/.gitkeep
+exports/*
+!exports/.gitkeep
+static/uploads/*
+!static/uploads/.gitkeep

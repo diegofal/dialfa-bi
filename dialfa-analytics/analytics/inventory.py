@@ -46,9 +46,9 @@ class InventoryAnalytics:
             df = self.db.execute_query(query, 'SPISA')
             df = clean_dataframe(df)
             
-            # Add formatted columns
-            df['FormattedStockValue'] = df['StockValue'].apply(format_currency)
-            df['FormattedUnitPrice'] = df['UnitPrice'].apply(format_currency)
+            # Add formatted columns (SPISA data = USD)
+            df['FormattedStockValue'] = df['StockValue'].apply(lambda x: format_currency(x, 'USD', 'SPISA'))
+            df['FormattedUnitPrice'] = df['UnitPrice'].apply(lambda x: format_currency(x, 'USD', 'SPISA'))
             
             return df.to_dict('records')
         except Exception as e:
@@ -61,13 +61,13 @@ class InventoryAnalytics:
             df = self.db.execute_query(self.queries.SLOW_MOVING_ANALYSIS, 'SPISA')
             df = clean_dataframe(df)
             
-            # Add formatted columns
-            df['FormattedStockValue'] = df['StockValue'].apply(format_currency)
-            df['FormattedCarryingCost'] = df['MonthlyCarryingCost'].apply(format_currency)
+            # Add formatted columns (SPISA data = USD)
+            df['FormattedStockValue'] = df['StockValue'].apply(lambda x: format_currency(x, 'USD', 'SPISA'))
+            df['FormattedCarryingCost'] = df['MonthlyCarryingCost'].apply(lambda x: format_currency(x, 'USD', 'SPISA'))
             
             # Calculate annual carrying cost
             df['AnnualCarryingCost'] = df['MonthlyCarryingCost'] * 12
-            df['FormattedAnnualCost'] = df['AnnualCarryingCost'].apply(format_currency)
+            df['FormattedAnnualCost'] = df['AnnualCarryingCost'].apply(lambda x: format_currency(x, 'USD', 'SPISA'))
             
             return df.to_dict('records')
         except Exception as e:

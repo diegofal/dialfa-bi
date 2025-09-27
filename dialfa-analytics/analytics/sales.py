@@ -16,22 +16,23 @@ class SalesAnalytics:
         self.queries = SalesQueries()
     
     def get_summary(self):
-        """Get sales summary metrics"""
+        """Get sales summary metrics from xERP database"""
         try:
-            df = self.db.execute_query(self.queries.SALES_SUMMARY, 'SPISA')
+            df = self.db.execute_query(self.queries.XERP_SALES_SUMMARY, 'xERP')
+            df = clean_dataframe(df)
             
             if not df.empty:
                 row = df.iloc[0]
                 return {
-                    'total_transactions': int(row['TotalTransactions']),
-                    'total_revenue': float(row['TotalRevenue']),
-                    'unique_customers': int(row['UniqueCustomers']),
-                    'avg_invoice_size': float(row['AvgInvoiceSize']),
-                    'formatted': {
-                        'total_revenue': format_currency(row['TotalRevenue']),
-                        'avg_invoice_size': format_currency(row['AvgInvoiceSize'])
+                        'total_transactions': int(row['TotalTransactions']),
+                        'total_revenue': float(row['TotalRevenue']),
+                        'unique_customers': int(row['UniqueCustomers']),
+                        'avg_invoice_size': float(row['AvgInvoiceSize']),
+                        'formatted': {
+                            'total_revenue': format_currency(row['TotalRevenue'], 'ARS', 'xERP'),
+                            'avg_invoice_size': format_currency(row['AvgInvoiceSize'], 'ARS', 'xERP')
+                        }
                     }
-                }
             return {}
         except Exception as e:
             self.logger.error(f"Error getting sales summary: {e}")
@@ -44,8 +45,8 @@ class SalesAnalytics:
             df = clean_dataframe(df)
             
             if not df.empty:
-                # Add formatted columns
-                df['FormattedRevenue'] = df['MonthlyRevenue'].apply(format_currency)
+                # Add formatted columns (xERP data = ARS)
+                df['FormattedRevenue'] = df['MonthlyRevenue'].apply(lambda x: format_currency(x, 'ARS', 'xERP'))
                 df['MonthYearLabel'] = df.apply(lambda x: f"{x['MonthName']} {x['Year']}", axis=1)
                 
                 # Calculate month-over-month growth manually since xERP query doesn't include it
@@ -401,3 +402,39 @@ class SalesAnalytics:
             return 1.0  # No seasonal adjustment if insufficient data
         except:
             return 1.0
+    
+    # Retool-compatible methods
+    def get_xerp_billed_monthly(self):
+        """Get xERP monthly billing exactly as in Retool"""
+        try:
+            df = self.db.execute_query(self.queries.XERP_BILLED_MONTHLY, 'xERP')
+            df = clean_dataframe(df)
+            if not df.empty:
+                return {'BilledMonthly': float(df.iloc[0]['BilledMonthly'])}
+            return {'BilledMonthly': 0}
+        except Exception as e:
+            self.logger.error(f"Error getting xERP monthly billing: {e}")
+            return {'BilledMonthly': 0}
+    
+    def get_xerp_billed_today(self):
+        """Get xERP today billing exactly as in Retool"""
+        try:
+            df = self.db.execute_query(self.queries.XERP_BILLED_TODAY, 'xERP')
+            df = clean_dataframe(df)
+            if not df.empty:
+                return {'BilledToday': float(df.iloc[0]['BilledToday'])}
+            return {'BilledToday': 0}
+        except Exception as e:
+            self.logger.error(f"Error getting xERP today billing: {e}")
+            return {'BilledToday': 0}
+    
+    def get_xerp_bills(self, view_filter='month'):
+        """Get xERP bills exactly as in Retool"""
+        try:
+            query = self.queries.XERP_BILLS.format(view_filter=view_filter)
+            df = self.db.execute_query(query, 'xERP')
+            df = clean_dataframe(df)
+            return df.to_dict('records')
+        except Exception as e:
+            self.logger.error(f"Error getting xERP bills: {e}")
+            return []

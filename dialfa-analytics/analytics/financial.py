@@ -29,9 +29,9 @@ class FinancialAnalytics:
                     'avg_balance': float(row['AvgBalance']),
                     'overdue_percentage': (float(row['TotalOverdue']) / float(row['TotalOutstanding'])) * 100 if row['TotalOutstanding'] > 0 else 0,
                     'formatted': {
-                        'total_outstanding': format_currency(row['TotalOutstanding']),
-                        'total_overdue': format_currency(row['TotalOverdue']),
-                        'avg_balance': format_currency(row['AvgBalance'])
+                        'total_outstanding': format_currency(row['TotalOutstanding'], '$', 'SPISA'),
+                        'total_overdue': format_currency(row['TotalOverdue'], '$', 'SPISA'),
+                        'avg_balance': format_currency(row['AvgBalance'], '$', 'SPISA')
                     }
                 }
             return {}
@@ -49,8 +49,8 @@ class FinancialAnalytics:
             df['RiskScore'] = df.apply(calculate_risk_score, axis=1)
             
             # Add formatted currency columns
-            df['FormattedBalance'] = df['CurrentBalance'].apply(format_currency)
-            df['FormattedOverdue'] = df['OverdueAmount'].apply(format_currency)
+            df['FormattedBalance'] = df['CurrentBalance'].apply(lambda x: format_currency(x, '$', 'SPISA'))
+            df['FormattedOverdue'] = df['OverdueAmount'].apply(lambda x: format_currency(x, '$', 'SPISA'))
             
             # Sort by risk score descending
             df = df.sort_values('RiskScore', ascending=False)
@@ -76,8 +76,8 @@ class FinancialAnalytics:
                 df = df.fillna(0)
                 
                 # Add formatted values
-                df['FormattedPayments'] = df['ActualPayments'].apply(format_currency)
-                df['FormattedMovingAvg'] = df['MovingAvg3'].apply(format_currency)
+                df['FormattedPayments'] = df['ActualPayments'].apply(lambda x: format_currency(x, '$', 'SPISA'))
+                df['FormattedMovingAvg'] = df['MovingAvg3'].apply(lambda x: format_currency(x, '$', 'SPISA'))
                 
                 # Create month-year label
                 df['MonthYear'] = df.apply(lambda x: f"{x['Year']}-{x['Month']:02d}", axis=1)
@@ -96,8 +96,8 @@ class FinancialAnalytics:
             df = clean_dataframe(df)
             
             # Add formatted currency columns
-            df['FormattedBalance'] = df['OutstandingBalance'].apply(format_currency)
-            df['FormattedOverdue'] = df['OverdueAmount'].apply(format_currency)
+            df['FormattedBalance'] = df['OutstandingBalance'].apply(lambda x: format_currency(x, '$', 'SPISA'))
+            df['FormattedOverdue'] = df['OverdueAmount'].apply(lambda x: format_currency(x, '$', 'SPISA'))
             
             # Add risk level based on overdue percentage
             df['RiskLevel'] = df['OverduePercentage'].apply(self._categorize_risk)
@@ -114,10 +114,10 @@ class FinancialAnalytics:
             df = clean_dataframe(df)
             
             # Add formatted currency columns
-            df['FormattedRevenue'] = df['TotalRevenue'].apply(format_currency)
-            df['FormattedPayments'] = df['TotalPayments'].apply(format_currency)
-            df['FormattedBalance'] = df['CurrentBalance'].apply(format_currency)
-            df['FormattedAnnualized'] = df['AnnualizedRevenue'].apply(format_currency)
+            df['FormattedRevenue'] = df['TotalRevenue'].apply(lambda x: format_currency(x, '$', 'SPISA'))
+            df['FormattedPayments'] = df['TotalPayments'].apply(lambda x: format_currency(x, '$', 'SPISA'))
+            df['FormattedBalance'] = df['CurrentBalance'].apply(lambda x: format_currency(x, '$', 'SPISA'))
+            df['FormattedAnnualized'] = df['AnnualizedRevenue'].apply(lambda x: format_currency(x, '$', 'SPISA'))
             
             return df.to_dict('records')
         except Exception as e:
@@ -159,7 +159,7 @@ class FinancialAnalytics:
             
             # Add formatted columns
             for col in ['TotalBalance', 'Current', 'Days30', 'Days60', 'Days90Plus']:
-                df[f'Formatted{col}'] = df[col].apply(format_currency)
+                df[f'Formatted{col}'] = df[col].apply(lambda x: format_currency(x, '$', 'SPISA'))
             
             return df.to_dict('records')
         except Exception as e:
@@ -180,7 +180,9 @@ class FinancialAnalytics:
             FROM Transactions
             WHERE PaymentDate >= DATEADD(MONTH, -12, GETDATE())
             AND PaymentDate > '2020-01-01'
+            AND PaymentDate < GETDATE()
             AND PaymentAmount > 0
+            AND YEAR(PaymentDate) BETWEEN 2020 AND 2025
             GROUP BY YEAR(PaymentDate), MONTH(PaymentDate), DATENAME(MONTH, PaymentDate)
             ORDER BY Year DESC, Month DESC
             """
@@ -189,10 +191,25 @@ class FinancialAnalytics:
             df = clean_dataframe(df)
             
             if not df.empty:
+                # Filter out any bad years (like 2975)
+                df = df[df['Year'].between(2020, 2025)]
+                
+                # Sort properly for growth calculation
+                df = df.sort_values(['Year', 'Month'])
+                
                 # Calculate trends
                 df['PaymentGrowth'] = df['TotalPayments'].pct_change() * 100
-                df['FormattedPayments'] = df['TotalPayments'].apply(format_currency)
-                df['FormattedAvgSize'] = df['AvgPaymentSize'].apply(format_currency)
+                
+                # Replace NaN and infinite values
+                df['PaymentGrowth'] = df['PaymentGrowth'].fillna(0)
+                df['PaymentGrowth'] = df['PaymentGrowth'].replace([np.inf, -np.inf], 0)
+                
+                # Format currency
+                df['FormattedPayments'] = df['TotalPayments'].apply(lambda x: format_currency(x, '$', 'SPISA'))
+                df['FormattedAvgSize'] = df['AvgPaymentSize'].apply(lambda x: format_currency(x, '$', 'SPISA'))
+                
+                # Sort back to descending for display
+                df = df.sort_values(['Year', 'Month'], ascending=[False, False])
                 
             return df.to_dict('records')
         except Exception as e:
@@ -258,13 +275,72 @@ class FinancialAnalytics:
                     'active_customers': int(current['ActiveCustomers']),
                     'revenue_growth': revenue_growth,
                     'payment_growth': payment_growth,
-                    'formatted': {
-                        'current_month_revenue': format_currency(current['CurrentMonthRevenue']),
-                        'current_month_payments': format_currency(current['CurrentMonthPayments'])
-                    }
+                       'formatted': {
+                           'current_month_revenue': format_currency(current['CurrentMonthRevenue'], '$', 'SPISA'),
+                           'current_month_payments': format_currency(current['CurrentMonthPayments'], '$', 'SPISA')
+                       }
                 }
             
             return {}
         except Exception as e:
             self.logger.error(f"Error calculating financial KPIs: {e}")
             return {}
+    
+    # Retool-compatible methods
+    def get_spisa_balances(self):
+        """Get SPISA balances exactly as in Retool"""
+        try:
+            df = self.db.execute_query(self.queries.SPISA_BALANCES, 'SPISA')
+            df = clean_dataframe(df)
+            return df.to_dict('records')
+        except Exception as e:
+            self.logger.error(f"Error getting SPISA balances: {e}")
+            return []
+    
+    def get_spisa_future_payments(self):
+        """Get SPISA future payments exactly as in Retool"""
+        try:
+            df = self.db.execute_query(self.queries.SPISA_FUTURE_PAYMENTS, 'SPISA')
+            df = clean_dataframe(df)
+            if not df.empty:
+                return {'PaymentAmount': float(df.iloc[0]['PaymentAmount'])}
+            return {'PaymentAmount': 0}
+        except Exception as e:
+            self.logger.error(f"Error getting SPISA future payments: {e}")
+            return {'PaymentAmount': 0}
+    
+    def get_spisa_due_balance(self):
+        """Get SPISA due balance exactly as in Retool"""
+        try:
+            df = self.db.execute_query(self.queries.SPISA_DUE_BALANCE, 'SPISA')
+            df = clean_dataframe(df)
+            if not df.empty:
+                return {'Due': float(df.iloc[0]['Due'])}
+            return {'Due': 0}
+        except Exception as e:
+            self.logger.error(f"Error getting SPISA due balance: {e}")
+            return {'Due': 0}
+    
+    def get_spisa_billed_monthly(self):
+        """Get SPISA monthly billing exactly as in Retool"""
+        try:
+            df = self.db.execute_query(self.queries.SPISA_BILLED_MONTHLY, 'SPISA')
+            df = clean_dataframe(df)
+            if not df.empty:
+                return {'InvoiceAmount': float(df.iloc[0]['InvoiceAmount'])}
+            return {'InvoiceAmount': 0}
+        except Exception as e:
+            self.logger.error(f"Error getting SPISA monthly billing: {e}")
+            return {'InvoiceAmount': 0}
+    
+    def get_spisa_billed_today(self):
+        """Get SPISA today billing exactly as in Retool"""
+        try:
+            df = self.db.execute_query(self.queries.SPISA_BILLED_TODAY, 'SPISA')
+            df = clean_dataframe(df)
+            if not df.empty:
+                return {'InvoiceAmount': float(df.iloc[0]['InvoiceAmount'])}
+            return {'InvoiceAmount': 0}
+        except Exception as e:
+            self.logger.error(f"Error getting SPISA today billing: {e}")
+            return {'InvoiceAmount': 0}

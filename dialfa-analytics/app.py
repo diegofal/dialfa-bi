@@ -20,6 +20,7 @@ from routes.dashboard import dashboard_bp
 from routes.financial import financial_bp
 from routes.inventory import inventory_bp
 from routes.sales import sales_bp
+from routes.retool_compat import retool_bp
 
 def create_app():
     """Application factory pattern"""
@@ -64,6 +65,7 @@ def create_app():
     app.register_blueprint(financial_bp, url_prefix='/financial')
     app.register_blueprint(inventory_bp, url_prefix='/inventory')
     app.register_blueprint(sales_bp, url_prefix='/sales')
+    app.register_blueprint(retool_bp)
     
     @app.route('/')
     def index():
@@ -122,12 +124,6 @@ def create_app():
     def favicon():
         """Serve favicon"""
         return '', 204  # No content
-    
-    @app.route('/test_charts.html')
-    def test_charts():
-        """Serve test charts page"""
-        with open('test_charts.html', 'r') as f:
-            return f.read()
     
     @app.errorhandler(404)
     def not_found(error):

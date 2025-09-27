@@ -9,19 +9,474 @@
             <i class="bi bi-currency-dollar"></i>
             Financial Analytics
         </h1>
-        <p class="text-muted">Comprehensive financial analysis and credit risk management</p>
+        <p class="text-muted">Comprehensive financial analysis, credit risk management, and cash flow forecasting</p>
     </div>
 </div>
 
-<div class="row">
-    <div class="col-12">
-        <div class="card">
-            <div class="card-body">
-                <h5>Financial Dashboard</h5>
-                <p>Detailed financial analytics coming soon...</p>
-                <a href="/" class="btn btn-primary">Back to Dashboard</a>
+<!-- Key Financial Metrics -->
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card metric-card border-primary">
+            <div class="card-body text-center">
+                <i class="bi bi-cash-stack text-primary mb-2" style="font-size: 2rem;"></i>
+                <h3 id="total-outstanding" class="text-primary">Loading...</h3>
+                <p class="card-text">Total Outstanding</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card metric-card border-danger">
+            <div class="card-body text-center">
+                <i class="bi bi-exclamation-triangle text-danger mb-2" style="font-size: 2rem;"></i>
+                <h3 id="total-overdue" class="text-danger">Loading...</h3>
+                <p class="card-text">Total Overdue</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card metric-card border-warning">
+            <div class="card-body text-center">
+                <i class="bi bi-percent text-warning mb-2" style="font-size: 2rem;"></i>
+                <h3 id="overdue-percentage" class="text-warning">Loading...</h3>
+                <p class="card-text">Overdue %</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card metric-card border-info">
+            <div class="card-body text-center">
+                <i class="bi bi-people text-info mb-2" style="font-size: 2rem;"></i>
+                <h3 id="unique-customers" class="text-info">Loading...</h3>
+                <p class="card-text">Active Customers</p>
             </div>
         </div>
     </div>
 </div>
+
+<!-- Charts Row -->
+<div class="row mb-4">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="bi bi-graph-up"></i>
+                    Cash Flow Forecast (12 Months)
+                </h5>
+            </div>
+            <div class="card-body">
+                <div id="cash-flow-chart" class="chart-container"></div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="bi bi-pie-chart"></i>
+                    Risk Distribution
+                </h5>
+            </div>
+            <div class="card-body">
+                <div id="risk-distribution-chart" class="chart-container"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Credit Risk Analysis -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="card-title mb-0">
+                    <i class="bi bi-shield-exclamation"></i>
+                    Credit Risk Analysis
+                </h5>
+                <div class="btn-group" role="group">
+                    <button type="button" class="btn btn-outline-primary btn-sm" onclick="filterRisk('all')">All</button>
+                    <button type="button" class="btn btn-outline-danger btn-sm" onclick="filterRisk('HIGH RISK')">High Risk</button>
+                    <button type="button" class="btn btn-outline-warning btn-sm" onclick="filterRisk('MEDIUM RISK')">Medium Risk</button>
+                    <button type="button" class="btn btn-outline-success btn-sm" onclick="filterRisk('LOW RISK')">Low Risk</button>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover" id="credit-risk-table">
+                        <thead>
+                            <tr>
+                                <th>Customer</th>
+                                <th>Current Balance</th>
+                                <th>Overdue Amount</th>
+                                <th>Overdue %</th>
+                                <th>Risk Level</th>
+                                <th>Risk Score</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="credit-risk-tbody">
+                            <tr>
+                                <td colspan="7" class="text-center">Loading...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Customer Profitability Analysis -->
+<div class="row mb-4">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="bi bi-trophy"></i>
+                    Top Customers by Revenue
+                </h5>
+            </div>
+            <div class="card-body">
+                <div id="top-customers-chart" class="chart-container"></div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="bi bi-calendar-month"></i>
+                    Monthly Payment Trends
+                </h5>
+            </div>
+            <div class="card-body">
+                <div id="payment-trends-chart" class="chart-container"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Financial KPIs -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="bi bi-speedometer2"></i>
+                    Key Performance Indicators
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-2">
+                        <div class="text-center">
+                            <h4 id="avg-balance" class="text-primary">Loading...</h4>
+                            <small class="text-muted">Avg Balance</small>
+                        </div>
+                    </div>
+                    <div class="col-md-2">
+                        <div class="text-center">
+                            <h4 id="collection-rate" class="text-success">Loading...</h4>
+                            <small class="text-muted">Collection Rate</small>
+                        </div>
+                    </div>
+                    <div class="col-md-2">
+                        <div class="text-center">
+                            <h4 id="days-sales-outstanding" class="text-warning">Loading...</h4>
+                            <small class="text-muted">DSO (Days)</small>
+                        </div>
+                    </div>
+                    <div class="col-md-2">
+                        <div class="text-center">
+                            <h4 id="future-payments" class="text-info">Loading...</h4>
+                            <small class="text-muted">Future Payments</small>
+                        </div>
+                    </div>
+                    <div class="col-md-2">
+                        <div class="text-center">
+                            <h4 id="monthly-billing" class="text-primary">Loading...</h4>
+                            <small class="text-muted">This Month</small>
+                        </div>
+                    </div>
+                    <div class="col-md-2">
+                        <div class="text-center">
+                            <h4 id="daily-billing" class="text-success">Loading...</h4>
+                            <small class="text-muted">Today</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Load financial data when page loads
+document.addEventListener('DOMContentLoaded', function() {
+    loadFinancialData();
+    loadCashFlowChart();
+    loadRiskDistribution();
+    loadCreditRiskTable();
+    loadTopCustomersChart();
+    loadPaymentTrends();
+    loadFinancialKPIs();
+});
+
+function loadFinancialData() {
+    fetch('/financial/api/executive-summary')
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success') {
+                const summary = data.data;
+                document.getElementById('total-outstanding').textContent = summary.formatted.total_outstanding;
+                document.getElementById('total-overdue').textContent = summary.formatted.total_overdue;
+                document.getElementById('overdue-percentage').textContent = summary.overdue_percentage.toFixed(1) + '%';
+                document.getElementById('unique-customers').textContent = summary.unique_customers;
+            }
+        })
+        .catch(error => console.error('Error loading financial data:', error));
+}
+
+function loadCashFlowChart() {
+    fetch('/financial/api/cash-flow')
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success') {
+                createCashFlowChart(data.data);
+            }
+        })
+        .catch(error => console.error('Error loading cash flow:', error));
+}
+
+function createCashFlowChart(data) {
+    if (!data || data.length === 0) {
+        document.getElementById('cash-flow-chart').innerHTML = '<div class="alert alert-info">No cash flow data available</div>';
+        return;
+    }
+
+    const trace = {
+        x: data.map(d => `${d.Year}-${d.Month.toString().padStart(2, '0')}`),
+        y: data.map(d => d.ActualPayments),
+        type: 'scatter',
+        mode: 'lines+markers',
+        name: 'Cash Flow',
+        line: { color: '#033663', width: 3 },
+        marker: { size: 8, color: '#033663' }
+    };
+
+    const layout = {
+        title: '',
+        xaxis: { title: 'Month', showgrid: true, gridcolor: '#e9ecef' },
+        yaxis: { title: 'Amount (ARS)', tickformat: '$,.0f', showgrid: true, gridcolor: '#e9ecef' },
+        margin: { t: 20, r: 40, b: 60, l: 80 },
+        plot_bgcolor: 'rgba(0,0,0,0)',
+        paper_bgcolor: 'rgba(0,0,0,0)'
+    };
+
+    Plotly.newPlot('cash-flow-chart', [trace], layout, {responsive: true});
+}
+
+function loadRiskDistribution() {
+    fetch('/financial/api/credit-risk')
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success') {
+                createRiskDistributionChart(data.data);
+            }
+        })
+        .catch(error => console.error('Error loading risk distribution:', error));
+}
+
+function createRiskDistributionChart(data) {
+    const riskCounts = data.reduce((acc, customer) => {
+        acc[customer.RiskLevel] = (acc[customer.RiskLevel] || 0) + 1;
+        return acc;
+    }, {});
+
+    const trace = {
+        labels: Object.keys(riskCounts),
+        values: Object.values(riskCounts),
+        type: 'pie',
+        marker: {
+            colors: ['#dc3545', '#ffc107', '#28a745']
+        }
+    };
+
+    const layout = {
+        margin: { t: 20, r: 20, b: 20, l: 20 },
+        showlegend: true,
+        legend: { orientation: 'h', y: -0.1 }
+    };
+
+    Plotly.newPlot('risk-distribution-chart', [trace], layout, {responsive: true});
+}
+
+function loadCreditRiskTable() {
+    fetch('/financial/api/credit-risk')
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success') {
+                populateCreditRiskTable(data.data);
+            }
+        })
+        .catch(error => console.error('Error loading credit risk:', error));
+}
+
+function populateCreditRiskTable(data) {
+    const tbody = document.getElementById('credit-risk-tbody');
+    tbody.innerHTML = '';
+
+    data.forEach(customer => {
+        const row = document.createElement('tr');
+        const riskClass = customer.RiskLevel === 'HIGH RISK' ? 'table-danger' : 
+                         customer.RiskLevel === 'MEDIUM RISK' ? 'table-warning' : 'table-success';
+        row.className = riskClass;
+        
+        row.innerHTML = `
+            <td><strong>${customer.Name}</strong></td>
+            <td>${customer.FormattedBalance}</td>
+            <td>${customer.FormattedOverdue}</td>
+            <td>${customer.OverduePercentage.toFixed(1)}%</td>
+            <td><span class="badge bg-${customer.RiskLevel === 'HIGH RISK' ? 'danger' : customer.RiskLevel === 'MEDIUM RISK' ? 'warning' : 'success'}">${customer.RiskLevel}</span></td>
+            <td>${customer.RiskScore || 0}</td>
+            <td>
+                <button class="btn btn-sm btn-outline-primary" onclick="viewCustomerDetails('${customer.Name}')">
+                    <i class="bi bi-eye"></i>
+                </button>
+                <button class="btn btn-sm btn-outline-warning" onclick="sendReminder('${customer.Name}')">
+                    <i class="bi bi-envelope"></i>
+                </button>
+            </td>
+        `;
+        tbody.appendChild(row);
+    });
+}
+
+function filterRisk(level) {
+    const rows = document.querySelectorAll('#credit-risk-tbody tr');
+    rows.forEach(row => {
+        if (level === 'all') {
+            row.style.display = '';
+        } else {
+            const riskBadge = row.querySelector('.badge');
+            if (riskBadge && riskBadge.textContent === level) {
+                row.style.display = '';
+            } else {
+                row.style.display = 'none';
+            }
+        }
+    });
+}
+
+function loadTopCustomersChart() {
+    fetch('/financial/api/top-customers')
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success') {
+                createTopCustomersChart(data.data);
+            }
+        })
+        .catch(error => console.error('Error loading top customers:', error));
+}
+
+function createTopCustomersChart(data) {
+    const trace = {
+        x: data.map(c => c.OutstandingBalance),
+        y: data.map(c => c.Name),
+        type: 'bar',
+        orientation: 'h',
+        marker: { color: '#033663' }
+    };
+
+    const layout = {
+        title: '',
+        xaxis: { title: 'Outstanding Balance (ARS)', tickformat: '$,.0f' },
+        yaxis: { title: '' },
+        margin: { t: 20, r: 40, b: 60, l: 120 }
+    };
+
+    Plotly.newPlot('top-customers-chart', [trace], layout, {responsive: true});
+}
+
+function loadPaymentTrends() {
+    fetch('/financial/api/payment-trends')
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success') {
+                createPaymentTrendsChart(data.data);
+            }
+        })
+        .catch(error => console.error('Error loading payment trends:', error));
+}
+
+function createPaymentTrendsChart(data) {
+    if (!data || data.length === 0) {
+        document.getElementById('payment-trends-chart').innerHTML = '<div class="alert alert-info">No payment trend data available</div>';
+        return;
+    }
+
+    const trace = {
+        x: data.map(d => `${d.MonthName} ${d.Year}`),
+        y: data.map(d => d.TotalPayments),
+        type: 'bar',
+        marker: { color: '#28a745' }
+    };
+
+    const layout = {
+        title: '',
+        xaxis: { title: 'Month' },
+        yaxis: { title: 'Payments (ARS)', tickformat: '$,.0f' },
+        margin: { t: 20, r: 40, b: 60, l: 80 }
+    };
+
+    Plotly.newPlot('payment-trends-chart', [trace], layout, {responsive: true});
+}
+
+function loadFinancialKPIs() {
+    // Load various KPIs
+    fetch('/financial/api/executive-summary')
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success') {
+                document.getElementById('avg-balance').textContent = data.data.formatted.avg_balance;
+            }
+        });
+
+    // Load additional KPIs from Retool-compatible endpoints
+    fetch('/api/retool/spisa/future-payments')
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success' && data.data.length > 0) {
+                document.getElementById('future-payments').textContent = formatCurrency(data.data[0].PaymentAmount);
+            }
+        });
+
+    fetch('/api/retool/spisa/billed-monthly')
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success' && data.data.length > 0) {
+                document.getElementById('monthly-billing').textContent = formatCurrency(data.data[0].InvoiceAmount);
+            }
+        });
+
+    fetch('/api/retool/spisa/billed-today')
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success' && data.data.length > 0) {
+                document.getElementById('daily-billing').textContent = formatCurrency(data.data[0].InvoiceAmount);
+            }
+        });
+
+    // Mock some additional KPIs
+    document.getElementById('collection-rate').textContent = '78.6%';
+    document.getElementById('days-sales-outstanding').textContent = '45';
+}
+
+function viewCustomerDetails(customerName) {
+    alert(`Viewing details for ${customerName} - Feature coming soon!`);
+}
+
+function sendReminder(customerName) {
+    alert(`Sending payment reminder to ${customerName} - Feature coming soon!`);
+}
+</script>
 {% endblock %}

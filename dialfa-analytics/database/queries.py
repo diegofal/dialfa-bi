@@ -6,6 +6,7 @@ Based on the comprehensive database analysis
 class FinancialQueries:
     """Financial analysis SQL queries"""
     
+    # SPISA financial queries
     EXECUTIVE_SUMMARY = """
     SELECT 
         COUNT(DISTINCT CustomerId) as UniqueCustomers,
@@ -13,7 +14,7 @@ class FinancialQueries:
         SUM(Due) as TotalOverdue,
         AVG(Amount) as AvgBalance
     FROM Balances 
-    WHERE Amount > 0
+    WHERE Amount > 100
     """
     
     CREDIT_RISK_ANALYSIS = """
@@ -55,8 +56,41 @@ class FinancialQueries:
         (b.Due / NULLIF(b.Amount, 0)) * 100 as OverduePercentage
     FROM Customers c
     INNER JOIN Balances b ON c.Id = b.CustomerId
-    WHERE b.Amount > 0
+    WHERE b.Amount > 100
     ORDER BY b.Amount DESC
+    """
+    
+    # Retool-compatible queries
+    SPISA_BALANCES = """
+    SELECT c.Name, b.Amount, b.Due, c.Type
+    FROM Balances b
+    INNER JOIN Customers c on c.Id = b.CustomerId
+    WHERE b.Amount > 100
+    """
+    
+    SPISA_FUTURE_PAYMENTS = """
+    SELECT COALESCE(Sum(PaymentAmount),0) as PaymentAmount
+    FROM Transactions t
+    WHERE t.Type=0 and t.PaymentAmount<>0 and PaymentDate >= GETDATE()
+    """
+    
+    SPISA_DUE_BALANCE = """
+    SELECT Sum(Due) as Due
+    FROM Balances b
+    """
+    
+    SPISA_BILLED_MONTHLY = """
+    SELECT Sum(InvoiceAmount) as InvoiceAmount
+    FROM Transactions t
+    WHERE MONTH(InvoiceDate) = MONTH(GETDATE()) AND YEAR(InvoiceDate) = YEAR(GETDATE())
+    AND Type=1
+    """
+    
+    SPISA_BILLED_TODAY = """
+    SELECT COALESCE(Sum(InvoiceAmount),0) as InvoiceAmount
+    FROM Transactions t
+    WHERE CAST(InvoiceDate AS DATE) = CAST(GETDATE() AS DATE)
+    AND Type=1
     """
     
     CUSTOMER_PROFITABILITY = """
@@ -180,6 +214,31 @@ class SalesQueries:
     AND InvoiceDate > '2020-01-01'
     """
     
+    XERP_SALES_SUMMARY = """
+    SELECT 
+        COUNT(*) as TotalTransactions,
+        SUM(
+            CASE 
+                WHEN dt.Type = 10 THEN (total * 1.21)
+                WHEN dt.Type = 11 THEN (total * -1.21)
+                ELSE 0
+            END
+        ) as TotalRevenue,
+        COUNT(DISTINCT dm.debtor_no) as UniqueCustomers,
+        AVG(
+            CASE 
+                WHEN dt.Type = 10 THEN (total * 1.21)
+                ELSE NULL
+            END
+        ) as AvgInvoiceSize
+    FROM [0_debtor_trans] dt
+    INNER JOIN [0_sales_orders] so ON so.ID = dt.order_
+    INNER JOIN [0_debtors_master] dm ON dm.debtor_no = so.debtor_no
+    WHERE dt.Type IN (10, 11)
+    AND ord_date >= DATEADD(YEAR, -1, GETDATE())
+    AND ord_date > '2020-01-01'
+    """
+    
     MONTHLY_SALES_TREND = """
     WITH MonthlySales AS (
         SELECT 
@@ -250,6 +309,60 @@ class SalesQueries:
              DATENAME(MONTH, ord_date)
     ORDER BY DATEPART(YEAR, ord_date) DESC,
              DATEPART(MONTH, ord_date) DESC
+    """
+    
+    # Retool-compatible xERP queries
+    XERP_BILLED_MONTHLY = """
+    WITH FC AS (
+      SELECT COALESCE(SUM(Total) * 1.21, 0) AS BilledMonthlyFC FROM [0_debtor_trans] dt
+      INNER JOIN [0_sales_orders] so ON so.ID = dt.order_
+      WHERE dt.Type=10 AND MONTH(ord_date) = MONTH(GETDATE()) AND YEAR(ord_date) = YEAR(GETDATE())
+    ),
+    NC AS (
+      SELECT COALESCE(SUM(Total) * 1.21, 0) AS BilledMonthlyNC FROM [0_debtor_trans] dt
+      INNER JOIN [0_sales_orders] so ON so.ID = dt.order_
+      WHERE dt.Type=11 AND MONTH(ord_date) = MONTH(GETDATE()) AND YEAR(ord_date) = YEAR(GETDATE())
+    )
+    SELECT (BilledMonthlyFC - BilledMonthlyNC) AS BilledMonthly
+    FROM FC, NC
+    """
+    
+    XERP_BILLED_TODAY = """
+    WITH FC AS (
+      SELECT COALESCE(SUM(Total) * 1.21, 0) AS BilledTodayFC FROM [0_debtor_trans] dt
+      INNER JOIN [0_sales_orders] so ON so.ID = dt.order_
+      WHERE dt.Type=10 AND CAST(ord_date AS DATE) = CAST(GETDATE() AS DATE)
+    ),
+    NC AS (
+      SELECT COALESCE(SUM(Total) * 1.21, 0) AS BilledTodayNC FROM [0_debtor_trans] dt
+      INNER JOIN [0_sales_orders] so ON so.ID = dt.order_
+      WHERE dt.Type=11 AND CAST(ord_date AS DATE) = CAST(GETDATE() AS DATE)
+    )
+    SELECT (BilledTodayFC - BilledTodayNC) AS BilledToday
+    FROM FC, NC
+    """
+    
+    XERP_BILLS = """
+    SELECT 
+    order_no ,
+    ord_date as invoiceDate,
+    [name] as customerName,
+    dt.Type,
+    concat(
+      dt.[subtype],
+      '-',
+      RIGHT('00000000'+ISNULL(dt.[reference],''),8)
+      ) as invoiceNumber,
+      dm.[debtor_no] as IdCliente,
+        (total * 1.21) as totalAmount
+    FROM [0_debtor_trans] dt
+      INNER JOIN [0_sales_orders] so ON so.ID = dt.order_
+      INNER JOIN [0_debtors_master] dm on dm.debtor_no = so.debtor_no
+      WHERE dt.Type=10 AND 
+        (('{view_filter}' = 'month' AND 
+    MONTH(ord_date) = MONTH(GETDATE()) AND YEAR(ord_date) = YEAR(GETDATE())) OR
+       ('{view_filter}' = 'day' 
+    AND CAST(ord_date AS DATE) = CAST(GETDATE() AS DATE)))
     """
 
 class CrossSystemQueries:

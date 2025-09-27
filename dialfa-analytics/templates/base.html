@@ -154,15 +154,37 @@
     
     <script>
         // Global functions
-        function formatCurrency(amount) {
-            if (amount == null) return '$0';
-            if (amount >= 1000000) {
-                return '$' + (amount / 1000000).toFixed(1) + 'M';
-            } else if (amount >= 1000) {
-                return '$' + (amount / 1000).toFixed(1) + 'K';
-            } else {
-                return '$' + amount.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+        function formatCurrency(amount, currency = null, databaseSource = null) {
+            if (amount == null) return (currency || 'USD') + ' 0';
+            
+            // Auto-detect currency based on database source if not specified
+            if (!currency && databaseSource) {
+                if (databaseSource.toLowerCase() === 'spisa') {
+                    currency = 'USD';
+                } else if (databaseSource.toLowerCase() === 'xerp') {
+                    currency = 'ARS';
+                }
             }
+            
+            // Default to USD if still not specified
+            if (!currency) currency = 'USD';
+            
+            if (amount >= 1000000) {
+                return currency + ' ' + (amount / 1000000).toFixed(1) + 'M';
+            } else if (amount >= 1000) {
+                return currency + ' ' + (amount / 1000).toFixed(1) + 'K';
+            } else {
+                return currency + ' ' + amount.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+            }
+        }
+        
+        // Convenience functions for specific currencies
+        function formatUSD(amount) {
+            return formatCurrency(amount, 'USD');
+        }
+        
+        function formatARS(amount) {
+            return formatCurrency(amount, 'ARS');
         }
         
         function formatPercentage(value) {

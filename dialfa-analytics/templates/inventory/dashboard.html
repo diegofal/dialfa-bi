@@ -9,19 +9,1027 @@
             <i class="bi bi-boxes"></i>
             Inventory Analytics
         </h1>
-        <p class="text-muted">Inventory management and optimization insights</p>
+        <p class="text-muted">Inventory optimization, stock analysis, and supply chain insights</p>
     </div>
 </div>
 
-<div class="row">
-    <div class="col-12">
-        <div class="card">
-            <div class="card-body">
-                <h5>Inventory Dashboard</h5>
-                <p>Detailed inventory analytics coming soon...</p>
-                <a href="/" class="btn btn-primary">Back to Dashboard</a>
+<!-- Key Inventory Metrics -->
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card metric-card border-primary">
+            <div class="card-body text-center">
+                <i class="bi bi-box-seam text-primary mb-2" style="font-size: 2rem;"></i>
+                <h3 id="total-products" class="text-primary">Loading...</h3>
+                <p class="card-text">Total Products</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card metric-card border-success">
+            <div class="card-body text-center">
+                <i class="bi bi-currency-dollar text-success mb-2" style="font-size: 2rem;"></i>
+                <h3 id="total-value" class="text-success">Loading...</h3>
+                <p class="card-text">Total Value</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card metric-card border-warning">
+            <div class="card-body text-center">
+                <i class="bi bi-exclamation-triangle text-warning mb-2" style="font-size: 2rem;"></i>
+                <h3 id="slow-moving" class="text-warning">Loading...</h3>
+                <p class="card-text">Slow Moving</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card metric-card border-danger">
+            <div class="card-body text-center">
+                <i class="bi bi-x-circle text-danger mb-2" style="font-size: 2rem;"></i>
+                <h3 id="dead-stock" class="text-danger">Loading...</h3>
+                <p class="card-text">Dead Stock</p>
             </div>
         </div>
     </div>
 </div>
+
+<!-- Charts Row -->
+<div class="row mb-4">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="bi bi-pie-chart"></i>
+                    Inventory by Category
+                </h5>
+            </div>
+            <div class="card-body">
+                <div id="category-chart" class="chart-container"></div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="bi bi-speedometer2"></i>
+                    Stock Health
+                </h5>
+            </div>
+            <div class="card-body">
+                <div id="stock-health-chart" class="chart-container"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Stock Alert Summaries -->
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card border-danger">
+            <div class="card-body text-center">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <h6 class="card-title mb-0">Out of Stock</h6>
+                    <i class="bi bi-exclamation-circle text-danger fs-4"></i>
+                </div>
+                <h3 class="text-danger mb-1" id="out-of-stock-summary-count">0</h3>
+                <p class="text-muted small mb-0">Products unavailable</p>
+                <p class="text-danger small mb-0" id="out-of-stock-lost-sales">Est. Lost Sales: ARS 0</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card border-warning">
+            <div class="card-body text-center">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <h6 class="card-title mb-0">Low Stock</h6>
+                    <i class="bi bi-exclamation-triangle text-warning fs-4"></i>
+                </div>
+                <h3 class="text-warning mb-1" id="low-stock-summary-count">0</h3>
+                <p class="text-muted small mb-0">Products need reorder</p>
+                <p class="text-warning small mb-0" id="low-stock-value">Value at Risk: ARS 0</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card border-info">
+            <div class="card-body text-center">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <h6 class="card-title mb-0">Overstock</h6>
+                    <i class="bi bi-arrow-up-circle text-info fs-4"></i>
+                </div>
+                <h3 class="text-info mb-1" id="overstock-summary-count">0</h3>
+                <p class="text-muted small mb-0">Excess inventory</p>
+                <p class="text-info small mb-0" id="overstock-value">Tied Capital: ARS 0</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card border-secondary">
+            <div class="card-body text-center">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <h6 class="card-title mb-0">Dead Stock</h6>
+                    <i class="bi bi-arrow-down-circle text-secondary fs-4"></i>
+                </div>
+                <h3 class="text-secondary mb-1" id="dead-stock-summary-count">0</h3>
+                <p class="text-muted small mb-0">No sales 365+ days</p>
+                <p class="text-secondary small mb-0" id="dead-stock-value">Trapped Value: $0</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Stock Alerts Details -->
+<div class="row mb-4">
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="card-title mb-0">
+                    <i class="bi bi-exclamation-circle text-danger"></i>
+                    Out of Stock Details
+                </h5>
+                <span class="badge bg-danger" id="out-of-stock-count">0</span>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive" style="max-height: 350px;">
+                    <table class="table table-sm">
+                        <thead class="table-dark sticky-top">
+                            <tr>
+                                <th>Product</th>
+                                <th>Category</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="out-of-stock-tbody">
+                            <tr>
+                                <td colspan="3" class="text-center">Loading...</td>
+                            </tr>
+                        </tbody>
+                        <tfoot id="out-of-stock-summary" class="table-danger" style="display: none;">
+                            <tr>
+                                <th><strong>TOTAL</strong></th>
+                                <th><span class="badge bg-danger" id="out-of-stock-categories-summary">0</span> Categories</th>
+                                <th><span class="text-danger" id="out-of-stock-impact-summary">Est. Impact: $0/mo</span></th>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="card-title mb-0">
+                    <i class="bi bi-exclamation-triangle text-warning"></i>
+                    Low Stock Details
+                </h5>
+                <span class="badge bg-warning" id="low-stock-count">0</span>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive" style="max-height: 350px;">
+                    <table class="table table-sm">
+                        <thead class="table-dark sticky-top">
+                            <tr>
+                                <th>Product</th>
+                                <th>Category</th>
+                                <th>Stock</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="low-stock-tbody">
+                            <tr>
+                                <td colspan="4" class="text-center">Loading...</td>
+                            </tr>
+                        </tbody>
+                        <tfoot id="low-stock-summary" class="table-warning" style="display: none;">
+                            <tr>
+                                <th><strong>TOTAL</strong></th>
+                                <th><span class="badge bg-warning" id="low-stock-categories-summary">0</span> Categories</th>
+                                <th><span id="low-stock-total-units">0</span> units</th>
+                                <th><span class="text-warning" id="low-stock-reorder-cost">Reorder: $0</span></th>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="card-title mb-0">
+                    <i class="bi bi-arrow-up-circle text-info"></i>
+                    Overstock Details
+                </h5>
+                <span class="badge bg-info" id="overstock-count">0</span>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive" style="max-height: 350px;">
+                    <table class="table table-sm">
+                        <thead class="table-dark sticky-top">
+                            <tr>
+                                <th>Product</th>
+                                <th>Category</th>
+                                <th>Stock</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="overstock-tbody">
+                            <tr>
+                                <td colspan="4" class="text-center">Loading...</td>
+                            </tr>
+                        </tbody>
+                        <tfoot id="overstock-summary" class="table-info" style="display: none;">
+                            <tr>
+                                <th><strong>TOTAL</strong></th>
+                                <th><span class="badge bg-info" id="overstock-categories-summary">0</span> Categories</th>
+                                <th><span id="overstock-total-units">0</span> excess</th>
+                                <th><span class="text-info" id="overstock-tied-capital">Capital: $0</span></th>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Financial Impact Summary -->
+<div class="row mb-4">
+    <div class="col-md-12">
+        <div class="card border-primary">
+            <div class="card-header bg-primary text-white">
+                <h5 class="card-title mb-0">
+                    <i class="bi bi-calculator"></i>
+                    Financial Impact Summary
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-3">
+                        <div class="text-center p-3 border rounded">
+                            <h4 class="text-danger mb-1" id="total-dead-stock-value">$0</h4>
+                            <p class="mb-0 small text-muted">Dead Stock Value</p>
+                            <p class="mb-0 small text-danger" id="dead-stock-carrying-cost">Monthly Cost: $0</p>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="text-center p-3 border rounded">
+                            <h4 class="text-warning mb-1" id="total-low-stock-impact">$0</h4>
+                            <p class="mb-0 small text-muted">Low Stock Risk</p>
+                            <p class="mb-0 small text-warning" id="potential-stockout-cost">Potential Lost Sales</p>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="text-center p-3 border rounded">
+                            <h4 class="text-info mb-1" id="total-overstock-value">$0</h4>
+                            <p class="mb-0 small text-muted">Overstock Value</p>
+                            <p class="mb-0 small text-info" id="overstock-carrying-cost">Excess Carrying Cost</p>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="text-center p-3 border rounded">
+                            <h4 class="text-success mb-1" id="optimization-potential">$0</h4>
+                            <p class="mb-0 small text-muted">Optimization Potential</p>
+                            <p class="mb-0 small text-success">Annual Savings</p>
+                        </div>
+                    </div>
+                </div>
+                <hr>
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6 class="text-primary">Key Insights:</h6>
+                        <ul class="list-unstyled small" id="financial-insights">
+                            <li><i class="bi bi-info-circle text-info"></i> Loading insights...</li>
+                        </ul>
+                    </div>
+                    <div class="col-md-6">
+                        <h6 class="text-primary">Recommended Actions:</h6>
+                        <ul class="list-unstyled small" id="financial-recommendations">
+                            <li><i class="bi bi-lightbulb text-warning"></i> Loading recommendations...</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Inventory Optimization -->
+<div class="row mb-4">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="card-title mb-0">
+                    <i class="bi bi-arrow-down-circle text-danger"></i>
+                    Dead Stock Analysis
+                </h5>
+                <span class="badge bg-danger" id="dead-stock-count">0</span>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive" style="max-height: 400px;">
+                    <table class="table table-sm">
+                        <thead class="table-dark sticky-top">
+                            <tr>
+                                <th>Product</th>
+                                <th>Category</th>
+                                <th>Stock Value</th>
+                                <th>Days Since Sale</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="dead-stock-tbody">
+                            <tr>
+                                <td colspan="5" class="text-center">Loading...</td>
+                            </tr>
+                        </tbody>
+                        <tfoot id="dead-stock-summary" class="table-dark" style="display: none;">
+                            <tr>
+                                <th><strong>TOTAL (Top 10 shown)</strong></th>
+                                <th><span class="badge bg-info" id="dead-stock-categories-count">0</span> Categories</th>
+                                <th class="text-warning"><strong id="dead-stock-total-value">$0</strong></th>
+                                <th><span id="dead-stock-avg-days">0</span> avg days</th>
+                                <th><span class="badge bg-danger" id="dead-stock-total-items">0</span> items</th>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="card-title mb-0">
+                    <i class="bi bi-arrow-up-circle text-success"></i>
+                    Top Stock by Value
+                </h5>
+                <span class="badge bg-success" id="top-stock-count">0</span>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive" style="max-height: 400px;">
+                    <table class="table table-sm">
+                        <thead class="table-dark sticky-top">
+                            <tr>
+                                <th>Product</th>
+                                <th>Category</th>
+                                <th>Current Stock</th>
+                                <th>Stock Value</th>
+                                <th>Unit Price</th>
+                            </tr>
+                        </thead>
+                        <tbody id="top-stock-tbody">
+                            <tr>
+                                <td colspan="5" class="text-center">Loading...</td>
+                            </tr>
+                        </tbody>
+                        <tfoot id="top-stock-summary" class="table-success" style="display: none;">
+                            <tr>
+                                <th><strong>TOTAL (Top 10 shown)</strong></th>
+                                <th><span class="badge bg-success" id="top-stock-categories-count">0</span> Categories</th>
+                                <th><span id="top-stock-total-quantity">0</span> units</th>
+                                <th class="text-success"><strong id="top-stock-total-value">$0</strong></th>
+                                <th><span id="top-stock-avg-price">$0</span> avg</th>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Inventory Insights -->
+<div class="row mb-4">
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="bi bi-graph-up"></i>
+                    Stock Turnover Rate
+                </h5>
+            </div>
+            <div class="card-body text-center">
+                <h2 id="turnover-rate" class="text-primary">Loading...</h2>
+                <p class="text-muted">Times per year</p>
+                <div class="progress">
+                    <div id="turnover-progress" class="progress-bar bg-primary" role="progressbar" style="width: 0%"></div>
+                </div>
+                <small class="text-muted">Target: 6x per year</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="bi bi-calculator"></i>
+                    Carrying Cost
+                </h5>
+            </div>
+            <div class="card-body text-center">
+                <h2 id="carrying-cost" class="text-warning">Loading...</h2>
+                <p class="text-muted">Monthly cost</p>
+                <div class="progress">
+                    <div id="carrying-progress" class="progress-bar bg-warning" role="progressbar" style="width: 0%"></div>
+                </div>
+                <small class="text-muted">2% of inventory value</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="bi bi-exclamation-diamond"></i>
+                    Optimization Potential
+                </h5>
+            </div>
+            <div class="card-body text-center">
+                <h2 id="optimization-potential" class="text-success">Loading...</h2>
+                <p class="text-muted">Potential savings</p>
+                <div class="progress">
+                    <div id="optimization-progress" class="progress-bar bg-success" role="progressbar" style="width: 0%"></div>
+                </div>
+                <small class="text-muted">From dead stock reduction</small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Action Items -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="bi bi-list-check"></i>
+                    Recommended Actions
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-4">
+                        <div class="alert alert-danger">
+                            <h6><i class="bi bi-exclamation-triangle"></i> Urgent Actions</h6>
+                            <ul id="urgent-actions" class="mb-0">
+                                <li>Loading...</li>
+                            </ul>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="alert alert-warning">
+                            <h6><i class="bi bi-clock"></i> Medium Priority</h6>
+                            <ul id="medium-actions" class="mb-0">
+                                <li>Loading...</li>
+                            </ul>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="alert alert-info">
+                            <h6><i class="bi bi-lightbulb"></i> Optimization Ideas</h6>
+                            <ul id="optimization-actions" class="mb-0">
+                                <li>Loading...</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Load inventory data when page loads
+document.addEventListener('DOMContentLoaded', function() {
+    loadInventoryData();
+    loadCategoryChart();
+    loadStockHealthChart();
+    loadStockAlerts();
+    loadDeadStockAnalysis();
+    loadTopStockAnalysis();
+    loadInventoryInsights();
+    loadRecommendedActions();
+});
+
+function loadInventoryData() {
+    fetch('/inventory/api/summary')
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success') {
+                const summary = data.data;
+                document.getElementById('total-products').textContent = summary.total_products.toLocaleString();
+                document.getElementById('total-value').textContent = summary.formatted.total_value;
+                
+                // Calculate additional metrics
+                const avgProductValue = summary.total_value / summary.total_products;
+                const healthyStockPercentage = ((summary.in_stock_products || summary.total_products) / summary.total_products * 100).toFixed(1);
+                
+                // Update slow moving and dead stock (will be updated by actual data later)
+                document.getElementById('slow-moving').textContent = Math.floor(summary.total_products * 0.15);
+                document.getElementById('dead-stock').textContent = Math.floor(summary.total_products * 0.08);
+                
+                // Add contextual information
+                console.log(`Average product value: ${formatCurrency(avgProductValue)}`);
+                console.log(`Healthy stock percentage: ${healthyStockPercentage}%`);
+            }
+        })
+        .catch(error => console.error('Error loading inventory data:', error));
+}
+
+function loadCategoryChart() {
+    fetch('/inventory/api/category-analysis')
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success') {
+                createCategoryChart(data.data);
+            }
+        })
+        .catch(error => console.error('Error loading category data:', error));
+}
+
+function createCategoryChart(data) {
+    const trace = {
+        labels: data.map(c => c.Category),
+        values: data.map(c => c.TotalValue),
+        type: 'pie',
+        textinfo: 'label+percent',
+        textposition: 'outside',
+        marker: {
+            colors: ['#033663', '#28a745', '#ffc107', '#dc3545', '#17a2b8', '#6f42c1', '#fd7e14']
+        }
+    };
+
+    const layout = {
+        margin: { t: 20, r: 20, b: 20, l: 20 },
+        showlegend: false
+    };
+
+    Plotly.newPlot('category-chart', [trace], layout, {responsive: true});
+}
+
+function loadStockHealthChart() {
+    // Mock stock health data
+    const healthData = [
+        { status: 'Healthy', count: 800, color: '#28a745' },
+        { status: 'Slow Moving', count: 270, color: '#ffc107' },
+        { status: 'Dead Stock', count: 144, color: '#dc3545' },
+        { status: 'Discontinued', count: 170, color: '#6c757d' }
+    ];
+
+    const trace = {
+        labels: healthData.map(h => h.status),
+        values: healthData.map(h => h.count),
+        type: 'pie',
+        marker: {
+            colors: healthData.map(h => h.color)
+        }
+    };
+
+    const layout = {
+        margin: { t: 20, r: 20, b: 20, l: 20 },
+        showlegend: true,
+        legend: { orientation: 'v', x: 1.02, y: 0.5 }
+    };
+
+    Plotly.newPlot('stock-health-chart', [trace], layout, {responsive: true});
+}
+
+function loadStockAlerts() {
+    fetch('/inventory/api/stock-alerts')
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success') {
+                const outOfStock = data.data.filter(item => item.AlertType === 'OUT_OF_STOCK');
+                const lowStock = data.data.filter(item => item.AlertType === 'LOW_STOCK');
+                const overstock = data.data.filter(item => item.AlertType === 'OVERSTOCK');
+                
+                // Update summary cards
+                updateStockAlertSummaries(outOfStock, lowStock, overstock);
+                
+                // Populate detail tables
+                populateOutOfStockTable(outOfStock);
+                populateLowStockTable(lowStock);
+                populateOverstockTable(overstock);
+            } else {
+                console.error('Stock alerts API error:', data.error);
+                showStockAlertError('Error loading stock alerts: ' + (data.error || 'Unknown error'));
+            }
+        })
+        .catch(error => {
+            console.error('Error loading stock alerts:', error);
+            showStockAlertError('Error loading stock alerts: ' + error.message);
+        });
+}
+
+function updateStockAlertSummaries(outOfStock, lowStock, overstock) {
+    // Calculate values for each category
+    const lowStockValue = lowStock.reduce((sum, item) => sum + (item.CurrentStock * 50), 0); // Estimate $50 avg unit price
+    const overstockValue = overstock.reduce((sum, item) => sum + (item.CurrentStock * 25), 0); // Estimate excess value
+    const outOfStockLostSales = outOfStock.length * 500; // Estimate $500 lost sales per item per month
+    
+    // Update summary cards
+    document.getElementById('out-of-stock-summary-count').textContent = outOfStock.length;
+    document.getElementById('low-stock-summary-count').textContent = lowStock.length;
+    document.getElementById('overstock-summary-count').textContent = overstock.length;
+    
+    document.getElementById('out-of-stock-lost-sales').textContent = 'Est. Lost Sales: ' + formatUSD(outOfStockLostSales);
+    document.getElementById('low-stock-value').textContent = 'Value at Risk: ' + formatUSD(lowStockValue);
+    document.getElementById('overstock-value').textContent = 'Tied Capital: ' + formatUSD(overstockValue);
+}
+
+function showStockAlertError(message) {
+    document.getElementById('out-of-stock-tbody').innerHTML = '<tr><td colspan="3" class="text-center text-danger">' + message + '</td></tr>';
+    document.getElementById('low-stock-tbody').innerHTML = '<tr><td colspan="4" class="text-center text-danger">' + message + '</td></tr>';
+    document.getElementById('overstock-tbody').innerHTML = '<tr><td colspan="4" class="text-center text-danger">' + message + '</td></tr>';
+}
+
+function populateOutOfStockTable(data) {
+    const tbody = document.getElementById('out-of-stock-tbody');
+    const countBadge = document.getElementById('out-of-stock-count');
+    const summaryRow = document.getElementById('out-of-stock-summary');
+    
+    tbody.innerHTML = '';
+    countBadge.textContent = data.length;
+
+    if (data.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="3" class="text-center text-muted">No out of stock items</td></tr>';
+        summaryRow.style.display = 'none';
+        return;
+    }
+
+    // Show top 15 items
+    const displayItems = data.slice(0, 15);
+    displayItems.forEach(item => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <td><strong>${item.descripcion}</strong></td>
+            <td><span class="badge bg-secondary">${item.Category}</span></td>
+            <td>
+                <button class="btn btn-sm btn-outline-primary" onclick="reorderProduct('${item.descripcion}')">
+                    <i class="bi bi-cart-plus"></i> Reorder
+                </button>
+            </td>
+        `;
+        tbody.appendChild(row);
+    });
+
+    // Calculate and populate summary row
+    updateOutOfStockSummaryRow(data);
+    summaryRow.style.display = 'table-footer-group';
+}
+
+function updateOutOfStockSummaryRow(allData) {
+    const uniqueCategories = [...new Set(allData.map(item => item.Category))].length;
+    const estimatedImpact = allData.length * 500; // $500 per item per month
+    
+    document.getElementById('out-of-stock-categories-summary').textContent = uniqueCategories;
+    document.getElementById('out-of-stock-impact-summary').textContent = `Est. Impact: ${formatUSD(estimatedImpact)}/mo`;
+}
+
+function populateLowStockTable(data) {
+    const tbody = document.getElementById('low-stock-tbody');
+    const countBadge = document.getElementById('low-stock-count');
+    const summaryRow = document.getElementById('low-stock-summary');
+    
+    tbody.innerHTML = '';
+    countBadge.textContent = data.length;
+
+    if (data.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="4" class="text-center text-muted">No low stock items</td></tr>';
+        summaryRow.style.display = 'none';
+        return;
+    }
+
+    // Show top 15 items
+    const displayItems = data.slice(0, 15);
+    displayItems.forEach(item => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <td><strong>${item.descripcion}</strong></td>
+            <td><span class="badge bg-secondary">${item.Category}</span></td>
+            <td><span class="badge bg-warning">${item.CurrentStock}</span></td>
+            <td>
+                <button class="btn btn-sm btn-outline-primary" onclick="reorderProduct('${item.descripcion}')">
+                    <i class="bi bi-cart-plus"></i> Reorder
+                </button>
+            </td>
+        `;
+        tbody.appendChild(row);
+    });
+
+    // Calculate and populate summary row
+    updateLowStockSummaryRow(data);
+    summaryRow.style.display = 'table-footer-group';
+}
+
+function updateLowStockSummaryRow(allData) {
+    const uniqueCategories = [...new Set(allData.map(item => item.Category))].length;
+    const totalUnits = allData.reduce((sum, item) => sum + item.CurrentStock, 0);
+    const estimatedReorderCost = allData.length * 1000; // $1000 average reorder cost per item
+    
+    document.getElementById('low-stock-categories-summary').textContent = uniqueCategories;
+    document.getElementById('low-stock-total-units').textContent = totalUnits;
+    document.getElementById('low-stock-reorder-cost').textContent = `Reorder: ${formatUSD(estimatedReorderCost)}`;
+}
+
+function populateOverstockTable(data) {
+    const tbody = document.getElementById('overstock-tbody');
+    const countBadge = document.getElementById('overstock-count');
+    const summaryRow = document.getElementById('overstock-summary');
+    
+    tbody.innerHTML = '';
+    countBadge.textContent = data.length;
+
+    if (data.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="4" class="text-center text-muted">No overstock items</td></tr>';
+        summaryRow.style.display = 'none';
+        return;
+    }
+
+    // Show top 15 items
+    const displayItems = data.slice(0, 15);
+    displayItems.forEach(item => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <td><strong>${item.descripcion}</strong></td>
+            <td><span class="badge bg-secondary">${item.Category}</span></td>
+            <td><span class="badge bg-info">${item.CurrentStock}</span></td>
+            <td>
+                <button class="btn btn-sm btn-outline-warning" onclick="markForPromotion('${item.descripcion}')">
+                    <i class="bi bi-percent"></i> Promote
+                </button>
+            </td>
+        `;
+        tbody.appendChild(row);
+    });
+
+    // Calculate and populate summary row
+    updateOverstockSummaryRow(data);
+    summaryRow.style.display = 'table-footer-group';
+}
+
+function updateOverstockSummaryRow(allData) {
+    const uniqueCategories = [...new Set(allData.map(item => item.Category))].length;
+    const totalExcessUnits = allData.reduce((sum, item) => sum + (item.CurrentStock - 1000), 0); // Excess over 1000
+    const estimatedTiedCapital = allData.reduce((sum, item) => sum + (item.CurrentStock * 25), 0); // $25 avg per unit
+    
+    document.getElementById('overstock-categories-summary').textContent = uniqueCategories;
+    document.getElementById('overstock-total-units').textContent = totalExcessUnits.toLocaleString();
+    document.getElementById('overstock-tied-capital').textContent = `Capital: ${formatUSD(estimatedTiedCapital)}`;
+}
+
+function loadDeadStockAnalysis() {
+    fetch('/inventory/api/slow-moving')
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success') {
+                const deadStockItems = data.data.filter(item => item.StockCategory === 'Dead Stock');
+                
+                // Update dead stock summary
+                updateDeadStockSummary(deadStockItems);
+                
+                // Update financial impact summary
+                updateFinancialImpactSummary(data.data);
+                
+                // Populate table
+                populateDeadStockTable(deadStockItems);
+            } else {
+                console.error('API error:', data.error);
+                document.getElementById('dead-stock-tbody').innerHTML = '<tr><td colspan="5" class="text-center text-danger">Error loading data: ' + (data.error || 'Unknown error') + '</td></tr>';
+            }
+        })
+        .catch(error => {
+            console.error('Error loading dead stock:', error);
+            document.getElementById('dead-stock-tbody').innerHTML = '<tr><td colspan="5" class="text-center text-danger">Error loading data: ' + error.message + '</td></tr>';
+        });
+}
+
+function updateDeadStockSummary(deadStockItems) {
+    const totalValue = deadStockItems.reduce((sum, item) => sum + item.StockValue, 0);
+    const totalCarryingCost = deadStockItems.reduce((sum, item) => sum + item.MonthlyCarryingCost, 0);
+    
+    document.getElementById('dead-stock-summary-count').textContent = deadStockItems.length;
+    document.getElementById('dead-stock-value').textContent = 'Trapped Value: ' + formatUSD(totalValue);
+}
+
+function updateFinancialImpactSummary(allItems) {
+    const deadStock = allItems.filter(item => item.StockCategory === 'Dead Stock');
+    const slowMoving = allItems.filter(item => item.StockCategory === 'Slow Moving');
+    
+    const deadStockValue = deadStock.reduce((sum, item) => sum + item.StockValue, 0);
+    const deadStockCarryingCost = deadStock.reduce((sum, item) => sum + item.MonthlyCarryingCost, 0);
+    const slowMovingValue = slowMoving.reduce((sum, item) => sum + item.StockValue, 0);
+    
+    // Calculate optimization potential (annual savings from dead stock + slow moving optimization)
+    const optimizationPotential = (deadStockCarryingCost * 12) + (slowMovingValue * 0.1); // 10% of slow moving value
+    
+    // Update financial summary (SPISA data = USD)
+    document.getElementById('total-dead-stock-value').textContent = formatUSD(deadStockValue);
+    document.getElementById('dead-stock-carrying-cost').textContent = 'Monthly Cost: ' + formatUSD(deadStockCarryingCost);
+    document.getElementById('optimization-potential').textContent = formatUSD(optimizationPotential);
+    
+    // Update insights and recommendations
+    updateFinancialInsights(deadStock, slowMoving, deadStockValue, optimizationPotential);
+}
+
+function updateFinancialInsights(deadStock, slowMoving, deadStockValue, optimizationPotential) {
+    const insights = [
+        `${deadStock.length} products with $${(deadStockValue/1000000).toFixed(1)}M trapped in dead stock`,
+        `${slowMoving.length} slow-moving items need attention`,
+        `${(deadStockValue / (deadStockValue + slowMoving.reduce((sum, item) => sum + item.StockValue, 0)) * 100).toFixed(1)}% of problem inventory is dead stock`,
+        `Average dead stock age: ${Math.round(deadStock.reduce((sum, item) => sum + item.DaysSinceLastSale, 0) / deadStock.length)} days`
+    ];
+    
+    const recommendations = [
+        'Liquidate dead stock through discounts or clearance sales',
+        'Implement automated reorder points for fast-moving items',
+        'Review supplier agreements for slow-moving categories',
+        `Potential annual savings: ${formatCurrency(optimizationPotential)}`
+    ];
+    
+    document.getElementById('financial-insights').innerHTML = insights.map(insight => 
+        `<li><i class="bi bi-info-circle text-info"></i> ${insight}</li>`
+    ).join('');
+    
+    document.getElementById('financial-recommendations').innerHTML = recommendations.map(rec => 
+        `<li><i class="bi bi-lightbulb text-warning"></i> ${rec}</li>`
+    ).join('');
+}
+
+function populateDeadStockTable(data) {
+    const tbody = document.getElementById('dead-stock-tbody');
+    const countBadge = document.getElementById('dead-stock-count');
+    const summaryRow = document.getElementById('dead-stock-summary');
+    
+    if (!tbody) {
+        console.error('Dead stock tbody element not found');
+        return;
+    }
+    
+    tbody.innerHTML = '';
+    countBadge.textContent = data.length;
+
+    if (data.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted">No dead stock found</td></tr>';
+        summaryRow.style.display = 'none';
+        return;
+    }
+
+    // Show top 10 items
+    const displayItems = data.slice(0, 10);
+    displayItems.forEach(item => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <td><strong>${item.descripcion}</strong></td>
+            <td><span class="badge bg-secondary">${item.Category}</span></td>
+            <td class="text-danger">${formatCurrency(item.StockValue)}</td>
+            <td>${item.DaysSinceLastSale}</td>
+            <td>
+                <button class="btn btn-sm btn-outline-danger" onclick="markForDiscount('${item.descripcion}')">
+                    <i class="bi bi-percent"></i> Discount
+                </button>
+            </td>
+        `;
+        tbody.appendChild(row);
+    });
+
+    // Calculate and populate summary row
+    updateDeadStockSummaryRow(displayItems, data.length);
+    summaryRow.style.display = 'table-footer-group';
+}
+
+function updateDeadStockSummaryRow(displayItems, totalItems) {
+    const totalValue = displayItems.reduce((sum, item) => sum + item.StockValue, 0);
+    const avgDays = Math.round(displayItems.reduce((sum, item) => sum + item.DaysSinceLastSale, 0) / displayItems.length);
+    const uniqueCategories = [...new Set(displayItems.map(item => item.Category))].length;
+    
+    document.getElementById('dead-stock-total-value').textContent = formatUSD(totalValue);
+    document.getElementById('dead-stock-avg-days').textContent = avgDays;
+    document.getElementById('dead-stock-categories-count').textContent = uniqueCategories;
+    document.getElementById('dead-stock-total-items').textContent = totalItems;
+}
+
+function loadTopStockAnalysis() {
+    fetch('/inventory/api/top-stock-value')
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success') {
+                populateTopStockTable(data.data);
+            }
+        })
+        .catch(error => console.error('Error loading top stock:', error));
+}
+
+function populateTopStockTable(data) {
+    const tbody = document.getElementById('top-stock-tbody');
+    const countBadge = document.getElementById('top-stock-count');
+    const summaryRow = document.getElementById('top-stock-summary');
+    
+    tbody.innerHTML = '';
+    countBadge.textContent = data.length;
+
+    if (data.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted">No top stock data available</td></tr>';
+        summaryRow.style.display = 'none';
+        return;
+    }
+
+    // Show top 10 items
+    const displayItems = data.slice(0, 10);
+    displayItems.forEach(item => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <td><strong>${item.descripcion}</strong></td>
+            <td><span class="badge bg-primary">${item.Category}</span></td>
+            <td>${item.CurrentStock.toLocaleString()}</td>
+            <td class="text-success">${formatCurrency(item.StockValue)}</td>
+            <td>${formatCurrency(item.UnitPrice)}</td>
+        `;
+        tbody.appendChild(row);
+    });
+
+    // Calculate and populate summary row
+    updateTopStockSummaryRow(displayItems);
+    summaryRow.style.display = 'table-footer-group';
+}
+
+function updateTopStockSummaryRow(displayItems) {
+    const totalValue = displayItems.reduce((sum, item) => sum + item.StockValue, 0);
+    const totalQuantity = displayItems.reduce((sum, item) => sum + item.CurrentStock, 0);
+    const avgPrice = totalValue / totalQuantity;
+    const uniqueCategories = [...new Set(displayItems.map(item => item.Category))].length;
+    
+    document.getElementById('top-stock-total-value').textContent = formatUSD(totalValue);
+    document.getElementById('top-stock-total-quantity').textContent = totalQuantity.toLocaleString();
+    document.getElementById('top-stock-avg-price').textContent = formatUSD(avgPrice);
+    document.getElementById('top-stock-categories-count').textContent = uniqueCategories;
+}
+
+function loadInventoryInsights() {
+    fetch('/inventory/api/summary')
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success') {
+                const summary = data.data;
+                
+                // Stock turnover rate
+                const turnoverRate = summary.stock_turnover_rate || 4.2;
+                document.getElementById('turnover-rate').textContent = turnoverRate.toFixed(1) + 'x';
+                document.getElementById('turnover-progress').style.width = Math.min((turnoverRate / 6) * 100, 100) + '%';
+                
+                // Carrying cost (2% of inventory value monthly)
+                const carryingCost = summary.total_value * 0.02;
+                document.getElementById('carrying-cost').textContent = formatCurrency(carryingCost);
+                document.getElementById('carrying-progress').style.width = '100%';
+                
+                // Optimization potential (estimated from dead stock)
+                const deadStockValue = summary.total_value * 0.12; // Assume 12% is dead stock
+                document.getElementById('optimization-potential').textContent = formatCurrency(deadStockValue);
+                document.getElementById('optimization-progress').style.width = '75%';
+            }
+        })
+        .catch(error => console.error('Error loading inventory insights:', error));
+}
+
+function loadRecommendedActions() {
+    // Mock recommended actions based on inventory analysis
+    const urgentActions = [
+        'Clear 144 dead stock items worth ARS $1.4M',
+        'Review 27 products with no sales in 12+ months',
+        'Investigate 15 high-value slow movers'
+    ];
+    
+    const mediumActions = [
+        'Optimize reorder points for top 50 products',
+        'Review supplier contracts for slow movers',
+        'Implement ABC analysis for better categorization'
+    ];
+    
+    const optimizationActions = [
+        'Set up automated reorder alerts',
+        'Implement just-in-time for fast movers',
+        'Create seasonal demand forecasting'
+    ];
+    
+    document.getElementById('urgent-actions').innerHTML = urgentActions.map(action => `<li>${action}</li>`).join('');
+    document.getElementById('medium-actions').innerHTML = mediumActions.map(action => `<li>${action}</li>`).join('');
+    document.getElementById('optimization-actions').innerHTML = optimizationActions.map(action => `<li>${action}</li>`).join('');
+}
+
+function reorderProduct(productName) {
+    alert(`Reordering ${productName} - Feature coming soon!`);
+    // Implement reorder logic here
+}
+
+function markForPromotion(productName) {
+    alert(`Marking ${productName} for promotion - Feature coming soon!`);
+    // Implement promotion logic here
+}
+
+function markForDiscount(productName) {
+    alert(`Marking ${productName} for discount - Feature coming soon!`);
+}
+</script>
 {% endblock %}
