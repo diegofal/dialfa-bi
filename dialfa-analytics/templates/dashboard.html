@@ -231,10 +231,10 @@ function loadDashboardData() {
 function updateMetricCards(financial, inventory, sales) {
     // Financial metrics
     if (financial) {
-        document.getElementById('total-outstanding').textContent = formatCurrency(financial.total_outstanding);
-        document.getElementById('total-overdue').textContent = formatCurrency(financial.total_overdue);
+        document.getElementById('total-outstanding').textContent = financial.formatted.total_outstanding;
+        document.getElementById('total-overdue').textContent = financial.formatted.total_overdue;
         document.getElementById('unique-customers').textContent = financial.unique_customers || 0;
-        document.getElementById('avg-balance').textContent = formatCurrency(financial.avg_balance);
+        document.getElementById('avg-balance').textContent = financial.formatted.avg_balance;
     }
 }
 
@@ -337,7 +337,7 @@ function createTopCustomersList(customers) {
             <div class="list-group-item d-flex justify-content-between align-items-center">
                 <div>
                     <h6 class="mb-1">${customer.Name}</h6>
-                    <small class="text-muted">${formatCurrency(customer.OutstandingBalance)}</small>
+                    <small class="text-muted">${customer.FormattedBalance}</small>
                 </div>
                 <span class="badge bg-${riskClass}">${customer.RiskLevel || 'LOW RISK'}</span>
             </div>
@@ -439,8 +439,8 @@ function updateCreditRiskTable(data) {
         html += `
             <tr>
                 <td><strong>${row.Name}</strong></td>
-                <td>${formatCurrency(row.CurrentBalance)}</td>
-                <td>${formatCurrency(row.OverdueAmount)}</td>
+                <td>${row.FormattedBalance}</td>
+                <td>${row.FormattedOverdue}</td>
                 <td>${formatPercentage(row.OverduePercentage)}</td>
                 <td><span class="badge bg-${riskClass}">${row.RiskLevel}</span></td>
                 <td>

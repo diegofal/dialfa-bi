@@ -29,9 +29,9 @@ class FinancialAnalytics:
                     'avg_balance': float(row['AvgBalance']),
                     'overdue_percentage': (float(row['TotalOverdue']) / float(row['TotalOutstanding'])) * 100 if row['TotalOutstanding'] > 0 else 0,
                     'formatted': {
-                        'total_outstanding': format_currency(row['TotalOutstanding'], '$', 'SPISA'),
-                        'total_overdue': format_currency(row['TotalOverdue'], '$', 'SPISA'),
-                        'avg_balance': format_currency(row['AvgBalance'], '$', 'SPISA')
+                        'total_outstanding': format_currency(row['TotalOutstanding'], 'ARS', 'SPISA'),
+                        'total_overdue': format_currency(row['TotalOverdue'], 'ARS', 'SPISA'),
+                        'avg_balance': format_currency(row['AvgBalance'], 'ARS', 'SPISA')
                     }
                 }
             return {}
@@ -49,8 +49,8 @@ class FinancialAnalytics:
             df['RiskScore'] = df.apply(calculate_risk_score, axis=1)
             
             # Add formatted currency columns
-            df['FormattedBalance'] = df['CurrentBalance'].apply(lambda x: format_currency(x, '$', 'SPISA'))
-            df['FormattedOverdue'] = df['OverdueAmount'].apply(lambda x: format_currency(x, '$', 'SPISA'))
+            df['FormattedBalance'] = df['CurrentBalance'].apply(lambda x: format_currency(x, 'ARS', 'SPISA'))
+            df['FormattedOverdue'] = df['OverdueAmount'].apply(lambda x: format_currency(x, 'ARS', 'SPISA'))
             
             # Sort by risk score descending
             df = df.sort_values('RiskScore', ascending=False)
@@ -96,8 +96,8 @@ class FinancialAnalytics:
             df = clean_dataframe(df)
             
             # Add formatted currency columns
-            df['FormattedBalance'] = df['OutstandingBalance'].apply(lambda x: format_currency(x, '$', 'SPISA'))
-            df['FormattedOverdue'] = df['OverdueAmount'].apply(lambda x: format_currency(x, '$', 'SPISA'))
+            df['FormattedBalance'] = df['OutstandingBalance'].apply(lambda x: format_currency(x, 'ARS', 'SPISA'))
+            df['FormattedOverdue'] = df['OverdueAmount'].apply(lambda x: format_currency(x, 'ARS', 'SPISA'))
             
             # Add risk level based on overdue percentage
             df['RiskLevel'] = df['OverduePercentage'].apply(self._categorize_risk)

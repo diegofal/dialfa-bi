@@ -6,7 +6,63 @@ Based on the comprehensive database analysis
 class FinancialQueries:
     """Financial analysis SQL queries"""
     
-    # SPISA financial queries
+    # xERP-based financial queries (ARS currency)
+    XERP_EXECUTIVE_SUMMARY = """
+    SELECT 
+        COUNT(DISTINCT dm.debtor_no) as UniqueCustomers,
+        SUM(dt.ov_amount * 1.21) as TotalOutstanding,
+        SUM(CASE WHEN dt.due_date < GETDATE() THEN dt.ov_amount * 1.21 ELSE 0 END) as TotalOverdue,
+        AVG(dt.ov_amount * 1.21) as AvgBalance
+    FROM [0_debtor_trans] dt
+    INNER JOIN [0_debtors_master] dm ON dt.debtor_no = dm.debtor_no
+    WHERE dt.Type = 10 
+    AND dt.ov_amount > 0
+    AND dt.alloc < dt.ov_amount  -- Not fully paid
+    """
+    
+    XERP_CREDIT_RISK_ANALYSIS = """
+    SELECT 
+        dm.name as Name,
+        SUM(dt.ov_amount * 1.21) as CurrentBalance,
+        SUM(CASE WHEN dt.due_date < GETDATE() THEN dt.ov_amount * 1.21 ELSE 0 END) as OverdueAmount,
+        (SUM(CASE WHEN dt.due_date < GETDATE() THEN dt.ov_amount * 1.21 ELSE 0 END) / 
+         NULLIF(SUM(dt.ov_amount * 1.21), 0)) * 100 as OverduePercentage,
+        CASE 
+            WHEN (SUM(CASE WHEN dt.due_date < GETDATE() THEN dt.ov_amount * 1.21 ELSE 0 END) / 
+                  NULLIF(SUM(dt.ov_amount * 1.21), 0)) > 0.5 THEN 'HIGH RISK'
+            WHEN (SUM(CASE WHEN dt.due_date < GETDATE() THEN dt.ov_amount * 1.21 ELSE 0 END) / 
+                  NULLIF(SUM(dt.ov_amount * 1.21), 0)) > 0.2 THEN 'MEDIUM RISK'
+            ELSE 'LOW RISK'
+        END as RiskLevel
+    FROM [0_debtor_trans] dt
+    INNER JOIN [0_debtors_master] dm ON dt.debtor_no = dm.debtor_no
+    WHERE dt.Type = 10 
+    AND dt.ov_amount > 0
+    AND dt.alloc < dt.ov_amount  -- Not fully paid
+    GROUP BY dm.debtor_no, dm.name
+    HAVING SUM(dt.ov_amount * 1.21) > 1000
+    ORDER BY OverduePercentage DESC
+    """
+    
+    XERP_TOP_CUSTOMERS_FINANCIAL = """
+    SELECT TOP {limit}
+        dm.name as Name,
+        'Customer' as Type,
+        SUM(dt.ov_amount * 1.21) as OutstandingBalance,
+        SUM(CASE WHEN dt.due_date < GETDATE() THEN dt.ov_amount * 1.21 ELSE 0 END) as OverdueAmount,
+        (SUM(CASE WHEN dt.due_date < GETDATE() THEN dt.ov_amount * 1.21 ELSE 0 END) / 
+         NULLIF(SUM(dt.ov_amount * 1.21), 0)) * 100 as OverduePercentage
+    FROM [0_debtor_trans] dt
+    INNER JOIN [0_debtors_master] dm ON dt.debtor_no = dm.debtor_no
+    WHERE dt.Type = 10 
+    AND dt.ov_amount > 0
+    AND dt.alloc < dt.ov_amount  -- Not fully paid
+    GROUP BY dm.debtor_no, dm.name
+    HAVING SUM(dt.ov_amount * 1.21) > 100
+    ORDER BY OutstandingBalance DESC
+    """
+    
+    # SPISA financial queries (USD currency) - kept for reference
     EXECUTIVE_SUMMARY = """
     SELECT 
         COUNT(DISTINCT CustomerId) as UniqueCustomers,
