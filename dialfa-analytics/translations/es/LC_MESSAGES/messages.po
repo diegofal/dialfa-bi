@@ -6,8 +6,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Dialfa Analytics 1.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-09-27 19:35+0000\n"
-"PO-Revision-Date: 2025-09-27 19:35+0000\n"
+"POT-Creation-Date: 2025-09-29 12:00+0000\n"
+"PO-Revision-Date: 2025-09-29 12:00+0000\n"
 "Last-Translator: \n"
 "Language: es\n"
 "Language-Team: Spanish\n"
@@ -34,6 +34,9 @@ msgstr "Ventas"
 msgid "Dialfa Business Intelligence"
 msgstr "Inteligencia de Negocios Dialfa"
 
+msgid "Business Intelligence Dashboard"
+msgstr "Panel de Inteligencia de Negocios"
+
 msgid "Financial Analytics"
 msgstr "Análisis Financiero"
 
@@ -43,7 +46,74 @@ msgstr "Análisis de Inventario"
 msgid "Sales Analytics"
 msgstr "Análisis de Ventas"
 
-# KPI Labels
+# Dashboard descriptions
+msgid "Real-time insights into your business performance"
+msgstr "Información en tiempo real sobre el rendimiento de su negocio"
+
+msgid "Comprehensive financial analysis, credit risk management, and cash flow forecasting"
+msgstr "Análisis financiero integral, gestión de riesgo crediticio y pronóstico de flujo de efectivo"
+
+msgid "Sales performance analysis, customer insights, and revenue forecasting"
+msgstr "Análisis de rendimiento de ventas, insights de clientes y pronóstico de ingresos"
+
+msgid "Inventory optimization, stock analysis, and supply chain insights"
+msgstr "Optimización de inventario, análisis de stock e insights de cadena de suministro"
+
+# KPI Labels - General
+msgid "Loading..."
+msgstr "Cargando..."
+
+msgid "Total Outstanding"
+msgstr "Total Pendiente"
+
+msgid "Accounts Receivable"
+msgstr "Cuentas por Cobrar"
+
+msgid "Overdue Amount"
+msgstr "Monto Vencido"
+
+msgid "Requires Attention"
+msgstr "Requiere Atención"
+
+msgid "Billed This Month"
+msgstr "Facturado Este Mes"
+
+msgid "Monthly Sales"
+msgstr "Ventas del Mes"
+
+msgid "Billed Today"
+msgstr "Facturado Hoy"
+
+msgid "Daily Sales"
+msgstr "Ventas del Día"
+
+msgid "Total Overdue"
+msgstr "Total Vencido"
+
+msgid "Overdue %"
+msgstr "% Vencido"
+
+msgid "Active Customers"
+msgstr "Clientes Activos"
+
+msgid "Total Revenue (12M)"
+msgstr "Ingresos Totales (12M)"
+
+msgid "Total Transactions"
+msgstr "Transacciones Totales"
+
+msgid "Avg Invoice Size"
+msgstr "Tamaño Promedio de Factura"
+
+msgid "Total Products"
+msgstr "Productos Totales"
+
+msgid "Total Value"
+msgstr "Valor Total"
+
+msgid "Slow Moving"
+msgstr "Movimiento Lento"
+
 msgid "Stock Turnover Rate"
 msgstr "Tasa de Rotación de Inventario"
 
@@ -74,51 +144,73 @@ msgstr "Riesgo de Stock Bajo"
 msgid "Overstock Value"
 msgstr "Valor de Sobrestock"
 
-# Time periods
-msgid "Times per year"
-msgstr "Veces por año"
+msgid "Out of Stock"
+msgstr "Sin Stock"
 
-msgid "Monthly cost"
-msgstr "Costo mensual"
+msgid "Low Stock"
+msgstr "Stock Bajo"
 
-msgid "Potential savings"
-msgstr "Ahorros potenciales"
+msgid "Overstock"
+msgstr "Sobrestock"
 
-msgid "Annual Savings"
-msgstr "Ahorros Anuales"
+msgid "Dead Stock"
+msgstr "Stock Muerto"
 
-# Tooltips
-msgid "Stock Turnover Rate Tooltip"
-msgstr "Mide cuántas veces por año se rota completamente el inventario. 4.2x significa que el inventario se convierte en ventas 4.2 veces al año. Meta ideal: 6x+ para mejor eficiencia de capital y flujo de caja."
+msgid "Stock Health"
+msgstr "Salud del Stock"
 
-msgid "Carrying Cost Tooltip"
-msgstr "Costo mensual de mantener el inventario actual. Incluye almacenamiento, seguros, servicios, costo de oportunidad del capital y riesgo de obsolescencia. Equivale al 2% del valor total del inventario por mes."
+# Chart and Section Titles
+msgid "Cash Flow Trend"
+msgstr "Tendencia de Flujo de Efectivo"
 
-msgid "Optimization Potential Tooltip"
-msgstr "Ahorro potencial total por optimización de inventario. Suma del valor de inventario muerto + exceso de stock. Representa capital que puede liberarse mediante liquidación, descuentos o mejor gestión de demanda. ¡USD 9.2M es una oportunidad enorme!"
+msgid "Top Customers"
+msgstr "Principales Clientes"
 
-msgid "Overall Turnover Rate Tooltip"
-msgstr "Indica cuántas veces al año se convierte el inventario en ventas. Un valor alto significa mejor eficiencia de capital. Meta: 6x por año. Cálculo: (Ventas Anuales ÷ Valor Promedio de Inventario) × 100"
+msgid "Monthly Sales Trend"
+msgstr "Tendencia de Ventas Mensuales"
 
-msgid "High Velocity Products Tooltip"
-msgstr "Productos que rotan 4+ veces por año. Son los más rentables y eficientes en términos de capital. Requieren reabastecimiento frecuente pero generan flujo de caja constante."
+msgid "Inventory by Category"
+msgstr "Inventario por Categoría"
 
-msgid "Low Velocity Products Tooltip"
-msgstr "Productos que rotan menos de 2 veces por año. Consumen capital y espacio de almacén. Considerar descuentos, promociones o descontinuar según demanda."
+msgid "Credit Risk Analysis"
+msgstr "Análisis de Riesgo Crediticio"
 
-msgid "No Movement Tooltip"
-msgstr "Productos sin ventas en los últimos 12 meses. Inventario muerto que genera costos de almacenamiento sin retorno. Acción urgente: liquidar o descartar."
+msgid "Cash Flow History"
+msgstr "Historial de Flujo de Efectivo"
 
-msgid "Dead Stock Value Tooltip"
-msgstr "Valor total del inventario sin movimiento por más de 365 días. Este capital está 'muerto' y genera solo costos sin retorno. Acción urgente: liquidar mediante descuentos o promociones."
+msgid "Cash Flow Forecast"
+msgstr "Pronóstico de Flujo de Efectivo"
 
-msgid "Low Stock Risk Tooltip"
-msgstr "Riesgo de pérdida de ventas por productos con stock bajo. Incluye productos con menos de 1 mes de inventario según la demanda histórica. Acción: reabastecer urgentemente."
+msgid "Risk Distribution"
+msgstr "Distribución de Riesgo"
 
-msgid "Overstock Value Tooltip"
-msgstr "Valor del inventario excesivo (más de 6 meses de suministro). Capital inmovilizado que genera costos de almacenamiento. Acción: reducir pedidos futuros y considerar promociones."
+msgid "Top Customers by Revenue"
+msgstr "Principales Clientes por Ingresos"
 
-# Chart titles
+msgid "Monthly Payment Trends"
+msgstr "Tendencias de Pago Mensuales"
+
+msgid "Key Performance Indicators"
+msgstr "Indicadores Clave de Rendimiento"
+
+msgid "Sales Performance"
+msgstr "Rendimiento de Ventas"
+
+msgid "Customer Segmentation"
+msgstr "Segmentación de Clientes"
+
+msgid "Sales Forecast (Next 6 Months)"
+msgstr "Pronóstico de Ventas (Próximos 6 Meses)"
+
+msgid "Sales Targets"
+msgstr "Objetivos de Ventas"
+
+msgid "Monthly Performance Breakdown"
+msgstr "Desglose de Rendimiento Mensual"
+
+msgid "Sales Insights & Recommendations"
+msgstr "Insights y Recomendaciones de Ventas"
+
 msgid "Stock Variation & Velocity Analysis"
 msgstr "Análisis de Variación y Velocidad de Stock"
 
@@ -131,7 +223,40 @@ msgstr "Distribución de Velocidad"
 msgid "Top Products by Velocity & Turnover"
 msgstr "Principales Productos por Velocidad y Rotación"
 
+msgid "Financial Impact Summary"
+msgstr "Resumen de Impacto Financiero"
+
+msgid "Dead Stock Analysis"
+msgstr "Análisis de Stock Muerto"
+
+msgid "Top Stock by Value"
+msgstr "Stock Principal por Valor"
+
+msgid "Out of Stock Details"
+msgstr "Detalles de Sin Stock"
+
+msgid "Low Stock Details"
+msgstr "Detalles de Stock Bajo"
+
+msgid "Overstock Details"
+msgstr "Detalles de Sobrestock"
+
 # Table headers
+msgid "Customer"
+msgstr "Cliente"
+
+msgid "Current Balance"
+msgstr "Saldo Actual"
+
+msgid "Risk Level"
+msgstr "Nivel de Riesgo"
+
+msgid "Risk Score"
+msgstr "Puntuación de Riesgo"
+
+msgid "Actions"
+msgstr "Acciones"
+
 msgid "Product"
 msgstr "Producto"
 
@@ -156,9 +281,42 @@ msgstr "Meses de Stock"
 msgid "Status"
 msgstr "Estado"
 
+msgid "Month"
+msgstr "Mes"
+
+msgid "Revenue"
+msgstr "Ingresos"
+
+msgid "Transactions"
+msgstr "Transacciones"
+
+msgid "Growth"
+msgstr "Crecimiento"
+
+msgid "Customers"
+msgstr "Clientes"
+
+msgid "Stock"
+msgstr "Stock"
+
+msgid "Action"
+msgstr "Acción"
+
+msgid "Stock Value"
+msgstr "Valor de Stock"
+
+msgid "Days Since Sale"
+msgstr "Días Desde Última Venta"
+
+msgid "Unit Price"
+msgstr "Precio Unitario"
+
 # Buttons and actions
 msgid "All"
 msgstr "Todos"
+
+msgid "View All"
+msgstr "Ver Todos"
 
 msgid "High Velocity"
 msgstr "Alta Velocidad"
@@ -166,11 +324,239 @@ msgstr "Alta Velocidad"
 msgid "Low Velocity"
 msgstr "Baja Velocidad"
 
-msgid "Dead Stock"
-msgstr "Stock Muerto"
+msgid "High Risk"
+msgstr "Alto Riesgo"
 
-msgid "Loading..."
-msgstr "Cargando..."
+msgid "Medium Risk"
+msgstr "Riesgo Medio"
+
+msgid "Low Risk"
+msgstr "Riesgo Bajo"
+
+msgid "Monthly"
+msgstr "Mensual"
+
+msgid "Quarterly"
+msgstr "Trimestral"
+
+msgid "Yearly"
+msgstr "Anual"
+
+msgid "Monthly Target"
+msgstr "Objetivo Mensual"
+
+msgid "Quarterly Target"
+msgstr "Objetivo Trimestral"
+
+msgid "Annual Target"
+msgstr "Objetivo Anual"
+
+# Performance metrics
+msgid "Avg Balance"
+msgstr "Saldo Promedio"
+
+msgid "Collection Rate"
+msgstr "Tasa de Cobro"
+
+msgid "DSO Days"
+msgstr "DSO (Días)"
+
+msgid "Future Payments"
+msgstr "Pagos Futuros"
+
+msgid "Monthly Growth"
+msgstr "Crecimiento Mensual"
+
+msgid "YTD Performance"
+msgstr "Rendimiento del Año"
+
+msgid "Customer Retention"
+msgstr "Retención de Clientes"
+
+# Alerts and summaries
+msgid "Products unavailable"
+msgstr "Productos no disponibles"
+
+msgid "Est. Lost Sales"
+msgstr "Ventas Perdidas Est."
+
+msgid "Products need reorder"
+msgstr "Productos necesitan reorden"
+
+msgid "Value at Risk"
+msgstr "Valor en Riesgo"
+
+msgid "Excess inventory"
+msgstr "Inventario excesivo"
+
+msgid "Tied Capital"
+msgstr "Capital Inmovilizado"
+
+msgid "No sales 365+ days"
+msgstr "Sin ventas 365+ días"
+
+msgid "Trapped Value"
+msgstr "Valor Atrapado"
+
+msgid "Monthly Cost"
+msgstr "Costo Mensual"
+
+msgid "Potential Lost Sales"
+msgstr "Ventas Perdidas Potenciales"
+
+msgid "Excess Carrying Cost"
+msgstr "Costo Excesivo de Almacenamiento"
+
+msgid "Key Insights"
+msgstr "Insights Clave"
+
+msgid "Loading insights..."
+msgstr "Cargando insights..."
+
+msgid "Recommended Actions"
+msgstr "Acciones Recomendadas"
+
+msgid "Loading recommendations..."
+msgstr "Cargando recomendaciones..."
+
+msgid "Urgent Actions"
+msgstr "Acciones Urgentes"
+
+msgid "Medium Priority"
+msgstr "Prioridad Media"
+
+msgid "Optimization Ideas"
+msgstr "Ideas de Optimización"
+
+msgid "Positive Trends"
+msgstr "Tendencias Positivas"
+
+msgid "Areas for Improvement"
+msgstr "Áreas de Mejora"
+
+msgid "Recommendations"
+msgstr "Recomendaciones"
+
+# Time periods
+msgid "Times per year"
+msgstr "Veces por año"
+
+msgid "Monthly cost"
+msgstr "Costo mensual"
+
+msgid "Potential savings"
+msgstr "Ahorros potenciales"
+
+msgid "Annual Savings"
+msgstr "Ahorros Anuales"
+
+msgid "Target: 6x per year"
+msgstr "Meta: 6x por año"
+
+msgid "2%% of inventory value"
+msgstr "2%% del valor del inventario"
+
+msgid "From dead stock reduction"
+msgstr "Por reducción de stock muerto"
+
+# Tooltips
+msgid "Stock Turnover Rate Tooltip"
+msgstr "Mide cuántas veces por año se rota completamente el inventario. 4.2x significa que el inventario se convierte en ventas 4.2 veces al año. Meta ideal: 6x+ para mejor eficiencia de capital y flujo de caja."
+
+msgid "Carrying Cost Tooltip"
+msgstr "Costo mensual de mantener el inventario actual. Incluye almacenamiento, seguros, servicios, costo de oportunidad del capital y riesgo de obsolescencia. Equivale al 2% del valor total del inventario por mes."
+
+msgid "Optimization Potential Tooltip"
+msgstr "Ahorro potencial total por optimización de inventario. Suma del valor de inventario muerto + exceso de stock. Representa capital que puede liberarse mediante liquidación, descuentos o mejor gestión de demanda."
+
+msgid "Overall Turnover Rate Tooltip"
+msgstr "Indica cuántas veces al año se convierte el inventario en ventas. Un valor alto significa mejor eficiencia de capital. Meta: 6x por año. Cálculo: (Ventas Anuales ÷ Valor Promedio de Inventario) × 100"
+
+msgid "High Velocity Products Tooltip"
+msgstr "Productos que rotan 4+ veces por año. Son los más rentables y eficientes en términos de capital. Requieren reabastecimiento frecuente pero generan flujo de caja constante."
+
+msgid "Low Velocity Products Tooltip"
+msgstr "Productos que rotan menos de 2 veces por año. Consumen capital y espacio de almacén. Considerar descuentos, promociones o descontinuar según demanda."
+
+msgid "No Movement Tooltip"
+msgstr "Productos sin ventas en los últimos 12 meses. Inventario muerto que genera costos de almacenamiento sin retorno. Acción urgente: liquidar o descartar."
+
+msgid "Dead Stock Value Tooltip"
+msgstr "Valor total del inventario sin movimiento por más de 365 días. Este capital está 'muerto' y genera solo costos sin retorno. Acción urgente: liquidar mediante descuentos o promociones."
+
+msgid "Low Stock Risk Tooltip"
+msgstr "Riesgo de pérdida de ventas por productos con stock bajo. Incluye productos con menos de 1 mes de inventario según la demanda histórica. Acción: reabastecer urgentemente."
+
+msgid "Overstock Value Tooltip"
+msgstr "Valor del inventario excesivo (más de 6 meses de suministro). Capital inmovilizado que genera costos de almacenamiento. Acción: reducir pedidos futuros y considerar promociones."
+
+msgid "Cash flow forecast prediction based on trend algorithms, seasonality and exponential smoothing"
+msgstr "Predicción de flujo de caja futuro basada en algoritmos de tendencia, estacionalidad y suavizado exponencial"
+
+msgid "Prediction based on trend analysis, seasonal patterns and exponential smoothing"
+msgstr "Predicción basada en análisis de tendencia, patrones estacionales y suavizado exponencial"
+
+# Error messages and alerts
+msgid "No data available for this period"
+msgstr "No hay datos disponibles para este período"
+
+msgid "No sales trend data available"
+msgstr "No hay datos de tendencia de ventas disponibles"
+
+msgid "No customer data available"
+msgstr "No hay datos de clientes disponibles"
+
+msgid "No payment trend data available"
+msgstr "No hay datos de tendencia de pagos disponibles"
+
+# Additional labels
+msgid "Total Revenue (ARS)"
+msgstr "Ingresos Totales (ARS)"
+
+msgid "Units"
+msgstr "Unidades"
+
+msgid "Monthly Revenue"
+msgstr "Ingresos Mensuales"
+
+msgid "Forecasted Revenue (ARS)"
+msgstr "Ingresos Pronosticados (ARS)"
+
+msgid "Amount"
+msgstr "Monto"
+
+msgid "Cash Flow"
+msgstr "Flujo de Efectivo"
+
+msgid "Historical Cash Flow"
+msgstr "Flujo de Efectivo Histórico"
+
+msgid "No cash flow data available"
+msgstr "No hay datos de flujo de efectivo disponibles"
+
+msgid "No category data available"
+msgstr "No hay datos de categorías disponibles"
+
+msgid "Historical"
+msgstr "Histórico"
+
+msgid "Forecast"
+msgstr "Pronóstico"
+
+msgid "Confidence Interval"
+msgstr "Intervalo de Confianza"
+
+msgid "Outstanding Balance"
+msgstr "Saldo Pendiente"
+
+msgid "Payments"
+msgstr "Pagos"
+
+msgid "No historical data available"
+msgstr "No hay datos históricos disponibles"
+
+msgid "No forecast data available"
+msgstr "No hay datos de pronóstico disponibles"
 
 # Language selector
 msgid "Language"

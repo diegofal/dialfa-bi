@@ -70,6 +70,32 @@ def cash_flow_forecast():
         logger.error(f"Cash flow forecast error: {e}")
         return jsonify({'error': str(e), 'status': 'error'}), 500
 
+@financial_bp.route('/api/billing-monthly')
+def billing_monthly():
+    """Get monthly billing from xERP"""
+    try:
+        data = current_app.sales_analytics.get_xerp_billed_monthly()
+        return jsonify({
+            'data': data,
+            'status': 'success'
+        })
+    except Exception as e:
+        logger.error(f"Monthly billing error: {e}")
+        return jsonify({'error': str(e), 'status': 'error'}), 500
+
+@financial_bp.route('/api/billing-today')
+def billing_today():
+    """Get today's billing from xERP"""
+    try:
+        data = current_app.sales_analytics.get_xerp_billed_today()
+        return jsonify({
+            'data': data,
+            'status': 'success'
+        })
+    except Exception as e:
+        logger.error(f"Today billing error: {e}")
+        return jsonify({'error': str(e), 'status': 'error'}), 500
+
 @financial_bp.route('/api/top-customers')
 def top_customers():
     """Get top customers by balance"""

@@ -98,14 +98,21 @@
                     <!-- Language Selector -->
                     <li class="nav-item dropdown">
                         <a class="nav-link dropdown-toggle" href="#" id="languageDropdown" role="button" data-bs-toggle="dropdown">
-                            <i class="bi bi-translate"></i> {{ _('Language') }}
+                            <i class="bi bi-translate"></i> 
+                            {% if get_locale()|string == 'es' %}
+                                Español
+                            {% else %}
+                                English
+                            {% endif %}
                         </a>
                         <ul class="dropdown-menu dropdown-menu-end">
-                            <li><a class="dropdown-item" href="#" onclick="setLanguage('es')">
-                                <i class="bi bi-flag"></i> {{ _('Spanish') }}
+                            <li><a class="dropdown-item {% if get_locale()|string == 'es' %}active{% endif %}" href="#" onclick="setLanguage('es')">
+                                <i class="bi bi-flag"></i> Español
+                                {% if get_locale()|string == 'es' %}<i class="bi bi-check-circle-fill ms-2 text-success"></i>{% endif %}
                             </a></li>
-                            <li><a class="dropdown-item" href="#" onclick="setLanguage('en')">
-                                <i class="bi bi-flag"></i> {{ _('English') }}
+                            <li><a class="dropdown-item {% if get_locale()|string == 'en' %}active{% endif %}" href="#" onclick="setLanguage('en')">
+                                <i class="bi bi-flag"></i> English
+                                {% if get_locale()|string == 'en' %}<i class="bi bi-check-circle-fill ms-2 text-success"></i>{% endif %}
                             </a></li>
                         </ul>
                     </li>

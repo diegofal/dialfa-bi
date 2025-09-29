@@ -35,20 +35,24 @@ def create_app():
     
     # Initialize Babel for internationalization
     babel = Babel()
-    babel.init_app(app)
     
     def get_locale():
         # 1. Check if language is set in session
         if 'language' in session:
-            return session['language']
+            lang = session['language']
+            app.logger.info(f"Language from session: {lang}")
+            return lang
         # 2. Check if language is in URL parameters
         if request.args.get('lang'):
             session['language'] = request.args.get('lang')
+            app.logger.info(f"Language from URL: {session['language']}")
             return session['language']
         # 3. Use browser's preferred language
-        return request.accept_languages.best_match(app.config['LANGUAGES'].keys()) or app.config['BABEL_DEFAULT_LOCALE']
+        default_lang = request.accept_languages.best_match(app.config['LANGUAGES'].keys()) or app.config['BABEL_DEFAULT_LOCALE']
+        app.logger.info(f"Language from browser/default: {default_lang}")
+        return default_lang
     
-    babel.locale_selector_func = get_locale
+    babel.init_app(app, locale_selector=get_locale)
     
     # Make get_locale and translation functions available in templates
     @app.context_processor
@@ -161,7 +165,15 @@ def create_app():
         """Set the language preference"""
         if language in app.config['LANGUAGES']:
             session['language'] = language
+            app.logger.info(f"Language set to: {language}")
         return jsonify({'status': 'success', 'language': session.get('language', 'es')})
+    
+    @app.route('/clear_session')
+    def clear_session():
+        """Clear session (for debugging)"""
+        session.clear()
+        app.logger.info("Session cleared")
+        return jsonify({'status': 'success', 'message': 'Session cleared'})
     
     @app.errorhandler(404)
     def not_found(error):

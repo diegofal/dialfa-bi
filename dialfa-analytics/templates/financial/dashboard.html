@@ -7,9 +7,9 @@
     <div class="col">
         <h1 class="h2">
             <i class="bi bi-currency-dollar"></i>
-            Financial Analytics
+            {{ _('Financial Analytics') }}
         </h1>
-        <p class="text-muted">Comprehensive financial analysis, credit risk management, and cash flow forecasting</p>
+        <p class="text-muted">{{ _('Comprehensive financial analysis, credit risk management, and cash flow forecasting') }}</p>
     </div>
 </div>
 
@@ -19,8 +19,8 @@
         <div class="card metric-card border-primary">
             <div class="card-body text-center">
                 <i class="bi bi-cash-stack text-primary mb-2" style="font-size: 2rem;"></i>
-                <h3 id="total-outstanding" class="text-primary">Loading...</h3>
-                <p class="card-text">Total Outstanding</p>
+                <h3 id="total-outstanding" class="text-primary">{{ _('Loading...') }}</h3>
+                <p class="card-text">{{ _('Total Outstanding') }}</p>
             </div>
         </div>
     </div>
@@ -28,8 +28,8 @@
         <div class="card metric-card border-danger">
             <div class="card-body text-center">
                 <i class="bi bi-exclamation-triangle text-danger mb-2" style="font-size: 2rem;"></i>
-                <h3 id="total-overdue" class="text-danger">Loading...</h3>
-                <p class="card-text">Total Overdue</p>
+                <h3 id="total-overdue" class="text-danger">{{ _('Loading...') }}</h3>
+                <p class="card-text">{{ _('Total Overdue') }}</p>
             </div>
         </div>
     </div>
@@ -37,8 +37,8 @@
         <div class="card metric-card border-warning">
             <div class="card-body text-center">
                 <i class="bi bi-percent text-warning mb-2" style="font-size: 2rem;"></i>
-                <h3 id="overdue-percentage" class="text-warning">Loading...</h3>
-                <p class="card-text">Overdue %</p>
+                <h3 id="overdue-percentage" class="text-warning">{{ _('Loading...') }}</h3>
+                <p class="card-text">{{ _('Overdue %') }}</p>
             </div>
         </div>
     </div>
@@ -46,8 +46,8 @@
         <div class="card metric-card border-info">
             <div class="card-body text-center">
                 <i class="bi bi-people text-info mb-2" style="font-size: 2rem;"></i>
-                <h3 id="unique-customers" class="text-info">Loading...</h3>
-                <p class="card-text">Active Customers</p>
+                <h3 id="unique-customers" class="text-info">{{ _('Loading...') }}</h3>
+                <p class="card-text">{{ _('Active Customers') }}</p>
             </div>
         </div>
     </div>
@@ -79,7 +79,7 @@
                         <i class="bi bi-graph-up-arrow"></i>
                         {{ _('Cash Flow Forecast') }}
                         <i class="bi bi-question-circle" data-bs-toggle="tooltip" data-bs-placement="top" 
-                           title="{{ _('Predicción de flujo de caja futuro basada en algoritmos de tendencia, estacionalidad y suavizado exponencial') }}"></i>
+                           title="{{ _('Cash flow forecast prediction based on trend algorithms, seasonality and exponential smoothing') }}"></i>
                     </h5>
                     <div class="btn-group" role="group">
                         <button type="button" class="btn btn-outline-success btn-sm active" onclick="changeForecastPeriod(6)">6M</button>
@@ -91,7 +91,7 @@
                     <div class="mt-2">
                         <small class="text-muted">
                             <i class="bi bi-info-circle"></i>
-                            {{ _('Predicción basada en análisis de tendencia, patrones estacionales y suavizado exponencial') }}
+                            {{ _('Prediction based on trend analysis, seasonal patterns and exponential smoothing') }}
                         </small>
                     </div>
                 </div>
@@ -102,7 +102,7 @@
             <div class="card-header">
                 <h5 class="card-title mb-0">
                     <i class="bi bi-pie-chart"></i>
-                    Risk Distribution
+                    {{ _('Risk Distribution') }}
                 </h5>
             </div>
             <div class="card-body">
@@ -119,13 +119,13 @@
             <div class="card-header d-flex justify-content-between align-items-center">
                 <h5 class="card-title mb-0">
                     <i class="bi bi-shield-exclamation"></i>
-                    Credit Risk Analysis
+                    {{ _('Credit Risk Analysis') }}
                 </h5>
                 <div class="btn-group" role="group">
-                    <button type="button" class="btn btn-outline-primary btn-sm" onclick="filterRisk('all')">All</button>
-                    <button type="button" class="btn btn-outline-danger btn-sm" onclick="filterRisk('HIGH RISK')">High Risk</button>
-                    <button type="button" class="btn btn-outline-warning btn-sm" onclick="filterRisk('MEDIUM RISK')">Medium Risk</button>
-                    <button type="button" class="btn btn-outline-success btn-sm" onclick="filterRisk('LOW RISK')">Low Risk</button>
+                    <button type="button" class="btn btn-outline-primary btn-sm" onclick="filterRisk('all')">{{ _('All') }}</button>
+                    <button type="button" class="btn btn-outline-danger btn-sm" onclick="filterRisk('HIGH RISK')">{{ _('High Risk') }}</button>
+                    <button type="button" class="btn btn-outline-warning btn-sm" onclick="filterRisk('MEDIUM RISK')">{{ _('Medium Risk') }}</button>
+                    <button type="button" class="btn btn-outline-success btn-sm" onclick="filterRisk('LOW RISK')">{{ _('Low Risk') }}</button>
                 </div>
             </div>
             <div class="card-body">
@@ -133,18 +133,18 @@
                     <table class="table table-hover" id="credit-risk-table">
                         <thead>
                             <tr>
-                                <th>Customer</th>
-                                <th>Current Balance</th>
-                                <th>Overdue Amount</th>
-                                <th>Overdue %</th>
-                                <th>Risk Level</th>
-                                <th>Risk Score</th>
-                                <th>Actions</th>
+                                <th>{{ _('Customer') }}</th>
+                                <th>{{ _('Current Balance') }}</th>
+                                <th>{{ _('Overdue Amount') }}</th>
+                                <th>{{ _('Overdue %') }}</th>
+                                <th>{{ _('Risk Level') }}</th>
+                                <th>{{ _('Risk Score') }}</th>
+                                <th>{{ _('Actions') }}</th>
                             </tr>
                         </thead>
                         <tbody id="credit-risk-tbody">
                             <tr>
-                                <td colspan="7" class="text-center">Loading...</td>
+                                <td colspan="7" class="text-center">{{ _('Loading...') }}</td>
                             </tr>
                         </tbody>
                     </table>
@@ -161,7 +161,7 @@
             <div class="card-header">
                 <h5 class="card-title mb-0">
                     <i class="bi bi-trophy"></i>
-                    Top Customers by Revenue
+                    {{ _('Top Customers by Revenue') }}
                 </h5>
             </div>
             <div class="card-body">
@@ -174,7 +174,7 @@
             <div class="card-header">
                 <h5 class="card-title mb-0">
                     <i class="bi bi-calendar-month"></i>
-                    Monthly Payment Trends
+                    {{ _('Monthly Payment Trends') }}
                 </h5>
             </div>
             <div class="card-body">
@@ -191,45 +191,45 @@
             <div class="card-header">
                 <h5 class="card-title mb-0">
                     <i class="bi bi-speedometer2"></i>
-                    Key Performance Indicators
+                    {{ _('Key Performance Indicators') }}
                 </h5>
             </div>
             <div class="card-body">
                 <div class="row">
                     <div class="col-md-2">
                         <div class="text-center">
-                            <h4 id="avg-balance" class="text-primary">Loading...</h4>
-                            <small class="text-muted">Avg Balance</small>
+                            <h4 id="avg-balance" class="text-primary">{{ _('Loading...') }}</h4>
+                            <small class="text-muted">{{ _('Avg Balance') }}</small>
                         </div>
                     </div>
                     <div class="col-md-2">
                         <div class="text-center">
-                            <h4 id="collection-rate" class="text-success">Loading...</h4>
-                            <small class="text-muted">Collection Rate</small>
+                            <h4 id="collection-rate" class="text-success">{{ _('Loading...') }}</h4>
+                            <small class="text-muted">{{ _('Collection Rate') }}</small>
                         </div>
                     </div>
                     <div class="col-md-2">
                         <div class="text-center">
-                            <h4 id="days-sales-outstanding" class="text-warning">Loading...</h4>
-                            <small class="text-muted">DSO (Days)</small>
+                            <h4 id="days-sales-outstanding" class="text-warning">{{ _('Loading...') }}</h4>
+                            <small class="text-muted">{{ _('DSO Days') }}</small>
                         </div>
                     </div>
                     <div class="col-md-2">
                         <div class="text-center">
-                            <h4 id="future-payments" class="text-info">Loading...</h4>
-                            <small class="text-muted">Future Payments</small>
+                            <h4 id="future-payments" class="text-info">{{ _('Loading...') }}</h4>
+                            <small class="text-muted">{{ _('Future Payments') }}</small>
                         </div>
                     </div>
                     <div class="col-md-2">
                         <div class="text-center">
-                            <h4 id="monthly-billing" class="text-primary">Loading...</h4>
-                            <small class="text-muted">This Month</small>
+                            <h4 id="monthly-billing" class="text-primary">{{ _('Loading...') }}</h4>
+                            <small class="text-muted" id="monthly-billing-label">{{ _('Billed This Month') }}</small>
                         </div>
                     </div>
                     <div class="col-md-2">
                         <div class="text-center">
-                            <h4 id="daily-billing" class="text-success">Loading...</h4>
-                            <small class="text-muted">Today</small>
+                            <h4 id="daily-billing" class="text-success">{{ _('Loading...') }}</h4>
+                            <small class="text-muted">{{ _('Billed Today') }}</small>
                         </div>
                     </div>
                 </div>
@@ -239,6 +239,19 @@
 </div>
 
 <script>
+// Translations object for JavaScript
+const i18n = {
+    month: "{{ _('Month') }}",
+    amount: "{{ _('Amount') }}",
+    historical: "{{ _('Historical') }}",
+    forecast: "{{ _('Forecast') }}",
+    confidenceInterval: "{{ _('Confidence Interval') }}",
+    outstandingBalance: "{{ _('Outstanding Balance') }}",
+    payments: "{{ _('Payments') }}",
+    noHistoricalData: "{{ _('No historical data available') }}",
+    noForecastData: "{{ _('No forecast data available') }}"
+};
+
 // Load financial data when page loads
 document.addEventListener('DOMContentLoaded', function() {
     loadFinancialData();
@@ -286,7 +299,7 @@ function loadCashFlowHistoryChart(months = 12) {
 
 function createCashFlowHistoryChart(data) {
     if (!data || data.length === 0) {
-        document.getElementById('cash-flow-history-chart').innerHTML = '<div class="alert alert-info">No historical data available</div>';
+        document.getElementById('cash-flow-history-chart').innerHTML = `<div class="alert alert-info">${i18n.noHistoricalData}</div>`;
         return;
     }
 
@@ -295,15 +308,15 @@ function createCashFlowHistoryChart(data) {
         y: data.map(d => d.ActualPayments),
         type: 'scatter',
         mode: 'lines+markers',
-        name: 'Historical Cash Flow',
+        name: i18n.historical,
         line: { color: '#033663', width: 3 },
         marker: { size: 8, color: '#033663' }
     };
 
     const layout = {
         title: '',
-        xaxis: { title: 'Month', showgrid: true, gridcolor: '#e9ecef' },
-        yaxis: { title: 'Amount (ARS)', tickformat: '$,.0f', showgrid: true, gridcolor: '#e9ecef' },
+        xaxis: { title: i18n.month, showgrid: true, gridcolor: '#e9ecef' },
+        yaxis: { title: i18n.amount + ' (ARS)', tickformat: '$,.0f', showgrid: true, gridcolor: '#e9ecef' },
         margin: { t: 20, r: 40, b: 60, l: 80 },
         plot_bgcolor: 'rgba(0,0,0,0)',
         paper_bgcolor: 'rgba(0,0,0,0)'
@@ -326,7 +339,7 @@ function loadCashFlowForecastChart(months = 6) {
 
 function createCashFlowForecastChart(data) {
     if (!data || data.length === 0) {
-        document.getElementById('cash-flow-forecast-chart').innerHTML = '<div class="alert alert-info">No forecast data available</div>';
+        document.getElementById('cash-flow-forecast-chart').innerHTML = `<div class="alert alert-info">${i18n.noForecastData}</div>`;
         return;
     }
 
@@ -343,7 +356,7 @@ function createCashFlowForecastChart(data) {
             y: historicalData.map(d => d.ActualPayments),
             type: 'scatter',
             mode: 'lines+markers',
-            name: 'Historical',
+            name: i18n.historical,
             line: { color: '#033663', width: 3 },
             marker: { size: 8, color: '#033663' }
         });
@@ -356,7 +369,7 @@ function createCashFlowForecastChart(data) {
             y: forecastData.map(d => d.ForecastedPayments),
             type: 'scatter',
             mode: 'lines+markers',
-            name: 'Forecast',
+            name: i18n.forecast,
             line: { color: '#28a745', width: 3, dash: 'dash' },
             marker: { size: 8, color: '#28a745', symbol: 'diamond' }
         });
@@ -372,7 +385,7 @@ function createCashFlowForecastChart(data) {
             fill: 'toself',
             fillcolor: 'rgba(40, 167, 69, 0.2)',
             line: { color: 'rgba(255,255,255,0)' },
-            name: 'Confidence Interval',
+            name: i18n.confidenceInterval,
             showlegend: true,
             hoverinfo: 'skip'
         });
@@ -380,8 +393,8 @@ function createCashFlowForecastChart(data) {
 
     const layout = {
         title: '',
-        xaxis: { title: 'Month', showgrid: true, gridcolor: '#e9ecef' },
-        yaxis: { title: 'Amount (ARS)', tickformat: '$,.0f', showgrid: true, gridcolor: '#e9ecef' },
+        xaxis: { title: i18n.month, showgrid: true, gridcolor: '#e9ecef' },
+        yaxis: { title: i18n.amount + ' (ARS)', tickformat: '$,.0f', showgrid: true, gridcolor: '#e9ecef' },
         margin: { t: 20, r: 40, b: 60, l: 80 },
         plot_bgcolor: 'rgba(0,0,0,0)',
         paper_bgcolor: 'rgba(0,0,0,0)',
@@ -505,7 +518,7 @@ function createTopCustomersChart(data) {
 
     const layout = {
         title: '',
-        xaxis: { title: 'Outstanding Balance (ARS)', tickformat: '$,.0f' },
+        xaxis: { title: i18n.outstandingBalance + ' (ARS)', tickformat: '$,.0f' },
         yaxis: { title: '' },
         margin: { t: 20, r: 40, b: 60, l: 120 }
     };
@@ -539,8 +552,8 @@ function createPaymentTrendsChart(data) {
 
     const layout = {
         title: '',
-        xaxis: { title: 'Month' },
-        yaxis: { title: 'Payments (ARS)', tickformat: '$,.0f' },
+        xaxis: { title: i18n.month },
+        yaxis: { title: i18n.payments + ' (ARS)', tickformat: '$,.0f' },
         margin: { t: 20, r: 40, b: 60, l: 80 }
     };
 
@@ -566,21 +579,30 @@ function loadFinancialKPIs() {
             }
         });
 
-    fetch('/api/retool/spisa/billed-monthly')
+    // Facturación real desde xERP (lo que realmente importa)
+    fetch('/financial/api/billing-monthly')
         .then(response => response.json())
         .then(data => {
-            if (data.status === 'success' && data.data.length > 0) {
-                document.getElementById('monthly-billing').textContent = formatCurrency(data.data[0].InvoiceAmount, 'ARS');
+            if (data.status === 'success' && data.data) {
+                document.getElementById('monthly-billing').textContent = formatCurrency(data.data.BilledMonthly, 'ARS');
+                // Actualizar etiqueta con mes actual
+                const currentMonth = new Date().toLocaleDateString('es-ES', { month: 'long' });
+                const monthLabel = document.getElementById('monthly-billing-label');
+                if (monthLabel) {
+                    monthLabel.textContent = `Facturado en ${currentMonth.charAt(0).toUpperCase() + currentMonth.slice(1)}`;
+                }
             }
-        });
+        })
+        .catch(error => console.error('Error loading monthly billing:', error));
 
-    fetch('/api/retool/spisa/billed-today')
+    fetch('/financial/api/billing-today')
         .then(response => response.json())
         .then(data => {
-            if (data.status === 'success' && data.data.length > 0) {
-                document.getElementById('daily-billing').textContent = formatCurrency(data.data[0].InvoiceAmount, 'ARS');
+            if (data.status === 'success' && data.data) {
+                document.getElementById('daily-billing').textContent = formatCurrency(data.data.BilledToday, 'ARS');
             }
-        });
+        })
+        .catch(error => console.error('Error loading today billing:', error));
 
     // Mock some additional KPIs
     document.getElementById('collection-rate').textContent = '78.6%';

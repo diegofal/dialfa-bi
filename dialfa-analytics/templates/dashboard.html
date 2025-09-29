@@ -7,9 +7,9 @@
     <div class="col">
         <h1 class="h2">
             <i class="bi bi-speedometer2"></i>
-            Business Intelligence Dashboard
+            {{ _('Business Intelligence Dashboard') }}
         </h1>
-        <p class="text-muted">Real-time insights into your business performance</p>
+        <p class="text-muted">{{ _('Real-time insights into your business performance') }}</p>
     </div>
 </div>
 
@@ -20,9 +20,9 @@
             <div class="card-body text-white">
                 <div class="d-flex justify-content-between align-items-center">
                     <div>
-                        <h6 class="card-title mb-0">Total Outstanding</h6>
-                        <h2 class="mb-0" id="total-outstanding">Loading...</h2>
-                        <small class="opacity-75">Accounts Receivable</small>
+                        <h6 class="card-title mb-0">{{ _('Total Outstanding') }}</h6>
+                        <h2 class="mb-0" id="total-outstanding">{{ _('Loading...') }}</h2>
+                        <small class="opacity-75">{{ _('Accounts Receivable') }}</small>
                     </div>
                     <div class="opacity-75">
                         <i class="bi bi-currency-dollar" style="font-size: 2rem;"></i>
@@ -37,9 +37,9 @@
             <div class="card-body text-white">
                 <div class="d-flex justify-content-between align-items-center">
                     <div>
-                        <h6 class="card-title mb-0">Overdue Amount</h6>
-                        <h2 class="mb-0" id="total-overdue">Loading...</h2>
-                        <small class="opacity-75">Requires Attention</small>
+                        <h6 class="card-title mb-0">{{ _('Overdue Amount') }}</h6>
+                        <h2 class="mb-0" id="total-overdue">{{ _('Loading...') }}</h2>
+                        <small class="opacity-75">{{ _('Requires Attention') }}</small>
                     </div>
                     <div class="opacity-75">
                         <i class="bi bi-exclamation-triangle" style="font-size: 2rem;"></i>
@@ -54,12 +54,12 @@
             <div class="card-body text-white">
                 <div class="d-flex justify-content-between align-items-center">
                     <div>
-                        <h6 class="card-title mb-0">Active Customers</h6>
-                        <h2 class="mb-0" id="unique-customers">Loading...</h2>
-                        <small class="opacity-75">With Balances</small>
+                        <h6 class="card-title mb-0" id="monthly-billing-label">{{ _('Billed This Month') }}</h6>
+                        <h2 class="mb-0" id="monthly-billing">{{ _('Loading...') }}</h2>
+                        <small class="opacity-75">{{ _('Monthly Sales') }}</small>
                     </div>
                     <div class="opacity-75">
-                        <i class="bi bi-people" style="font-size: 2rem;"></i>
+                        <i class="bi bi-receipt" style="font-size: 2rem;"></i>
                     </div>
                 </div>
             </div>
@@ -71,12 +71,12 @@
             <div class="card-body text-white">
                 <div class="d-flex justify-content-between align-items-center">
                     <div>
-                        <h6 class="card-title mb-0">Average Balance</h6>
-                        <h2 class="mb-0" id="avg-balance">Loading...</h2>
-                        <small class="opacity-75">Per Customer</small>
+                        <h6 class="card-title mb-0">{{ _('Billed Today') }}</h6>
+                        <h2 class="mb-0" id="daily-billing">{{ _('Loading...') }}</h2>
+                        <small class="opacity-75">{{ _('Daily Sales') }}</small>
                     </div>
                     <div class="opacity-75">
-                        <i class="bi bi-graph-up" style="font-size: 2rem;"></i>
+                        <i class="bi bi-calendar-check" style="font-size: 2rem;"></i>
                     </div>
                 </div>
             </div>
@@ -92,7 +92,7 @@
             <div class="card-header d-flex justify-content-between align-items-center">
                 <h5 class="mb-0">
                     <i class="bi bi-graph-up"></i>
-                    Cash Flow Trend
+                    {{ _('Cash Flow Trend') }}
                 </h5>
                 <div class="btn-group btn-group-sm" role="group">
                     <button type="button" class="btn btn-outline-primary active" onclick="loadCashFlowChart(6)">6M</button>
@@ -111,7 +111,7 @@
             <div class="card-header">
                 <h5 class="mb-0">
                     <i class="bi bi-star"></i>
-                    Top Customers
+                    {{ _('Top Customers') }}
                 </h5>
             </div>
             <div class="card-body">
@@ -135,7 +135,7 @@
             <div class="card-header">
                 <h5 class="mb-0">
                     <i class="bi bi-graph-up-arrow"></i>
-                    Monthly Sales Trend
+                    {{ _('Monthly Sales Trend') }}
                 </h5>
             </div>
             <div class="card-body">
@@ -150,7 +150,7 @@
             <div class="card-header">
                 <h5 class="mb-0">
                     <i class="bi bi-pie-chart"></i>
-                    Inventory by Category
+                    {{ _('Inventory by Category') }}
                 </h5>
             </div>
             <div class="card-body">
@@ -167,10 +167,10 @@
             <div class="card-header d-flex justify-content-between align-items-center">
                 <h5 class="mb-0">
                     <i class="bi bi-shield-exclamation"></i>
-                    Credit Risk Analysis
+                    {{ _('Credit Risk Analysis') }}
                 </h5>
                 <a href="/financial" class="btn btn-outline-primary btn-sm">
-                    View All <i class="bi bi-arrow-right"></i>
+                    {{ _('View All') }} <i class="bi bi-arrow-right"></i>
                 </a>
             </div>
             <div class="card-body">
@@ -178,19 +178,19 @@
                     <table class="table table-hover" id="credit-risk-table">
                         <thead>
                             <tr>
-                                <th>Customer</th>
-                                <th>Current Balance</th>
-                                <th>Overdue Amount</th>
-                                <th>Overdue %</th>
-                                <th>Risk Level</th>
-                                <th>Risk Score</th>
+                                <th>{{ _('Customer') }}</th>
+                                <th>{{ _('Current Balance') }}</th>
+                                <th>{{ _('Overdue Amount') }}</th>
+                                <th>{{ _('Overdue %') }}</th>
+                                <th>{{ _('Risk Level') }}</th>
+                                <th>{{ _('Risk Score') }}</th>
                             </tr>
                         </thead>
                         <tbody>
                             <tr>
                                 <td colspan="6" class="text-center">
                                     <div class="spinner-border" role="status">
-                                        <span class="visually-hidden">Loading...</span>
+                                        <span class="visually-hidden">{{ _('Loading...') }}</span>
                                     </div>
                                 </td>
                             </tr>
@@ -205,6 +205,19 @@
 
 {% block scripts %}
 <script>
+// Translations object for JavaScript
+const i18n = {
+    month: "{{ _('Month') }}",
+    amount: "{{ _('Amount') }}",
+    cashFlow: "{{ _('Cash Flow') }}",
+    historicalCashFlow: "{{ _('Historical Cash Flow') }}",
+    noCashFlowData: "{{ _('No cash flow data available') }}",
+    noCustomerData: "{{ _('No customer data available') }}",
+    noSalesTrendData: "{{ _('No sales trend data available') }}",
+    noCategoryData: "{{ _('No category data available') }}",
+    monthlyRevenue: "{{ _('Monthly Revenue') }}"
+};
+
 // Load dashboard data when page loads
 document.addEventListener('DOMContentLoaded', function() {
     loadDashboardData();
@@ -233,9 +246,32 @@ function updateMetricCards(financial, inventory, sales) {
     if (financial) {
         document.getElementById('total-outstanding').textContent = financial.formatted.total_outstanding;
         document.getElementById('total-overdue').textContent = financial.formatted.total_overdue;
-        document.getElementById('unique-customers').textContent = financial.unique_customers || 0;
-        document.getElementById('avg-balance').textContent = financial.formatted.avg_balance;
     }
+    
+    // Facturación real desde xERP (lo que realmente importa)
+    fetch('/financial/api/billing-monthly')
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success' && data.data) {
+                document.getElementById('monthly-billing').textContent = formatCurrency(data.data.BilledMonthly, 'ARS');
+                // Actualizar etiqueta con mes actual
+                const currentMonth = new Date().toLocaleDateString('es-ES', { month: 'long' });
+                const monthLabel = document.getElementById('monthly-billing-label');
+                if (monthLabel) {
+                    monthLabel.textContent = `Facturado en ${currentMonth.charAt(0).toUpperCase() + currentMonth.slice(1)}`;
+                }
+            }
+        })
+        .catch(error => console.error('Error loading monthly billing:', error));
+
+    fetch('/financial/api/billing-today')
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success' && data.data) {
+                document.getElementById('daily-billing').textContent = formatCurrency(data.data.BilledToday, 'ARS');
+            }
+        })
+        .catch(error => console.error('Error loading today billing:', error));
 }
 
 function loadCharts() {
@@ -285,7 +321,7 @@ function createCashFlowChart(data) {
             y: data.map(d => d.ActualPayments),
             type: 'scatter',
             mode: 'lines+markers',
-            name: 'Cash Flow',
+            name: i18n.cashFlow,
             line: { 
                 color: '#033663',
                 width: 3
@@ -299,12 +335,12 @@ function createCashFlowChart(data) {
         const layout = {
             title: '',
             xaxis: { 
-                title: 'Month',
+                title: i18n.month,
                 showgrid: true,
                 gridcolor: '#e9ecef'
             },
             yaxis: { 
-                title: 'Amount ($)',
+                title: i18n.amount + ' ($)',
                 tickformat: '$,.0f',
                 showgrid: true,
                 gridcolor: '#e9ecef'
@@ -324,7 +360,7 @@ function createCashFlowChart(data) {
 
 function createTopCustomersList(customers) {
     if (!customers || customers.length === 0) {
-        document.getElementById('top-customers-list').innerHTML = '<div class="alert alert-info">No customer data available</div>';
+        document.getElementById('top-customers-list').innerHTML = `<div class="alert alert-info">${i18n.noCustomerData}</div>`;
         return;
     }
 
@@ -350,7 +386,7 @@ function createTopCustomersList(customers) {
 
 function createSalesTrendChart(data) {
     if (!data || data.length === 0) {
-        document.getElementById('sales-trend-chart').innerHTML = '<div class="alert alert-info">No sales trend data available</div>';
+        document.getElementById('sales-trend-chart').innerHTML = `<div class="alert alert-info">${i18n.noSalesTrendData}</div>`;
         return;
     }
 
@@ -358,7 +394,7 @@ function createSalesTrendChart(data) {
         x: data.map(d => d.MonthYearLabel || `${d.MonthName} ${d.Year}`),
         y: data.map(d => d.MonthlyRevenue),
         type: 'bar',
-        name: 'Monthly Revenue',
+        name: i18n.monthlyRevenue,
         marker: {
             color: '#28a745'
         }
@@ -366,9 +402,9 @@ function createSalesTrendChart(data) {
 
     const layout = {
         title: '',
-        xaxis: { title: 'Month' },
+        xaxis: { title: i18n.month },
         yaxis: { 
-            title: 'Revenue ($)',
+            title: i18n.amount + ' ($)',
             tickformat: '$,.0f'
         },
         margin: { t: 20, r: 40, b: 60, l: 80 },
@@ -381,7 +417,7 @@ function createSalesTrendChart(data) {
 
 function createCategoryChart(data) {
     if (!data || data.length === 0) {
-        document.getElementById('category-chart').innerHTML = '<div class="alert alert-info">No category data available</div>';
+        document.getElementById('category-chart').innerHTML = `<div class="alert alert-info">${i18n.noCategoryData}</div>`;
         return;
     }
 
