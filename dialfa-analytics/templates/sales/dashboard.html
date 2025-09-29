@@ -538,10 +538,38 @@ function changePeriod(period) {
         .then(response => response.json())
         .then(data => {
             if (data.status === 'success') {
-                createSalesTrendChart(data.data);
+                createPeriodChart(data.data, period);
             }
         })
         .catch(error => console.error('Error loading period data:', error));
+}
+
+function createPeriodChart(data, period) {
+    if (!data || data.length === 0) {
+        document.getElementById('sales-trend-chart').innerHTML = '<div class="alert alert-info">No data available for this period</div>';
+        return;
+    }
+
+    const trace = {
+        x: data.map(d => d.PeriodLabel),
+        y: data.map(d => d.Revenue),
+        type: 'scatter',
+        mode: 'lines+markers',
+        name: `${period.charAt(0).toUpperCase() + period.slice(1)}ly Revenue`,
+        line: { color: '#033663', width: 3 },
+        marker: { size: 8, color: '#033663' }
+    };
+
+    const layout = {
+        title: '',
+        xaxis: { title: period.charAt(0).toUpperCase() + period.slice(1), showgrid: true, gridcolor: '#e9ecef' },
+        yaxis: { title: 'Revenue (ARS)', tickformat: '$,.0f', showgrid: true, gridcolor: '#e9ecef' },
+        margin: { t: 20, r: 40, b: 60, l: 80 },
+        plot_bgcolor: 'rgba(0,0,0,0)',
+        paper_bgcolor: 'rgba(0,0,0,0)'
+    };
+
+    Plotly.newPlot('sales-trend-chart', [trace], layout, {responsive: true});
 }
 </script>
 {% endblock %}

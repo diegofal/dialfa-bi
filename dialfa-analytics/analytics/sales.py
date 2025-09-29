@@ -85,60 +85,78 @@ class SalesAnalytics:
             if period == 'month':
                 period_query = """
                 SELECT 
-                    YEAR(InvoiceDate) as Year,
-                    MONTH(InvoiceDate) as Month,
-                    DATENAME(MONTH, InvoiceDate) as PeriodName,
-                    SUM(InvoiceAmount) as Revenue,
+                    YEAR(ord_date) as Year,
+                    MONTH(ord_date) as Month,
+                    DATENAME(MONTH, ord_date) as PeriodName,
+                    SUM(total * 1.21) as Revenue,
                     COUNT(*) as TransactionCount,
-                    COUNT(DISTINCT CustomerId) as UniqueCustomers
-                FROM Transactions
-                WHERE Type = 1 
-                AND InvoiceDate >= DATEADD(MONTH, -12, GETDATE())
-                AND InvoiceDate > '2020-01-01'
-                GROUP BY YEAR(InvoiceDate), MONTH(InvoiceDate), DATENAME(MONTH, InvoiceDate)
+                    COUNT(DISTINCT so.debtor_no) as UniqueCustomers
+                FROM [0_debtor_trans] dt
+                INNER JOIN [0_sales_orders] so ON so.ID = dt.order_
+                WHERE dt.Type = 10 
+                AND ord_date >= DATEADD(MONTH, -12, GETDATE())
+                AND ord_date > '2020-01-01'
+                GROUP BY YEAR(ord_date), MONTH(ord_date), DATENAME(MONTH, ord_date)
                 ORDER BY Year DESC, Month DESC
                 """
             elif period == 'quarter':
                 period_query = """
                 SELECT 
-                    YEAR(InvoiceDate) as Year,
-                    DATEPART(QUARTER, InvoiceDate) as Quarter,
-                    'Q' + CAST(DATEPART(QUARTER, InvoiceDate) AS VARCHAR) as PeriodName,
-                    SUM(InvoiceAmount) as Revenue,
+                    YEAR(ord_date) as Year,
+                    DATEPART(QUARTER, ord_date) as Quarter,
+                    'Q' + CAST(DATEPART(QUARTER, ord_date) AS VARCHAR) as PeriodName,
+                    SUM(total * 1.21) as Revenue,
                     COUNT(*) as TransactionCount,
-                    COUNT(DISTINCT CustomerId) as UniqueCustomers
-                FROM Transactions
-                WHERE Type = 1 
-                AND InvoiceDate >= DATEADD(YEAR, -2, GETDATE())
-                AND InvoiceDate > '2020-01-01'
-                GROUP BY YEAR(InvoiceDate), DATEPART(QUARTER, InvoiceDate)
+                    COUNT(DISTINCT so.debtor_no) as UniqueCustomers
+                FROM [0_debtor_trans] dt
+                INNER JOIN [0_sales_orders] so ON so.ID = dt.order_
+                WHERE dt.Type = 10 
+                AND ord_date >= DATEADD(YEAR, -2, GETDATE())
+                AND ord_date > '2020-01-01'
+                GROUP BY YEAR(ord_date), DATEPART(QUARTER, ord_date)
                 ORDER BY Year DESC, Quarter DESC
                 """
             else:  # year
                 period_query = """
                 SELECT 
-                    YEAR(InvoiceDate) as Year,
-                    YEAR(InvoiceDate) as PeriodName,
-                    SUM(InvoiceAmount) as Revenue,
+                    YEAR(ord_date) as Year,
+                    YEAR(ord_date) as PeriodName,
+                    SUM(total * 1.21) as Revenue,
                     COUNT(*) as TransactionCount,
-                    COUNT(DISTINCT CustomerId) as UniqueCustomers
-                FROM Transactions
-                WHERE Type = 1 
-                AND InvoiceDate >= DATEADD(YEAR, -5, GETDATE())
-                AND InvoiceDate > '2020-01-01'
-                GROUP BY YEAR(InvoiceDate)
+                    COUNT(DISTINCT so.debtor_no) as UniqueCustomers
+                FROM [0_debtor_trans] dt
+                INNER JOIN [0_sales_orders] so ON so.ID = dt.order_
+                WHERE dt.Type = 10 
+                AND ord_date >= DATEADD(YEAR, -5, GETDATE())
+                AND ord_date > '2020-01-01'
+                GROUP BY YEAR(ord_date)
                 ORDER BY Year DESC
                 """
             
-            df = self.db.execute_query(period_query, 'SPISA')
+            df = self.db.execute_query(period_query, 'xERP')
             df = clean_dataframe(df)
             
             if not df.empty:
                 # Calculate period-over-period growth
+                df = df.sort_values(['Year'] + (['Month'] if period == 'month' else ['Quarter'] if period == 'quarter' else []))
                 df['RevenueGrowth'] = df['Revenue'].pct_change() * 100
-                df['FormattedRevenue'] = df['Revenue'].apply(format_currency)
+                df['RevenueGrowth'] = df['RevenueGrowth'].fillna(0)
+                
+                # Format currency for xERP (ARS)
+                df['FormattedRevenue'] = df['Revenue'].apply(lambda x: format_currency(x, 'ARS', 'xERP'))
                 df['AvgTransactionSize'] = df['Revenue'] / df['TransactionCount']
-                df['FormattedAvgTransaction'] = df['AvgTransactionSize'].apply(format_currency)
+                df['FormattedAvgTransaction'] = df['AvgTransactionSize'].apply(lambda x: format_currency(x, 'ARS', 'xERP'))
+                
+                # Create period labels for display
+                if period == 'month':
+                    df['PeriodLabel'] = df.apply(lambda x: f"{x['PeriodName']} {x['Year']}", axis=1)
+                elif period == 'quarter':
+                    df['PeriodLabel'] = df.apply(lambda x: f"{x['PeriodName']} {x['Year']}", axis=1)
+                else:
+                    df['PeriodLabel'] = df['Year'].astype(str)
+                
+                # Sort back for display (most recent first)
+                df = df.sort_values(['Year'] + (['Month'] if period == 'month' else ['Quarter'] if period == 'quarter' else []), ascending=False)
                 
             return df.to_dict('records')
         except Exception as e:

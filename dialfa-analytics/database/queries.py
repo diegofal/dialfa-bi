@@ -97,7 +97,9 @@ class FinancialQueries:
         SUM(PaymentAmount) as ActualPayments,
         COUNT(*) as TransactionCount
     FROM Transactions 
-    WHERE PaymentDate >= DATEADD(MONTH, -12, GETDATE())
+    WHERE PaymentDate >= DATEADD(MONTH, -{months}, GETDATE())
+    AND PaymentDate <= GETDATE()
+    AND PaymentDate != '0001-01-01 00:00:00'
     AND PaymentDate > '2020-01-01'
     GROUP BY YEAR(PaymentDate), MONTH(PaymentDate)
     ORDER BY Year, Month

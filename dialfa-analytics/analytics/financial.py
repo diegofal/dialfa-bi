@@ -60,20 +60,25 @@ class FinancialAnalytics:
             self.logger.error(f"Error in credit risk analysis: {e}")
             return []
     
-    def get_cash_flow_forecast(self, months=12):
-        """Generate cash flow forecast"""
+    def get_cash_flow_history(self, months=12):
+        """Get historical cash flow data"""
         try:
-            df = self.db.execute_query(self.queries.CASH_FLOW_FORECAST, 'SPISA')
+            query = self.queries.CASH_FLOW_FORECAST.format(months=months)
+            df = self.db.execute_query(query, 'SPISA')
             df = clean_dataframe(df)
             
             if not df.empty:
+                # Sort by Year, Month for proper trend calculation
+                df = df.sort_values(['Year', 'Month'])
+                
                 # Calculate moving averages and trends
                 df['MovingAvg3'] = df['ActualPayments'].rolling(window=3, min_periods=1).mean()
                 df['MovingAvg6'] = df['ActualPayments'].rolling(window=6, min_periods=1).mean()
                 df['MonthOverMonth'] = df['ActualPayments'].pct_change() * 100
                 
-                # Replace NaN values with None for JSON serialization
+                # Replace NaN and inf values with 0 for JSON serialization
                 df = df.fillna(0)
+                df = df.replace([float('inf'), float('-inf')], 0)
                 
                 # Add formatted values
                 df['FormattedPayments'] = df['ActualPayments'].apply(lambda x: format_currency(x, '$', 'SPISA'))
@@ -82,11 +87,240 @@ class FinancialAnalytics:
                 # Create month-year label
                 df['MonthYear'] = df.apply(lambda x: f"{x['Year']}-{x['Month']:02d}", axis=1)
                 
+                # Sort again for display (most recent first or chronological)
+                df = df.sort_values(['Year', 'Month'])
+                
                 return df.to_dict('records')
             return []
         except Exception as e:
+            self.logger.error(f"Error in cash flow history: {e}")
+            return []
+    
+    def get_cash_flow_forecast(self, forecast_months=6):
+        """Generate actual cash flow forecast using multiple algorithms"""
+        try:
+            # Get 24 months of historical data for better predictions
+            historical_query = self.queries.CASH_FLOW_FORECAST.format(months=24)
+            df_historical = self.db.execute_query(historical_query, 'SPISA')
+            df_historical = clean_dataframe(df_historical)
+            
+            if df_historical.empty:
+                return []
+            
+            # Sort and prepare historical data
+            df_historical = df_historical.sort_values(['Year', 'Month'])
+            df_historical['Date'] = pd.to_datetime(df_historical[['Year', 'Month']].assign(day=1))
+            
+            # Generate future dates
+            last_date = df_historical['Date'].max()
+            future_dates = []
+            for i in range(1, forecast_months + 1):
+                future_date = last_date + pd.DateOffset(months=i)
+                future_dates.append({
+                    'Date': future_date,
+                    'Year': future_date.year,
+                    'Month': future_date.month,
+                    'MonthYear': f"{future_date.year}-{future_date.month:02d}"
+                })
+            
+            df_future = pd.DataFrame(future_dates)
+            
+            # Apply multiple forecasting algorithms
+            forecasts = self._apply_forecasting_algorithms(df_historical, df_future)
+            
+            # Combine historical and forecast data
+            result = []
+            
+            # Add historical data (last 6 months for context)
+            historical_context = df_historical.tail(6).copy()
+            for _, row in historical_context.iterrows():
+                result.append({
+                    'Year': int(row['Year']),
+                    'Month': int(row['Month']),
+                    'MonthYear': f"{int(row['Year'])}-{int(row['Month']):02d}",
+                    'ActualPayments': float(row['ActualPayments']),
+                    'ForecastedPayments': None,
+                    'IsHistorical': True,
+                    'Algorithm': 'Historical',
+                    'FormattedPayments': format_currency(row['ActualPayments'], '$', 'SPISA'),
+                    'ConfidenceInterval': None
+                })
+            
+            # Add forecast data
+            for forecast in forecasts:
+                result.append(forecast)
+            
+            return result
+            
+        except Exception as e:
             self.logger.error(f"Error in cash flow forecast: {e}")
             return []
+    
+    def _apply_forecasting_algorithms(self, df_historical, df_future):
+        """Apply multiple forecasting algorithms and combine results"""
+        forecasts = []
+        
+        # Algorithm 1: Linear Trend
+        trend_forecasts = self._linear_trend_forecast(df_historical, df_future)
+        
+        # Algorithm 2: Seasonal Decomposition + Trend
+        seasonal_forecasts = self._seasonal_forecast(df_historical, df_future)
+        
+        # Algorithm 3: Exponential Smoothing
+        exponential_forecasts = self._exponential_smoothing_forecast(df_historical, df_future)
+        
+        # Algorithm 4: Moving Average with Growth
+        moving_avg_forecasts = self._moving_average_forecast(df_historical, df_future)
+        
+        # Combine algorithms with weights
+        for i, row in df_future.iterrows():
+            # Weighted ensemble of forecasts
+            trend_value = trend_forecasts[i] if i < len(trend_forecasts) else 0
+            seasonal_value = seasonal_forecasts[i] if i < len(seasonal_forecasts) else 0
+            exponential_value = exponential_forecasts[i] if i < len(exponential_forecasts) else 0
+            moving_avg_value = moving_avg_forecasts[i] if i < len(moving_avg_forecasts) else 0
+            
+            # Weighted average (adjust weights based on algorithm performance)
+            ensemble_forecast = (
+                trend_value * 0.25 +           # Linear trend
+                seasonal_value * 0.35 +        # Seasonal (highest weight)
+                exponential_value * 0.25 +     # Exponential smoothing
+                moving_avg_value * 0.15        # Moving average
+            )
+            
+            # Calculate confidence interval (±15% for simplicity)
+            confidence_lower = ensemble_forecast * 0.85
+            confidence_upper = ensemble_forecast * 1.15
+            
+            forecasts.append({
+                'Year': int(row['Year']),
+                'Month': int(row['Month']),
+                'MonthYear': row['MonthYear'],
+                'ActualPayments': None,
+                'ForecastedPayments': float(ensemble_forecast),
+                'IsHistorical': False,
+                'Algorithm': 'Ensemble',
+                'FormattedPayments': format_currency(ensemble_forecast, '$', 'SPISA'),
+                'ConfidenceInterval': {
+                    'lower': float(confidence_lower),
+                    'upper': float(confidence_upper),
+                    'formatted_lower': format_currency(confidence_lower, '$', 'SPISA'),
+                    'formatted_upper': format_currency(confidence_upper, '$', 'SPISA')
+                },
+                'ComponentForecasts': {
+                    'trend': float(trend_value),
+                    'seasonal': float(seasonal_value),
+                    'exponential': float(exponential_value),
+                    'moving_average': float(moving_avg_value)
+                }
+            })
+        
+        return forecasts
+    
+    def _linear_trend_forecast(self, df_historical, df_future):
+        """Simple linear trend forecasting"""
+        if len(df_historical) < 2:
+            return [df_historical['ActualPayments'].mean()] * len(df_future)
+        
+        # Create time index
+        x = np.arange(len(df_historical))
+        y = df_historical['ActualPayments'].values
+        
+        # Linear regression
+        slope, intercept = np.polyfit(x, y, 1)
+        
+        # Project future values
+        future_x = np.arange(len(df_historical), len(df_historical) + len(df_future))
+        forecasts = slope * future_x + intercept
+        
+        # Ensure non-negative values
+        forecasts = np.maximum(forecasts, 0)
+        
+        return forecasts.tolist()
+    
+    def _seasonal_forecast(self, df_historical, df_future):
+        """Seasonal decomposition with trend forecasting"""
+        if len(df_historical) < 12:
+            # Not enough data for seasonal analysis, fall back to trend
+            return self._linear_trend_forecast(df_historical, df_future)
+        
+        # Calculate seasonal factors (month-over-month patterns)
+        df_historical['MonthNum'] = df_historical['Month']
+        monthly_avg = df_historical.groupby('MonthNum')['ActualPayments'].mean()
+        overall_avg = df_historical['ActualPayments'].mean()
+        seasonal_factors = monthly_avg / overall_avg
+        
+        # Get trend
+        trend_forecasts = self._linear_trend_forecast(df_historical, df_future)
+        
+        # Apply seasonal adjustment
+        seasonal_forecasts = []
+        for i, row in df_future.iterrows():
+            month_num = row['Month']
+            seasonal_factor = seasonal_factors.get(month_num, 1.0)
+            seasonal_forecast = trend_forecasts[i] * seasonal_factor
+            seasonal_forecasts.append(max(seasonal_forecast, 0))
+        
+        return seasonal_forecasts
+    
+    def _exponential_smoothing_forecast(self, df_historical, df_future):
+        """Exponential smoothing forecasting"""
+        if df_historical.empty:
+            return [0] * len(df_future)
+        
+        alpha = 0.3  # Smoothing parameter
+        values = df_historical['ActualPayments'].values
+        
+        # Initialize
+        smoothed = [values[0]]
+        
+        # Calculate exponential smoothing
+        for i in range(1, len(values)):
+            smoothed_value = alpha * values[i] + (1 - alpha) * smoothed[i-1]
+            smoothed.append(smoothed_value)
+        
+        # Forecast future values (use last smoothed value with slight trend)
+        last_smoothed = smoothed[-1]
+        recent_trend = (smoothed[-1] - smoothed[-3]) / 2 if len(smoothed) >= 3 else 0
+        
+        forecasts = []
+        for i in range(len(df_future)):
+            forecast = last_smoothed + (recent_trend * (i + 1))
+            forecasts.append(max(forecast, 0))
+        
+        return forecasts
+    
+    def _moving_average_forecast(self, df_historical, df_future):
+        """Moving average with growth rate forecasting"""
+        if len(df_historical) < 3:
+            avg_value = df_historical['ActualPayments'].mean()
+            return [avg_value] * len(df_future)
+        
+        # Calculate 6-month moving average
+        window = min(6, len(df_historical))
+        moving_avg = df_historical['ActualPayments'].rolling(window=window).mean().iloc[-1]
+        
+        # Calculate average growth rate
+        recent_values = df_historical['ActualPayments'].tail(6).values
+        if len(recent_values) >= 2:
+            growth_rates = []
+            for i in range(1, len(recent_values)):
+                if recent_values[i-1] > 0:
+                    growth_rate = (recent_values[i] - recent_values[i-1]) / recent_values[i-1]
+                    growth_rates.append(growth_rate)
+            
+            avg_growth_rate = np.mean(growth_rates) if growth_rates else 0
+        else:
+            avg_growth_rate = 0
+        
+        # Apply growth rate to moving average
+        forecasts = []
+        current_value = moving_avg
+        for i in range(len(df_future)):
+            current_value = current_value * (1 + avg_growth_rate)
+            forecasts.append(max(current_value, 0))
+        
+        return forecasts
     
     def get_top_customers(self, limit=10):
         """Get top customers by outstanding balance"""
@@ -179,10 +413,10 @@ class FinancialAnalytics:
                 AVG(PaymentAmount) as AvgPaymentSize
             FROM Transactions
             WHERE PaymentDate >= DATEADD(MONTH, -12, GETDATE())
+            AND PaymentDate <= GETDATE()
+            AND PaymentDate != '0001-01-01 00:00:00'
             AND PaymentDate > '2020-01-01'
-            AND PaymentDate < GETDATE()
             AND PaymentAmount > 0
-            AND YEAR(PaymentDate) BETWEEN 2020 AND 2025
             GROUP BY YEAR(PaymentDate), MONTH(PaymentDate), DATENAME(MONTH, PaymentDate)
             ORDER BY Year DESC, Month DESC
             """
@@ -191,9 +425,6 @@ class FinancialAnalytics:
             df = clean_dataframe(df)
             
             if not df.empty:
-                # Filter out any bad years (like 2975)
-                df = df[df['Year'].between(2020, 2025)]
-                
                 # Sort properly for growth calculation
                 df = df.sort_values(['Year', 'Month'])
                 

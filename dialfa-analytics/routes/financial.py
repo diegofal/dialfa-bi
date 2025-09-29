@@ -40,19 +40,34 @@ def credit_risk():
         logger.error(f"Credit risk error: {e}")
         return jsonify({'error': str(e), 'status': 'error'}), 500
 
-@financial_bp.route('/api/cash-flow')
-def cash_flow():
-    """Get cash flow forecast"""
+@financial_bp.route('/api/cash-flow-history')
+def cash_flow_history():
+    """Get historical cash flow data"""
     try:
         months = request.args.get('months', 12, type=int)
-        cash_flow_data = current_app.financial_analytics.get_cash_flow_forecast(months)
+        cash_flow_data = current_app.financial_analytics.get_cash_flow_history(months)
         return jsonify({
             'data': cash_flow_data,
             'total_records': len(cash_flow_data),
             'status': 'success'
         })
     except Exception as e:
-        logger.error(f"Cash flow error: {e}")
+        logger.error(f"Cash flow history error: {e}")
+        return jsonify({'error': str(e), 'status': 'error'}), 500
+
+@financial_bp.route('/api/cash-flow-forecast')
+def cash_flow_forecast():
+    """Get cash flow forecast with predictions"""
+    try:
+        forecast_months = request.args.get('months', 6, type=int)
+        forecast_data = current_app.financial_analytics.get_cash_flow_forecast(forecast_months)
+        return jsonify({
+            'data': forecast_data,
+            'total_records': len(forecast_data),
+            'status': 'success'
+        })
+    except Exception as e:
+        logger.error(f"Cash flow forecast error: {e}")
         return jsonify({'error': str(e), 'status': 'error'}), 500
 
 @financial_bp.route('/api/top-customers')

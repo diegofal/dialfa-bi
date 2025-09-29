@@ -53,21 +53,50 @@
     </div>
 </div>
 
-<!-- Charts Row -->
-<div class="row mb-4">
-    <div class="col-md-8">
-        <div class="card">
-            <div class="card-header">
-                <h5 class="card-title mb-0">
-                    <i class="bi bi-graph-up"></i>
-                    Cash Flow Forecast (12 Months)
-                </h5>
-            </div>
-            <div class="card-body">
-                <div id="cash-flow-chart" class="chart-container"></div>
+    <!-- Charts Row -->
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-graph-up"></i>
+                        {{ _('Cash Flow History') }}
+                    </h5>
+                    <div class="btn-group" role="group">
+                        <button type="button" class="btn btn-outline-primary btn-sm" onclick="changeCashFlowHistoryPeriod(6)">6M</button>
+                        <button type="button" class="btn btn-outline-primary btn-sm active" onclick="changeCashFlowHistoryPeriod(12)">12M</button>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div id="cash-flow-history-chart" class="chart-container"></div>
+                </div>
             </div>
         </div>
-    </div>
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-graph-up-arrow"></i>
+                        {{ _('Cash Flow Forecast') }}
+                        <i class="bi bi-question-circle" data-bs-toggle="tooltip" data-bs-placement="top" 
+                           title="{{ _('Predicción de flujo de caja futuro basada en algoritmos de tendencia, estacionalidad y suavizado exponencial') }}"></i>
+                    </h5>
+                    <div class="btn-group" role="group">
+                        <button type="button" class="btn btn-outline-success btn-sm active" onclick="changeForecastPeriod(6)">6M</button>
+                        <button type="button" class="btn btn-outline-success btn-sm" onclick="changeForecastPeriod(12)">12M</button>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div id="cash-flow-forecast-chart" class="chart-container"></div>
+                    <div class="mt-2">
+                        <small class="text-muted">
+                            <i class="bi bi-info-circle"></i>
+                            {{ _('Predicción basada en análisis de tendencia, patrones estacionales y suavizado exponencial') }}
+                        </small>
+                    </div>
+                </div>
+            </div>
+        </div>
     <div class="col-md-4">
         <div class="card">
             <div class="card-header">
@@ -213,12 +242,19 @@
 // Load financial data when page loads
 document.addEventListener('DOMContentLoaded', function() {
     loadFinancialData();
-    loadCashFlowChart();
+    loadCashFlowHistoryChart();
+    loadCashFlowForecastChart();
     loadRiskDistribution();
     loadCreditRiskTable();
     loadTopCustomersChart();
     loadPaymentTrends();
     loadFinancialKPIs();
+    
+    // Initialize Bootstrap tooltips
+    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+    var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl);
+    });
 });
 
 function loadFinancialData() {
@@ -236,29 +272,30 @@ function loadFinancialData() {
         .catch(error => console.error('Error loading financial data:', error));
 }
 
-function loadCashFlowChart() {
-    fetch('/financial/api/cash-flow')
+// Cash Flow History Functions
+function loadCashFlowHistoryChart(months = 12) {
+    fetch(`/financial/api/cash-flow-history?months=${months}`)
         .then(response => response.json())
         .then(data => {
             if (data.status === 'success') {
-                createCashFlowChart(data.data);
+                createCashFlowHistoryChart(data.data);
             }
         })
-        .catch(error => console.error('Error loading cash flow:', error));
+        .catch(error => console.error('Error loading cash flow history:', error));
 }
 
-function createCashFlowChart(data) {
+function createCashFlowHistoryChart(data) {
     if (!data || data.length === 0) {
-        document.getElementById('cash-flow-chart').innerHTML = '<div class="alert alert-info">No cash flow data available</div>';
+        document.getElementById('cash-flow-history-chart').innerHTML = '<div class="alert alert-info">No historical data available</div>';
         return;
     }
 
     const trace = {
-        x: data.map(d => `${d.Year}-${d.Month.toString().padStart(2, '0')}`),
+        x: data.map(d => d.MonthYear),
         y: data.map(d => d.ActualPayments),
         type: 'scatter',
         mode: 'lines+markers',
-        name: 'Cash Flow',
+        name: 'Historical Cash Flow',
         line: { color: '#033663', width: 3 },
         marker: { size: 8, color: '#033663' }
     };
@@ -272,7 +309,86 @@ function createCashFlowChart(data) {
         paper_bgcolor: 'rgba(0,0,0,0)'
     };
 
-    Plotly.newPlot('cash-flow-chart', [trace], layout, {responsive: true});
+    Plotly.newPlot('cash-flow-history-chart', [trace], layout, {responsive: true});
+}
+
+// Cash Flow Forecast Functions
+function loadCashFlowForecastChart(months = 6) {
+    fetch(`/financial/api/cash-flow-forecast?months=${months}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success') {
+                createCashFlowForecastChart(data.data);
+            }
+        })
+        .catch(error => console.error('Error loading cash flow forecast:', error));
+}
+
+function createCashFlowForecastChart(data) {
+    if (!data || data.length === 0) {
+        document.getElementById('cash-flow-forecast-chart').innerHTML = '<div class="alert alert-info">No forecast data available</div>';
+        return;
+    }
+
+    // Separate historical and forecast data
+    const historicalData = data.filter(d => d.IsHistorical);
+    const forecastData = data.filter(d => !d.IsHistorical);
+
+    const traces = [];
+
+    // Historical data trace
+    if (historicalData.length > 0) {
+        traces.push({
+            x: historicalData.map(d => d.MonthYear),
+            y: historicalData.map(d => d.ActualPayments),
+            type: 'scatter',
+            mode: 'lines+markers',
+            name: 'Historical',
+            line: { color: '#033663', width: 3 },
+            marker: { size: 8, color: '#033663' }
+        });
+    }
+
+    // Forecast data trace
+    if (forecastData.length > 0) {
+        traces.push({
+            x: forecastData.map(d => d.MonthYear),
+            y: forecastData.map(d => d.ForecastedPayments),
+            type: 'scatter',
+            mode: 'lines+markers',
+            name: 'Forecast',
+            line: { color: '#28a745', width: 3, dash: 'dash' },
+            marker: { size: 8, color: '#28a745', symbol: 'diamond' }
+        });
+
+        // Add confidence interval
+        const confidenceUpper = forecastData.map(d => d.ConfidenceInterval.upper);
+        const confidenceLower = forecastData.map(d => d.ConfidenceInterval.lower);
+        const xValues = forecastData.map(d => d.MonthYear);
+
+        traces.push({
+            x: [...xValues, ...xValues.slice().reverse()],
+            y: [...confidenceUpper, ...confidenceLower.slice().reverse()],
+            fill: 'toself',
+            fillcolor: 'rgba(40, 167, 69, 0.2)',
+            line: { color: 'rgba(255,255,255,0)' },
+            name: 'Confidence Interval',
+            showlegend: true,
+            hoverinfo: 'skip'
+        });
+    }
+
+    const layout = {
+        title: '',
+        xaxis: { title: 'Month', showgrid: true, gridcolor: '#e9ecef' },
+        yaxis: { title: 'Amount (ARS)', tickformat: '$,.0f', showgrid: true, gridcolor: '#e9ecef' },
+        margin: { t: 20, r: 40, b: 60, l: 80 },
+        plot_bgcolor: 'rgba(0,0,0,0)',
+        paper_bgcolor: 'rgba(0,0,0,0)',
+        legend: { x: 0, y: 1, bgcolor: 'rgba(255,255,255,0.8)' }
+    };
+
+    Plotly.newPlot('cash-flow-forecast-chart', traces, layout, {responsive: true});
 }
 
 function loadRiskDistribution() {
@@ -469,6 +585,26 @@ function loadFinancialKPIs() {
     // Mock some additional KPIs
     document.getElementById('collection-rate').textContent = '78.6%';
     document.getElementById('days-sales-outstanding').textContent = '45';
+}
+
+function changeCashFlowHistoryPeriod(months) {
+    // Update button states for history chart
+    const historyButtons = event.target.closest('.card').querySelectorAll('.btn-group .btn');
+    historyButtons.forEach(btn => btn.classList.remove('active'));
+    event.target.classList.add('active');
+    
+    // Reload cash flow history chart with new period
+    loadCashFlowHistoryChart(months);
+}
+
+function changeForecastPeriod(months) {
+    // Update button states for forecast chart
+    const forecastButtons = event.target.closest('.card').querySelectorAll('.btn-group .btn');
+    forecastButtons.forEach(btn => btn.classList.remove('active'));
+    event.target.classList.add('active');
+    
+    // Reload cash flow forecast chart with new period
+    loadCashFlowForecastChart(months);
 }
 
 function viewCustomerDetails(customerName) {
