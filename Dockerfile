@@ -4,22 +4,23 @@ FROM python:3.11-slim
 # Set working directory
 WORKDIR /app
 
-# Install system dependencies for pyodbc and SQL Server
+# Install system dependencies
 RUN apt-get update && apt-get install -y \
+    curl \
+    apt-transport-https \
+    gnupg2 \
     unixodbc \
     unixodbc-dev \
-    freetds-dev \
-    freetds-bin \
-    tdsodbc \
     gcc \
     g++ \
     && rm -rf /var/lib/apt/lists/*
 
-# Configure FreeTDS
-RUN echo "[FreeTDS]\n\
-Description = FreeTDS Driver\n\
-Driver = /usr/lib/x86_64-linux-gnu/odbc/libtdsodbc.so\n\
-Setup = /usr/lib/x86_64-linux-gnu/odbc/libtdsS.so" > /etc/odbcinst.ini
+# Install Microsoft ODBC Driver 17 for SQL Server
+RUN curl https://packages.microsoft.com/keys/microsoft.asc | apt-key add - && \
+    curl https://packages.microsoft.com/config/debian/11/prod.list > /etc/apt/sources.list.d/mssql-release.list && \
+    apt-get update && \
+    ACCEPT_EULA=Y apt-get install -y msodbcsql17 && \
+    rm -rf /var/lib/apt/lists/*
 
 # Copy requirements file
 COPY dialfa-analytics/requirements.txt /app/requirements.txt
