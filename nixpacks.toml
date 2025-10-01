@@ -1,5 +1,5 @@
 [phases.setup]
-nixPkgs = ["python311", "unixODBC", "freetds", "gnumake", "gcc", "g++"]
+nixPkgs = ["python311", "unixODBC", "freetds"]
 
 [phases.install]
 cmds = [
