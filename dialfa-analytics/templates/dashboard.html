@@ -236,6 +236,9 @@ const i18n = {
     month: "{{ _('Month') }}",
     amount: "{{ _('Amount') }}",
     paymentCollections: "{{ _('Payment Collections') }}",
+    cash: "{{ _('Cash') }}",
+    electronic: "{{ _('Electronic') }}",
+    total: "{{ _('Total') }}",
     historicalCashFlow: "{{ _('Historical Cash Flow') }}",
     noPaymentData: "{{ _('No payment data available') }}",
     noCustomerData: "{{ _('No customer data available') }}",
@@ -368,20 +371,55 @@ function createCashFlowChart(data) {
     }
 
     try {
-        const trace = {
-            x: data.map(d => `${d.Year}-${d.Month.toString().padStart(2, '0')}`),
-            y: data.map(d => d.ActualPayments),
+        const months = data.map(d => `${d.Year}-${d.Month.toString().padStart(2, '0')}`);
+        
+        // Trace para Efectivo (Type 1)
+        const traceCash = {
+            x: months,
+            y: data.map(d => d.CashPayments || 0),
             type: 'scatter',
             mode: 'lines+markers',
-            name: i18n.paymentCollections,
+            name: i18n.cash,
             line: { 
-                color: '#033663',
-                width: 3
+                color: '#28a745',
+                width: 2.5
             },
             marker: {
-                size: 8,
-                color: '#033663'
+                size: 7,
+                color: '#28a745'
             }
+        };
+        
+        // Trace para Transferencias/Cheques (Type 0)
+        const traceElectronic = {
+            x: months,
+            y: data.map(d => d.ElectronicPayments || 0),
+            type: 'scatter',
+            mode: 'lines+markers',
+            name: i18n.electronic,
+            line: { 
+                color: '#6f42c1',
+                width: 2.5
+            },
+            marker: {
+                size: 7,
+                color: '#6f42c1'
+            }
+        };
+        
+        // Trace para Total (opcional, como línea punteada de referencia)
+        const traceTotal = {
+            x: months,
+            y: data.map(d => d.ActualPayments),
+            type: 'scatter',
+            mode: 'lines',
+            name: i18n.total,
+            line: { 
+                color: '#033663',
+                width: 1,
+                dash: 'dot'
+            },
+            opacity: 0.5
         };
 
         const layout = {
@@ -392,18 +430,26 @@ function createCashFlowChart(data) {
                 gridcolor: '#e9ecef'
             },
             yaxis: { 
-                title: i18n.amount + ' ($)',
+                title: i18n.amount + ' (ARS)',
                 tickformat: '$,.0f',
                 showgrid: true,
                 gridcolor: '#e9ecef'
             },
             margin: { t: 20, r: 40, b: 60, l: 80 },
             plot_bgcolor: 'rgba(0,0,0,0)',
-            paper_bgcolor: 'rgba(0,0,0,0)'
+            paper_bgcolor: 'rgba(0,0,0,0)',
+            legend: {
+                orientation: 'h',
+                yanchor: 'bottom',
+                y: 1.02,
+                xanchor: 'right',
+                x: 1
+            },
+            hovermode: 'x unified'
         };
 
-        Plotly.newPlot('cash-flow-chart', [trace], layout, {responsive: true});
-        console.log('Cash flow chart created successfully');
+        Plotly.newPlot('cash-flow-chart', [traceCash, traceElectronic, traceTotal], layout, {responsive: true});
+        console.log('Cash flow chart created successfully with payment type breakdown');
     } catch (error) {
         console.error('Error creating cash flow chart:', error);
         document.getElementById('cash-flow-chart').innerHTML = '<div class="alert alert-danger">Error creating chart: ' + error.message + '</div>';

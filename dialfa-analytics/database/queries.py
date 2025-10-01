@@ -95,7 +95,11 @@ class FinancialQueries:
         YEAR(PaymentDate) as Year,
         MONTH(PaymentDate) as Month,
         SUM(PaymentAmount) as ActualPayments,
-        COUNT(*) as TransactionCount
+        SUM(CASE WHEN Type = 1 THEN PaymentAmount ELSE 0 END) as CashPayments,
+        SUM(CASE WHEN Type = 0 THEN PaymentAmount ELSE 0 END) as ElectronicPayments,
+        COUNT(*) as TransactionCount,
+        COUNT(CASE WHEN Type = 1 THEN 1 END) as CashCount,
+        COUNT(CASE WHEN Type = 0 THEN 1 END) as ElectronicCount
     FROM Transactions 
     WHERE PaymentDate >= DATEADD(MONTH, -{months}, DATEADD(HOUR, -3, GETDATE()))
     AND PaymentDate <= DATEADD(HOUR, -3, GETDATE())

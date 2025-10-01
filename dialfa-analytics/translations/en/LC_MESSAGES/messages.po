@@ -93,6 +93,9 @@ msgstr "Cash"
 msgid "Electronic"
 msgstr "Electronic/Checks"
 
+msgid "Total"
+msgstr "Total"
+
 msgid "Billed Today"
 msgstr "Billed Today"
 

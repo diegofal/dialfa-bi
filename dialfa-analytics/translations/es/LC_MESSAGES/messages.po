@@ -93,6 +93,9 @@ msgstr "Efectivo"
 msgid "Electronic"
 msgstr "Transferencias/Cheques"
 
+msgid "Total"
+msgstr "Total"
+
 msgid "Billed Today"
 msgstr "Facturado Hoy"
 
