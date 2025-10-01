@@ -9,6 +9,7 @@ from datetime import datetime
 import logging
 import traceback
 from flask_babel import Babel, _, get_locale
+from flask_login import LoginManager, login_required, current_user
 from config import Config
 
 # Import our custom modules
@@ -17,12 +18,16 @@ from analytics.financial import FinancialAnalytics
 from analytics.inventory import InventoryAnalytics
 from analytics.sales import SalesAnalytics
 
+# Import authentication
+from auth.models import get_user_by_id
+
 # Import routes
 from routes.dashboard import dashboard_bp
 from routes.financial import financial_bp
 from routes.inventory import inventory_bp
 from routes.sales import sales_bp
 from routes.retool_compat import retool_bp
+from auth.routes import auth_bp
 
 def create_app():
     """Application factory pattern"""
@@ -32,6 +37,18 @@ def create_app():
     app.config['SECRET_KEY'] = 'dialfa-analytics-2025'
     app.config['DEBUG'] = True
     app.config.from_object(Config)
+    
+    # Initialize Flask-Login
+    login_manager = LoginManager()
+    login_manager.init_app(app)
+    login_manager.login_view = 'auth.login'
+    login_manager.login_message = 'Please log in to access this page.'
+    login_manager.login_message_category = 'warning'
+    
+    @login_manager.user_loader
+    def load_user(user_id):
+        """Load user by ID for Flask-Login"""
+        return get_user_by_id(user_id)
     
     # Initialize Babel for internationalization
     babel = Babel()
@@ -96,6 +113,7 @@ def create_app():
     app.sales_analytics = sales_analytics
     
     # Register blueprints
+    app.register_blueprint(auth_bp, url_prefix='/auth')
     app.register_blueprint(dashboard_bp)
     app.register_blueprint(financial_bp, url_prefix='/financial')
     app.register_blueprint(inventory_bp, url_prefix='/inventory')
@@ -103,6 +121,7 @@ def create_app():
     app.register_blueprint(retool_bp)
     
     @app.route('/')
+    @login_required
     def index():
         """Main dashboard page"""
         try:
@@ -223,6 +242,12 @@ def create_app():
                 'remote_addr': request.remote_addr,
                 'headers': dict(request.headers)
             }), 500
+    
+    @app.errorhandler(403)
+    def forbidden(error):
+        return render_template('error.html', 
+                             error="You do not have permission to access this resource", 
+                             error_code=403), 403
     
     @app.errorhandler(404)
     def not_found(error):

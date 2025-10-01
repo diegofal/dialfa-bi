@@ -3,10 +3,18 @@ Inventory Routes
 Inventory analysis API endpoints
 """
 from flask import Blueprint, render_template, jsonify, request, current_app
+from flask_login import login_required
 import logging
 
 inventory_bp = Blueprint('inventory', __name__)
 logger = logging.getLogger(__name__)
+
+# Protect all routes in this blueprint
+@inventory_bp.before_request
+@login_required
+def require_login():
+    """Require login for all inventory routes"""
+    pass
 
 @inventory_bp.route('/')
 def inventory_dashboard():

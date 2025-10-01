@@ -3,10 +3,18 @@ Financial Routes
 Financial analysis API endpoints
 """
 from flask import Blueprint, render_template, jsonify, request, current_app
+from flask_login import login_required
 import logging
 
 financial_bp = Blueprint('financial', __name__)
 logger = logging.getLogger(__name__)
+
+# Protect all routes in this blueprint
+@financial_bp.before_request
+@login_required
+def require_login():
+    """Require login for all financial routes"""
+    pass
 
 @financial_bp.route('/')
 def financial_dashboard():

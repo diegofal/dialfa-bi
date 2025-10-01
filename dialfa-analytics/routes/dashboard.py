@@ -3,12 +3,14 @@ Dashboard Routes
 Main dashboard API endpoints
 """
 from flask import Blueprint, render_template, jsonify, current_app
+from flask_login import login_required
 import logging
 
 dashboard_bp = Blueprint('dashboard', __name__)
 logger = logging.getLogger(__name__)
 
 @dashboard_bp.route('/api/dashboard/overview')
+@login_required
 def dashboard_overview():
     """Get dashboard overview data"""
     try:
@@ -33,6 +35,7 @@ def dashboard_overview():
         return jsonify({'error': str(e), 'status': 'error'}), 500
 
 @dashboard_bp.route('/api/dashboard/charts')
+@login_required
 def dashboard_charts():
     """Get chart data for dashboard"""
     try:
@@ -61,6 +64,7 @@ def dashboard_charts():
         return jsonify({'error': str(e), 'status': 'error'}), 500
 
 @dashboard_bp.route('/api/dashboard/kpis')
+@login_required
 def dashboard_kpis():
     """Get key performance indicators"""
     try:
@@ -85,6 +89,7 @@ def dashboard_kpis():
         return jsonify({'error': str(e), 'status': 'error'}), 500
 
 @dashboard_bp.route('/api/dashboard/alerts')
+@login_required
 def dashboard_alerts():
     """Get system alerts and notifications"""
     try:

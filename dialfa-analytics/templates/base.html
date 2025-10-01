@@ -126,6 +126,34 @@
                             <li><span class="dropdown-item-text">Loading alerts...</span></li>
                         </ul>
                     </li>
+                    
+                    <!-- User Menu -->
+                    {% if current_user.is_authenticated %}
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown">
+                            <i class="bi bi-person-circle"></i> 
+                            {{ current_user.full_name }}
+                            {% if current_user.is_admin() %}
+                                <span class="badge bg-warning text-dark ms-1">Admin</span>
+                            {% endif %}
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-end">
+                            <li><span class="dropdown-item-text">
+                                <strong>{{ current_user.full_name }}</strong><br>
+                                <small class="text-muted">{{ current_user.username }}</small>
+                            </span></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><span class="dropdown-item-text">
+                                <i class="bi bi-shield-check"></i> Role: <strong>{{ current_user.role.title() }}</strong>
+                            </span></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item text-danger" href="{{ url_for('auth.logout') }}">
+                                <i class="bi bi-box-arrow-right"></i> Logout
+                            </a></li>
+                        </ul>
+                    </li>
+                    {% endif %}
+                    
                     <li class="nav-item">
                         <span class="navbar-text">
                             <small id="last-updated">Last updated: Loading...</small>

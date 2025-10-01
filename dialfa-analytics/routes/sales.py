@@ -3,10 +3,18 @@ Sales Routes
 Sales analysis API endpoints
 """
 from flask import Blueprint, render_template, jsonify, request, current_app
+from flask_login import login_required
 import logging
 
 sales_bp = Blueprint('sales', __name__)
 logger = logging.getLogger(__name__)
+
+# Protect all routes in this blueprint
+@sales_bp.before_request
+@login_required
+def require_login():
+    """Require login for all sales routes"""
+    pass
 
 @sales_bp.route('/')
 def sales_dashboard():
