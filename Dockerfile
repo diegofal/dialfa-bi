@@ -28,7 +28,7 @@ RUN curl -fsSL https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor
 # Copy requirements file
 COPY dialfa-analytics/requirements.txt /app/requirements.txt
 
-# Install Python dependencies
+# Install Python dependencies (updated 2025-10-01 - added Flask-Caching)
 RUN pip install --no-cache-dir --upgrade pip && \
     pip install --no-cache-dir -r requirements.txt
 

@@ -5,6 +5,9 @@ Supports SimpleCache (memory) and Redis backends
 import os
 from flask_caching import Cache
 
+# Auto-detect Redis from Railway REDIS_URL or REDIS_PRIVATE_URL
+REDIS_URL = os.getenv('REDIS_URL') or os.getenv('REDIS_PRIVATE_URL')
+
 # Cache configuration - easily switch between backends
 CACHE_CONFIG = {
     # Development: SimpleCache (in-memory)
@@ -13,15 +16,17 @@ CACHE_CONFIG = {
         'CACHE_DEFAULT_TIMEOUT': 300  # 5 minutes default
     },
     
-    # Production: Redis (when ready)
+    # Production: Redis (Railway provides REDIS_URL automatically)
     'redis': {
         'CACHE_TYPE': 'RedisCache',
-        'CACHE_REDIS_HOST': os.getenv('REDIS_HOST', 'localhost'),
-        'CACHE_REDIS_PORT': int(os.getenv('REDIS_PORT', 6379)),
-        'CACHE_REDIS_DB': int(os.getenv('REDIS_DB', 0)),
-        'CACHE_REDIS_PASSWORD': os.getenv('REDIS_PASSWORD', None),
+        'CACHE_REDIS_URL': REDIS_URL,  # Railway format: redis://host:port
         'CACHE_DEFAULT_TIMEOUT': 300,
-        'CACHE_KEY_PREFIX': 'dialfa_'
+        'CACHE_KEY_PREFIX': 'dialfa_',
+        'CACHE_OPTIONS': {
+            'socket_connect_timeout': 5,
+            'socket_timeout': 5,
+            'retry_on_timeout': True
+        }
     },
     
     # Filesystem cache (alternative to Redis)
@@ -33,8 +38,16 @@ CACHE_CONFIG = {
     }
 }
 
-# Select cache backend from environment or default to simple
-CACHE_BACKEND = os.getenv('CACHE_BACKEND', 'simple')
+# Auto-select cache backend:
+# - If REDIS_URL exists (Railway), use Redis
+# - Otherwise use CACHE_BACKEND env var or default to simple
+if REDIS_URL:
+    CACHE_BACKEND = 'redis'
+    print(f"✅ Redis URL detected, using Redis cache: {REDIS_URL[:20]}...")
+else:
+    CACHE_BACKEND = os.getenv('CACHE_BACKEND', 'simple')
+    print(f"⚠️ No Redis URL found, using {CACHE_BACKEND} cache")
+
 cache_config = CACHE_CONFIG.get(CACHE_BACKEND, CACHE_CONFIG['simple'])
 
 # Cache timeout configurations by data type (in seconds)
