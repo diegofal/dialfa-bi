@@ -422,6 +422,74 @@ class InventoryQueries:
     WHERE Date >= DATEADD(MONTH, -{months}, GETDATE())
     ORDER BY Date ASC
     """
+    
+    OUT_OF_STOCK_ANALYSIS = """
+    WITH OutOfStockAnalysis AS (
+        SELECT 
+            a.IdArticulo,
+            a.descripcion as ProductName,
+            a.preciounitario as UnitPrice,
+            c.Descripcion as Category,
+            a.Discontinuado as IsDiscontinued,
+            COALESCE(sales.LastSaleDate, '1900-01-01') as LastSaleDate,
+            COALESCE(sales.TotalSold, 0) as TotalSold,
+            COALESCE(sales.Last90DaysSales, 0) as Last90DaysSales,
+            COALESCE(sales.Last180DaysSales, 0) as Last180DaysSales,
+            COALESCE(sales.Last365DaysSales, 0) as Last365DaysSales,
+            DATEDIFF(DAY, COALESCE(sales.LastSaleDate, '1900-01-01'), GETDATE()) as DaysSinceLastSale,
+            -- Estimate lost sales (average daily sales * days out of stock, capped at 90 days)
+            CASE 
+                WHEN sales.Last90DaysSales > 0 THEN 
+                    (sales.Last90DaysSales / 90.0) * 
+                    CASE WHEN DATEDIFF(DAY, sales.LastSaleDate, GETDATE()) > 90 
+                         THEN 90 
+                         ELSE DATEDIFF(DAY, sales.LastSaleDate, GETDATE()) 
+                    END * a.preciounitario
+                ELSE 0
+            END as EstimatedLostSales
+        FROM Articulos a
+        INNER JOIN Categorias c ON a.IdCategoria = c.IdCategoria
+        LEFT JOIN (
+            SELECT 
+                npi.IdArticulo,
+                MAX(np.FechaEmision) as LastSaleDate,
+                SUM(npi.Cantidad) as TotalSold,
+                SUM(CASE WHEN np.FechaEmision >= DATEADD(DAY, -90, GETDATE()) THEN npi.Cantidad ELSE 0 END) as Last90DaysSales,
+                SUM(CASE WHEN np.FechaEmision >= DATEADD(DAY, -180, GETDATE()) THEN npi.Cantidad ELSE 0 END) as Last180DaysSales,
+                SUM(CASE WHEN np.FechaEmision >= DATEADD(DAY, -365, GETDATE()) THEN npi.Cantidad ELSE 0 END) as Last365DaysSales
+            FROM NotaPedido_Items npi
+            INNER JOIN NotaPedidos np ON npi.IdNotaPedido = np.IdNotaPedido
+            WHERE np.FechaEmision >= DATEADD(YEAR, -2, GETDATE())
+            GROUP BY npi.IdArticulo
+        ) sales ON a.IdArticulo = sales.IdArticulo
+        WHERE a.cantidad = 0  -- Out of stock
+    )
+    SELECT 
+        *,
+        CASE 
+            WHEN IsDiscontinued = 1 THEN 'Discontinued'
+            WHEN DaysSinceLastSale > 365 OR LastSaleDate = '1900-01-01' THEN 'Dead Stock'
+            WHEN DaysSinceLastSale > 180 THEN 'Slow Moving'
+            WHEN DaysSinceLastSale > 90 THEN 'Moderate'
+            ELSE 'Healthy'
+        END as StockProfile,
+        CASE 
+            WHEN IsDiscontinued = 1 THEN 'No Action'
+            WHEN DaysSinceLastSale > 365 OR LastSaleDate = '1900-01-01' THEN 'Consider Discontinuing'
+            WHEN DaysSinceLastSale > 180 THEN 'Low Priority Reorder'
+            WHEN DaysSinceLastSale > 90 THEN 'Monitor & Reorder if Needed'
+            ELSE 'URGENT REORDER'
+        END as RecommendedAction,
+        CASE 
+            WHEN IsDiscontinued = 1 THEN 0
+            WHEN Last90DaysSales > 0 THEN 4  -- Critical
+            WHEN Last180DaysSales > 0 THEN 3  -- High
+            WHEN Last365DaysSales > 0 THEN 2  -- Medium
+            ELSE 1  -- Low
+        END as Priority
+    FROM OutOfStockAnalysis
+    ORDER BY Priority DESC, EstimatedLostSales DESC
+    """
 
 class SalesQueries:
     """Sales analysis SQL queries"""

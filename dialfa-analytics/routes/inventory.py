@@ -187,3 +187,30 @@ def stock_value_evolution():
     except Exception as e:
         logger.error(f"Stock value evolution error: {e}")
         return jsonify({'error': str(e), 'status': 'error'}), 500
+
+@inventory_bp.route('/api/out-of-stock-analysis')
+def out_of_stock_analysis():
+    """Get detailed analysis of out of stock items with priority classification"""
+    try:
+        analysis_data = current_app.inventory_analytics.get_out_of_stock_analysis()
+        
+        # Calculate summary stats
+        summary = {
+            'total_count': len(analysis_data),
+            'healthy_count': len([x for x in analysis_data if x['StockProfile'] == 'Healthy']),
+            'slow_moving_count': len([x for x in analysis_data if x['StockProfile'] in ['Slow Moving', 'Moderate']]),
+            'dead_stock_count': len([x for x in analysis_data if x['StockProfile'] == 'Dead Stock']),
+            'discontinued_count': len([x for x in analysis_data if x['StockProfile'] == 'Discontinued']),
+            'total_lost_sales': sum([x['EstimatedLostSales'] for x in analysis_data]),
+            'urgent_reorder_count': len([x for x in analysis_data if x['Priority'] == 4])
+        }
+        
+        return jsonify({
+            'data': analysis_data,
+            'summary': summary,
+            'total_records': len(analysis_data),
+            'status': 'success'
+        })
+    except Exception as e:
+        logger.error(f"Out of stock analysis error: {e}")
+        return jsonify({'error': str(e), 'status': 'error'}), 500

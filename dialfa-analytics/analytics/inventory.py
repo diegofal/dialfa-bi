@@ -284,6 +284,8 @@ class InventoryAnalytics:
             SELECT 
                 a.descripcion,
                 a.cantidad as CurrentStock,
+                a.preciounitario as UnitPrice,
+                a.cantidad * a.preciounitario as StockValue,
                 c.Descripcion as Category,
                 CASE 
                     WHEN a.cantidad = 0 THEN 'OUT_OF_STOCK'
@@ -451,4 +453,24 @@ class InventoryAnalytics:
             return []
         except Exception as e:
             self.logger.error(f"Error getting stock value evolution: {e}")
+            return []
+    
+    @cache.cached(timeout=get_cache_timeout('out_of_stock_analysis'), key_prefix='inventory_out_of_stock_analysis')
+    def get_out_of_stock_analysis(self):
+        """Get detailed analysis of out of stock items with classification"""
+        self.logger.info("Executing get_out_of_stock_analysis (cache miss or expired)")
+        try:
+            df = self.db.execute_query(self.queries.OUT_OF_STOCK_ANALYSIS, 'SPISA')
+            df = clean_dataframe(df)
+            
+            if not df.empty:
+                # Format values
+                df['FormattedUnitPrice'] = df['UnitPrice'].apply(lambda x: format_currency(x, 'USD', 'SPISA'))
+                df['FormattedLostSales'] = df['EstimatedLostSales'].apply(lambda x: format_currency(x, 'USD', 'SPISA'))
+                df['FormattedLastSaleDate'] = pd.to_datetime(df['LastSaleDate']).dt.strftime('%Y-%m-%d')
+                
+                return df.to_dict('records')
+            return []
+        except Exception as e:
+            self.logger.error(f"Error getting out of stock analysis: {e}")
             return []

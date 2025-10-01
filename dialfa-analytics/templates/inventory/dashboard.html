@@ -208,35 +208,42 @@
 <div class="row mb-4">
     <div class="col-md-4">
         <div class="card">
-            <div class="card-header d-flex justify-content-between align-items-center">
-                <h5 class="card-title mb-0">
+            <div class="card-header">
+                <h5 class="card-title mb-2">
                     <i class="bi bi-exclamation-circle text-danger"></i>
-                    Out of Stock Details
+                    Out of Stock Analysis
                 </h5>
-                <span class="badge bg-danger" id="out-of-stock-count">0</span>
+                <div class="row g-2 small">
+                    <div class="col-6">
+                        <span class="badge bg-danger" id="oos-healthy-badge">0</span> <span class="text-muted">Healthy (Urgent)</span>
+                    </div>
+                    <div class="col-6">
+                        <span class="badge bg-warning text-dark" id="oos-slow-badge">0</span> <span class="text-muted">Slow/Moderate</span>
+                    </div>
+                    <div class="col-6">
+                        <span class="badge bg-secondary" id="oos-dead-badge">0</span> <span class="text-muted">Dead Stock</span>
+                    </div>
+                    <div class="col-6">
+                        <span class="badge bg-dark" id="oos-discontinued-badge">0</span> <span class="text-muted">Discontinued</span>
+                    </div>
+                </div>
             </div>
-            <div class="card-body">
+            <div class="card-body p-0">
                 <div class="table-responsive" style="max-height: 350px;">
-                    <table class="table table-sm">
-                        <thead class="table-dark sticky-top">
+                    <table class="table table-sm table-hover mb-0">
+                        <thead class="table-light sticky-top">
                             <tr>
                                 <th>Product</th>
-                                <th>Category</th>
-                                <th>Action</th>
+                                <th>Profile</th>
+                                <th>Last Sale</th>
+                                <th class="text-end">Lost Sales</th>
                             </tr>
                         </thead>
                         <tbody id="out-of-stock-tbody">
                             <tr>
-                                <td colspan="3" class="text-center">Loading...</td>
+                                <td colspan="4" class="text-center">Loading...</td>
                             </tr>
                         </tbody>
-                        <tfoot id="out-of-stock-summary" class="table-danger" style="display: none;">
-                            <tr>
-                                <th><strong>TOTAL</strong></th>
-                                <th><span class="badge bg-danger" id="out-of-stock-categories-summary">0</span> Categories</th>
-                                <th><span class="text-danger" id="out-of-stock-impact-summary">Est. Impact: $0/mo</span></th>
-                            </tr>
-                        </tfoot>
                     </table>
                 </div>
             </div>
@@ -848,34 +855,96 @@ function loadInventoryData() {
 }
 
 function loadCategoryChart() {
-    fetch('/inventory/api/category-analysis')
-        .then(response => response.json())
-        .then(data => {
-            if (data.status === 'success') {
-                createCategoryChart(data.data);
-            }
-        })
-        .catch(error => console.error('Error loading category data:', error));
+    // Load both category analysis and slow moving data to show dead stock breakdown
+    Promise.all([
+        fetch('/inventory/api/category-analysis').then(r => r.json()),
+        fetch('/inventory/api/slow-moving').then(r => r.json())
+    ])
+    .then(([categoryData, slowData]) => {
+        if (categoryData.status === 'success' && slowData.status === 'success') {
+            createCategoryChartWithDeadStock(categoryData.data, slowData.data);
+        }
+    })
+    .catch(error => console.error('Error loading category data:', error));
 }
 
-function createCategoryChart(data) {
-    const trace = {
-        labels: data.map(c => c.Category),
-        values: data.map(c => c.TotalValue),
-        type: 'pie',
-        textinfo: 'label+percent',
-        textposition: 'outside',
-        marker: {
-            colors: ['#033663', '#28a745', '#ffc107', '#dc3545', '#17a2b8', '#6f42c1', '#fd7e14']
+function createCategoryChartWithDeadStock(categories, slowMovingItems) {
+    // Calculate dead stock value per category
+    const deadStockByCategory = {};
+    
+    slowMovingItems
+        .filter(item => item.StockCategory === 'Dead Stock')
+        .forEach(item => {
+            const category = item.Category || 'Unknown';
+            deadStockByCategory[category] = (deadStockByCategory[category] || 0) + (item.StockValue || 0);
+        });
+    
+    // Build sunburst data
+    const labels = ['Total'];
+    const parents = [''];
+    const values = [categories.reduce((sum, c) => sum + c.TotalValue, 0)];
+    const colors = ['#ffffff'];
+    
+    const categoryColors = {
+        'Accesorios': '#033663',
+        'Bridas': '#28a745',
+        'Espárragos': '#ffc107',
+        'Accesorio forjado': '#dc3545',
+        'Nipples': '#17a2b8'
+    };
+    
+    // Add categories
+    categories.forEach(cat => {
+        const categoryName = cat.Category;
+        const totalValue = cat.TotalValue;
+        const deadValue = deadStockByCategory[categoryName] || 0;
+        const healthyValue = totalValue - deadValue;
+        
+        // Add category
+        labels.push(categoryName);
+        parents.push('Total');
+        values.push(totalValue);
+        colors.push(categoryColors[categoryName] || '#6f42c1');
+        
+        // Add healthy subcategory (only if > 0)
+        if (healthyValue > 0) {
+            labels.push(`${categoryName} - Healthy`);
+            parents.push(categoryName);
+            values.push(healthyValue);
+            colors.push(categoryColors[categoryName] || '#6f42c1');
         }
+        
+        // Add dead stock subcategory (only if > 0)
+        if (deadValue > 0) {
+            labels.push(`${categoryName} - Dead Stock`);
+            parents.push(categoryName);
+            values.push(deadValue);
+            colors.push('#dc3545'); // Red for dead stock
+        }
+    });
+    
+    const trace = {
+        type: 'sunburst',
+        labels: labels,
+        parents: parents,
+        values: values,
+        branchvalues: 'total',
+        marker: {
+            colors: colors,
+            line: { width: 2, color: '#ffffff' }
+        },
+        textinfo: 'label+percent parent',
+        hovertemplate: '<b>%{label}</b><br>Value: $%{value:,.0f}<br>Percentage: %{percentParent}<extra></extra>'
     };
-
+    
     const layout = {
-        margin: { t: 20, r: 20, b: 20, l: 20 },
-        showlegend: false
+        margin: { t: 10, r: 10, b: 10, l: 10 },
+        sunburstcolorway: colors,
+        extendsunburstcolors: true
     };
-
+    
     Plotly.newPlot('category-chart', [trace], layout, {responsive: true});
+    console.log('Category chart with dead stock breakdown created');
 }
 
 function loadStockHealthChart() {
@@ -906,36 +975,49 @@ function loadStockHealthChart() {
 }
 
 function loadStockAlerts() {
+    // Load new out of stock analysis
+    fetch('/inventory/api/out-of-stock-analysis')
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success') {
+                populateOutOfStockAnalysisTable(data.data, data.summary);
+            }
+        })
+        .catch(error => console.error('Error loading out of stock analysis:', error));
+    
+    // Load regular stock alerts for low stock and overstock
     fetch('/inventory/api/stock-alerts')
         .then(response => response.json())
         .then(data => {
             if (data.status === 'success') {
-                const outOfStock = data.data.filter(item => item.AlertType === 'OUT_OF_STOCK');
                 const lowStock = data.data.filter(item => item.AlertType === 'LOW_STOCK');
                 const overstock = data.data.filter(item => item.AlertType === 'OVERSTOCK');
                 
-                // Update summary cards
-                updateStockAlertSummaries(outOfStock, lowStock, overstock);
-                
                 // Populate detail tables
-                populateOutOfStockTable(outOfStock);
                 populateLowStockTable(lowStock);
                 populateOverstockTable(overstock);
-            } else {
-                console.error('Stock alerts API error:', data.error);
-                showStockAlertError('Error loading stock alerts: ' + (data.error || 'Unknown error'));
+                
+                // Update summary cards for low stock and overstock
+                document.getElementById('low-stock-summary-count').textContent = lowStock.length;
+                document.getElementById('overstock-summary-count').textContent = overstock.length;
+                
+                // Use real stock values from database
+                const lowStockValue = lowStock.reduce((sum, item) => sum + (item.StockValue || 0), 0);
+                const overstockValue = overstock.reduce((sum, item) => sum + (item.StockValue || 0), 0);
+                
+                document.getElementById('low-stock-value').textContent = 'Value at Risk: ' + formatUSD(lowStockValue);
+                document.getElementById('overstock-value').textContent = 'Tied Capital: ' + formatUSD(overstockValue);
+                document.getElementById('total-overstock-value').textContent = formatUSD(overstockValue);
+                document.getElementById('overstock-carrying-cost').textContent = 'Excess Carrying Cost: ' + formatUSD(overstockValue * 0.02);
             }
         })
-        .catch(error => {
-            console.error('Error loading stock alerts:', error);
-            showStockAlertError('Error loading stock alerts: ' + error.message);
-        });
+        .catch(error => console.error('Error loading stock alerts:', error));
 }
 
 function updateStockAlertSummaries(outOfStock, lowStock, overstock) {
-    // Calculate values for each category
-    const lowStockValue = lowStock.reduce((sum, item) => sum + (item.CurrentStock * 50), 0); // Estimate $50 avg unit price
-    const overstockValue = overstock.reduce((sum, item) => sum + (item.CurrentStock * 25), 0); // Estimate excess value
+    // Calculate values for each category using real stock values
+    const lowStockValue = lowStock.reduce((sum, item) => sum + (item.StockValue || 0), 0);
+    const overstockValue = overstock.reduce((sum, item) => sum + (item.StockValue || 0), 0);
     const outOfStockLostSales = outOfStock.length * 500; // Estimate $500 lost sales per item per month
     
     // Update summary cards
@@ -958,39 +1040,56 @@ function showStockAlertError(message) {
     document.getElementById('overstock-tbody').innerHTML = '<tr><td colspan="4" class="text-center text-danger">' + message + '</td></tr>';
 }
 
-function populateOutOfStockTable(data) {
+function populateOutOfStockAnalysisTable(data, summary) {
     const tbody = document.getElementById('out-of-stock-tbody');
-    const countBadge = document.getElementById('out-of-stock-count');
-    const summaryRow = document.getElementById('out-of-stock-summary');
+    
+    // Update badges
+    document.getElementById('oos-healthy-badge').textContent = summary.healthy_count;
+    document.getElementById('oos-slow-badge').textContent = summary.slow_moving_count;
+    document.getElementById('oos-dead-badge').textContent = summary.dead_stock_count;
+    document.getElementById('oos-discontinued-badge').textContent = summary.discontinued_count;
+    
+    // Update summary card
+    document.getElementById('out-of-stock-summary-count').textContent = summary.total_count;
+    document.getElementById('out-of-stock-lost-sales').textContent = 'Est. Lost Sales: ' + formatUSD(summary.total_lost_sales);
     
     tbody.innerHTML = '';
-    countBadge.textContent = data.length;
 
     if (data.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="3" class="text-center text-muted">No out of stock items</td></tr>';
-        summaryRow.style.display = 'none';
+        tbody.innerHTML = '<tr><td colspan="4" class="text-center text-muted">No out of stock items</td></tr>';
         return;
     }
-
-    // Show top 15 items
-    const displayItems = data.slice(0, 15);
+    
+    // Show top 20 items (sorted by priority and lost sales)
+    const displayItems = data.slice(0, 20);
     displayItems.forEach(item => {
+        const profileBadge = getProfileBadge(item.StockProfile);
+        const daysAgo = item.DaysSinceLastSale > 1000 ? 'Never' : `${item.DaysSinceLastSale}d ago`;
+        
         const row = document.createElement('tr');
+        row.className = item.Priority === 4 ? 'table-danger' : '';
         row.innerHTML = `
-            <td><strong>${item.descripcion}</strong></td>
-            <td><span class="badge bg-secondary">${item.Category}</span></td>
             <td>
-                <button class="btn btn-sm btn-outline-primary" onclick="reorderProduct('${item.descripcion}')">
-                    <i class="bi bi-cart-plus"></i> Reorder
-                </button>
+                <div><strong>${item.ProductName}</strong></div>
+                <small class="text-muted">${item.Category}</small>
             </td>
+            <td>${profileBadge}</td>
+            <td class="small">${daysAgo}</td>
+            <td class="text-end"><strong>${item.FormattedLostSales}</strong></td>
         `;
         tbody.appendChild(row);
     });
+}
 
-    // Calculate and populate summary row
-    updateOutOfStockSummaryRow(data);
-    summaryRow.style.display = 'table-footer-group';
+function getProfileBadge(profile) {
+    const badges = {
+        'Healthy': '<span class="badge bg-danger">Urgent</span>',
+        'Moderate': '<span class="badge bg-warning text-dark">Moderate</span>',
+        'Slow Moving': '<span class="badge bg-warning text-dark">Slow</span>',
+        'Dead Stock': '<span class="badge bg-secondary">Dead</span>',
+        'Discontinued': '<span class="badge bg-dark">Disc.</span>'
+    };
+    return badges[profile] || '<span class="badge bg-secondary">' + profile + '</span>';
 }
 
 function updateOutOfStockSummaryRow(allData) {
