@@ -8,11 +8,11 @@ load_dotenv()
 
 class Config:
     # Database Configuration
-    DB_SERVER = 'dialfa.database.windows.net'
-    DB_USER = 'fp'
-    DB_PASSWORD = 'Ab1234,,,'
-    SPISA_DB = 'SPISA'
-    XERP_DB = 'xERP'
+    DB_SERVER = os.environ.get('DB_SERVER', 'dialfa.database.windows.net')
+    DB_USER = os.environ.get('DB_USER', 'fp')
+    DB_PASSWORD = os.environ.get('DB_PASSWORD', 'Ab1234,,,')
+    SPISA_DB = os.environ.get('SPISA_DB', 'SPISA')
+    XERP_DB = os.environ.get('XERP_DB', 'xERP')
     
     # Connection string template - working configuration
     CONNECTION_STRING = (
@@ -28,7 +28,7 @@ class Config:
     
     # Flask Configuration
     SECRET_KEY = os.environ.get('SECRET_KEY') or 'dialfa-analytics-2025'
-    DEBUG = True
+    DEBUG = os.environ.get('FLASK_DEBUG', 'False').lower() == 'true'
     
     # Analytics Configuration
     CACHE_TIMEOUT = 300  # 5 minutes
