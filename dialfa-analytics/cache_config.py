@@ -43,10 +43,13 @@ CACHE_CONFIG = {
 # - Otherwise use CACHE_BACKEND env var or default to simple
 if REDIS_URL:
     CACHE_BACKEND = 'redis'
-    print(f"✅ Redis URL detected, using Redis cache: {REDIS_URL[:20]}...")
+    # Use logging instead of print to avoid Windows encoding issues
+    import logging
+    logging.info(f"[CACHE] Redis URL detected, using Redis cache: {REDIS_URL[:20]}...")
 else:
     CACHE_BACKEND = os.getenv('CACHE_BACKEND', 'simple')
-    print(f"⚠️ No Redis URL found, using {CACHE_BACKEND} cache")
+    import logging
+    logging.info(f"[CACHE] No Redis URL found, using {CACHE_BACKEND} cache")
 
 cache_config = CACHE_CONFIG.get(CACHE_BACKEND, CACHE_CONFIG['simple'])
 
