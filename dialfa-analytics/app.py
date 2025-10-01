@@ -175,6 +175,55 @@ def create_app():
         app.logger.info("Session cleared")
         return jsonify({'status': 'success', 'message': 'Session cleared'})
     
+    @app.route('/api/my-ip')
+    def get_my_ip():
+        """Get the outbound IP address of this Railway deployment"""
+        import requests as req
+        try:
+            # Try multiple IP detection services
+            ip_services = [
+                'https://api.ipify.org?format=json',
+                'https://ifconfig.me/ip',
+                'https://icanhazip.com'
+            ]
+            
+            detected_ips = []
+            for service in ip_services:
+                try:
+                    response = req.get(service, timeout=5)
+                    if 'json' in service:
+                        ip = response.json()['ip']
+                    else:
+                        ip = response.text.strip()
+                    detected_ips.append({'service': service, 'ip': ip})
+                except Exception as e:
+                    detected_ips.append({'service': service, 'error': str(e)})
+            
+            # Get the most common IP
+            ips = [item['ip'] for item in detected_ips if 'ip' in item]
+            primary_ip = ips[0] if ips else 'Unable to detect'
+            
+            return jsonify({
+                'primary_ip': primary_ip,
+                'all_detections': detected_ips,
+                'x_forwarded_for': request.headers.get('X-Forwarded-For', 'Not set'),
+                'x_real_ip': request.headers.get('X-Real-IP', 'Not set'),
+                'remote_addr': request.remote_addr,
+                'instructions': {
+                    'azure_firewall': {
+                        'rule_name': 'Railway-Production',
+                        'start_ip': primary_ip,
+                        'end_ip': primary_ip
+                    }
+                }
+            })
+        except Exception as e:
+            return jsonify({
+                'error': str(e),
+                'remote_addr': request.remote_addr,
+                'headers': dict(request.headers)
+            }), 500
+    
     @app.errorhandler(404)
     def not_found(error):
         return render_template('error.html', 
