@@ -575,3 +575,43 @@ class FinancialAnalytics:
         except Exception as e:
             self.logger.error(f"Error getting SPISA today billing: {e}")
             return {'InvoiceAmount': 0}
+    
+    def get_spisa_collected_monthly(self):
+        """Get SPISA monthly collections (payments received this month) with breakdown by type"""
+        try:
+            df = self.db.execute_query(self.queries.SPISA_COLLECTED_MONTHLY, 'SPISA')
+            df = clean_dataframe(df)
+            if not df.empty:
+                row = df.iloc[0]
+                return {
+                    'TotalPayments': float(row['TotalPayments']),
+                    'CashPayments': float(row['CashPayments']),
+                    'ElectronicPayments': float(row['ElectronicPayments']),
+                    'TransactionCount': int(row['TransactionCount']),
+                    'CashCount': int(row['CashCount']),
+                    'ElectronicCount': int(row['ElectronicCount']),
+                    'CashPercentage': (float(row['CashPayments']) / float(row['TotalPayments']) * 100) if float(row['TotalPayments']) > 0 else 0,
+                    'ElectronicPercentage': (float(row['ElectronicPayments']) / float(row['TotalPayments']) * 100) if float(row['TotalPayments']) > 0 else 0
+                }
+            return {
+                'TotalPayments': 0,
+                'CashPayments': 0,
+                'ElectronicPayments': 0,
+                'TransactionCount': 0,
+                'CashCount': 0,
+                'ElectronicCount': 0,
+                'CashPercentage': 0,
+                'ElectronicPercentage': 0
+            }
+        except Exception as e:
+            self.logger.error(f"Error getting SPISA monthly collections: {e}")
+            return {
+                'TotalPayments': 0,
+                'CashPayments': 0,
+                'ElectronicPayments': 0,
+                'TransactionCount': 0,
+                'CashCount': 0,
+                'ElectronicCount': 0,
+                'CashPercentage': 0,
+                'ElectronicPercentage': 0
+            }

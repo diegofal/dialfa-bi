@@ -15,7 +15,7 @@
 
 <!-- Key Metrics Cards -->
 <div class="row mb-4">
-    <div class="col-md-3 mb-3">
+    <div class="col-xl col-lg-4 col-md-6 mb-3">
         <div class="card metric-card h-100" style="background: linear-gradient(135deg, var(--primary-color), #0056b3);">
             <div class="card-body text-white">
                 <div class="d-flex justify-content-between align-items-center">
@@ -32,7 +32,7 @@
         </div>
     </div>
     
-    <div class="col-md-3 mb-3">
+    <div class="col-xl col-lg-4 col-md-6 mb-3">
         <div class="card metric-card h-100" style="background: linear-gradient(135deg, var(--danger-color), #c82333);">
             <div class="card-body text-white">
                 <div class="d-flex justify-content-between align-items-center">
@@ -49,7 +49,7 @@
         </div>
     </div>
     
-    <div class="col-md-3 mb-3">
+    <div class="col-xl col-lg-4 col-md-6 mb-3">
         <div class="card metric-card h-100" style="background: linear-gradient(135deg, var(--success-color), #218838);">
             <div class="card-body text-white">
                 <div class="d-flex justify-content-between align-items-center">
@@ -66,7 +66,7 @@
         </div>
     </div>
     
-    <div class="col-md-3 mb-3">
+    <div class="col-xl col-lg-4 col-md-6 mb-3">
         <div class="card metric-card h-100" style="background: linear-gradient(135deg, var(--info-color), #138496);">
             <div class="card-body text-white">
                 <div class="d-flex justify-content-between align-items-center">
@@ -82,17 +82,43 @@
             </div>
         </div>
     </div>
+    
+    <div class="col-xl col-lg-4 col-md-6 mb-3">
+        <div class="card metric-card h-100" style="background: linear-gradient(135deg, #6f42c1, #563d7c);">
+            <div class="card-body text-white">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div class="flex-grow-1">
+                        <h6 class="card-title mb-0" id="monthly-collections-label">{{ _('Collected This Month') }}</h6>
+                        <h2 class="mb-2" id="monthly-collections">{{ _('Loading...') }}</h2>
+                        <div class="mt-2" style="font-size: 0.85rem;">
+                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                <span class="opacity-75"><i class="bi bi-cash"></i> {{ _('Cash') }}</span>
+                                <strong id="cash-collections">-</strong>
+                            </div>
+                            <div class="d-flex justify-content-between align-items-center">
+                                <span class="opacity-75"><i class="bi bi-bank"></i> {{ _('Electronic') }}</span>
+                                <strong id="electronic-collections">-</strong>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="opacity-75">
+                        <i class="bi bi-cash-stack" style="font-size: 2rem;"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
 
 <!-- Charts Row -->
 <div class="row mb-4">
-    <!-- Cash Flow Chart -->
+    <!-- Monthly Payment Collections Chart -->
     <div class="col-lg-8 mb-4">
         <div class="card h-100">
             <div class="card-header d-flex justify-content-between align-items-center">
                 <h5 class="mb-0">
-                    <i class="bi bi-graph-up"></i>
-                    {{ _('Cash Flow Trend') }}
+                    <i class="bi bi-cash-coin"></i>
+                    {{ _('Monthly Payment Collections') }}
                 </h5>
                 <div class="btn-group btn-group-sm" role="group">
                     <button type="button" class="btn btn-outline-primary active" onclick="loadCashFlowChart(6)">6M</button>
@@ -209,9 +235,9 @@
 const i18n = {
     month: "{{ _('Month') }}",
     amount: "{{ _('Amount') }}",
-    cashFlow: "{{ _('Cash Flow') }}",
+    paymentCollections: "{{ _('Payment Collections') }}",
     historicalCashFlow: "{{ _('Historical Cash Flow') }}",
-    noCashFlowData: "{{ _('No cash flow data available') }}",
+    noPaymentData: "{{ _('No payment data available') }}",
     noCustomerData: "{{ _('No customer data available') }}",
     noSalesTrendData: "{{ _('No sales trend data available') }}",
     noCategoryData: "{{ _('No category data available') }}",
@@ -255,10 +281,12 @@ function updateMetricCards(financial, inventory, sales) {
             if (data.status === 'success' && data.data) {
                 document.getElementById('monthly-billing').textContent = formatCurrency(data.data.BilledMonthly, 'ARS');
                 // Actualizar etiqueta con mes actual
-                const currentMonth = new Date().toLocaleDateString('es-ES', { month: 'long' });
+                const locale = document.documentElement.lang || 'es';
+                const currentMonth = new Date().toLocaleDateString(locale, { month: 'long' });
                 const monthLabel = document.getElementById('monthly-billing-label');
                 if (monthLabel) {
-                    monthLabel.textContent = `Facturado en ${currentMonth.charAt(0).toUpperCase() + currentMonth.slice(1)}`;
+                    const billedInText = locale === 'es' ? 'Facturado en' : 'Billed in';
+                    monthLabel.textContent = `${billedInText} ${currentMonth.charAt(0).toUpperCase() + currentMonth.slice(1)}`;
                 }
             }
         })
@@ -272,6 +300,30 @@ function updateMetricCards(financial, inventory, sales) {
             }
         })
         .catch(error => console.error('Error loading today billing:', error));
+    
+    // Cobranzas del mes actual desde SPISA con desglose por tipo
+    fetch('/financial/api/collected-monthly')
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success' && data.data) {
+                // Total
+                document.getElementById('monthly-collections').textContent = formatCurrency(data.data.TotalPayments, 'ARS');
+                
+                // Desglose por tipo
+                document.getElementById('cash-collections').textContent = formatCurrency(data.data.CashPayments, 'ARS');
+                document.getElementById('electronic-collections').textContent = formatCurrency(data.data.ElectronicPayments, 'ARS');
+                
+                // Actualizar etiqueta con mes actual
+                const locale = document.documentElement.lang || 'es';
+                const currentMonth = new Date().toLocaleDateString(locale, { month: 'long' });
+                const monthLabel = document.getElementById('monthly-collections-label');
+                if (monthLabel) {
+                    const collectedInText = locale === 'es' ? 'Cobrado en' : 'Collected in';
+                    monthLabel.textContent = `${collectedInText} ${currentMonth.charAt(0).toUpperCase() + currentMonth.slice(1)}`;
+                }
+            }
+        })
+        .catch(error => console.error('Error loading monthly collections:', error));
 }
 
 function loadCharts() {
@@ -321,7 +373,7 @@ function createCashFlowChart(data) {
             y: data.map(d => d.ActualPayments),
             type: 'scatter',
             mode: 'lines+markers',
-            name: i18n.cashFlow,
+            name: i18n.paymentCollections,
             line: { 
                 color: '#033663',
                 width: 3

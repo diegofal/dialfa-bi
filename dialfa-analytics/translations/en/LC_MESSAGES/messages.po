@@ -78,8 +78,20 @@ msgstr "Requires Attention"
 msgid "Billed This Month"
 msgstr "Billed This Month"
 
+msgid "Collected This Month"
+msgstr "Collected This Month"
+
 msgid "Monthly Sales"
 msgstr "Monthly Sales"
+
+msgid "Monthly Collections"
+msgstr "Monthly Collections"
+
+msgid "Cash"
+msgstr "Cash"
+
+msgid "Electronic"
+msgstr "Electronic/Checks"
 
 msgid "Billed Today"
 msgstr "Billed Today"
@@ -160,8 +172,8 @@ msgid "Stock Health"
 msgstr "Stock Health"
 
 # Chart and Section Titles
-msgid "Cash Flow Trend"
-msgstr "Cash Flow Trend"
+msgid "Monthly Payment Collections"
+msgstr "Monthly Payment Collections"
 
 msgid "Top Customers"
 msgstr "Top Customers"
@@ -525,14 +537,14 @@ msgstr "Forecasted Revenue (ARS)"
 msgid "Amount"
 msgstr "Amount"
 
-msgid "Cash Flow"
-msgstr "Cash Flow"
+msgid "Payment Collections"
+msgstr "Payment Collections"
 
 msgid "Historical Cash Flow"
 msgstr "Historical Cash Flow"
 
-msgid "No cash flow data available"
-msgstr "No cash flow data available"
+msgid "No payment data available"
+msgstr "No payment data available"
 
 msgid "No category data available"
 msgstr "No category data available"

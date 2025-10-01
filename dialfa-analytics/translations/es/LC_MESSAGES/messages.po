@@ -78,8 +78,20 @@ msgstr "Requiere Atención"
 msgid "Billed This Month"
 msgstr "Facturado Este Mes"
 
+msgid "Collected This Month"
+msgstr "Cobrado Este Mes"
+
 msgid "Monthly Sales"
 msgstr "Ventas del Mes"
+
+msgid "Monthly Collections"
+msgstr "Cobranzas Mensuales"
+
+msgid "Cash"
+msgstr "Efectivo"
+
+msgid "Electronic"
+msgstr "Transferencias/Cheques"
 
 msgid "Billed Today"
 msgstr "Facturado Hoy"
@@ -160,8 +172,8 @@ msgid "Stock Health"
 msgstr "Salud del Stock"
 
 # Chart and Section Titles
-msgid "Cash Flow Trend"
-msgstr "Tendencia de Flujo de Efectivo"
+msgid "Monthly Payment Collections"
+msgstr "Cobranzas Mensuales"
 
 msgid "Top Customers"
 msgstr "Principales Clientes"
@@ -525,14 +537,14 @@ msgstr "Ingresos Pronosticados (ARS)"
 msgid "Amount"
 msgstr "Monto"
 
-msgid "Cash Flow"
-msgstr "Flujo de Efectivo"
+msgid "Payment Collections"
+msgstr "Cobranzas"
 
 msgid "Historical Cash Flow"
 msgstr "Flujo de Efectivo Histórico"
 
-msgid "No cash flow data available"
-msgstr "No hay datos de flujo de efectivo disponibles"
+msgid "No payment data available"
+msgstr "No hay datos de cobranzas disponibles"
 
 msgid "No category data available"
 msgstr "No hay datos de categorías disponibles"

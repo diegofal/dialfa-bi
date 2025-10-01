@@ -11,7 +11,7 @@ class FinancialQueries:
     SELECT 
         COUNT(DISTINCT dm.debtor_no) as UniqueCustomers,
         SUM(dt.ov_amount * 1.21) as TotalOutstanding,
-        SUM(CASE WHEN dt.due_date < GETDATE() THEN dt.ov_amount * 1.21 ELSE 0 END) as TotalOverdue,
+        SUM(CASE WHEN dt.due_date < DATEADD(HOUR, -3, GETDATE()) THEN dt.ov_amount * 1.21 ELSE 0 END) as TotalOverdue,
         AVG(dt.ov_amount * 1.21) as AvgBalance
     FROM [0_debtor_trans] dt
     INNER JOIN [0_debtors_master] dm ON dt.debtor_no = dm.debtor_no
@@ -24,13 +24,13 @@ class FinancialQueries:
     SELECT 
         dm.name as Name,
         SUM(dt.ov_amount * 1.21) as CurrentBalance,
-        SUM(CASE WHEN dt.due_date < GETDATE() THEN dt.ov_amount * 1.21 ELSE 0 END) as OverdueAmount,
-        (SUM(CASE WHEN dt.due_date < GETDATE() THEN dt.ov_amount * 1.21 ELSE 0 END) / 
+        SUM(CASE WHEN dt.due_date < DATEADD(HOUR, -3, GETDATE()) THEN dt.ov_amount * 1.21 ELSE 0 END) as OverdueAmount,
+        (SUM(CASE WHEN dt.due_date < DATEADD(HOUR, -3, GETDATE()) THEN dt.ov_amount * 1.21 ELSE 0 END) / 
          NULLIF(SUM(dt.ov_amount * 1.21), 0)) * 100 as OverduePercentage,
         CASE 
-            WHEN (SUM(CASE WHEN dt.due_date < GETDATE() THEN dt.ov_amount * 1.21 ELSE 0 END) / 
+            WHEN (SUM(CASE WHEN dt.due_date < DATEADD(HOUR, -3, GETDATE()) THEN dt.ov_amount * 1.21 ELSE 0 END) / 
                   NULLIF(SUM(dt.ov_amount * 1.21), 0)) > 0.5 THEN 'HIGH RISK'
-            WHEN (SUM(CASE WHEN dt.due_date < GETDATE() THEN dt.ov_amount * 1.21 ELSE 0 END) / 
+            WHEN (SUM(CASE WHEN dt.due_date < DATEADD(HOUR, -3, GETDATE()) THEN dt.ov_amount * 1.21 ELSE 0 END) / 
                   NULLIF(SUM(dt.ov_amount * 1.21), 0)) > 0.2 THEN 'MEDIUM RISK'
             ELSE 'LOW RISK'
         END as RiskLevel
@@ -49,8 +49,8 @@ class FinancialQueries:
         dm.name as Name,
         'Customer' as Type,
         SUM(dt.ov_amount * 1.21) as OutstandingBalance,
-        SUM(CASE WHEN dt.due_date < GETDATE() THEN dt.ov_amount * 1.21 ELSE 0 END) as OverdueAmount,
-        (SUM(CASE WHEN dt.due_date < GETDATE() THEN dt.ov_amount * 1.21 ELSE 0 END) / 
+        SUM(CASE WHEN dt.due_date < DATEADD(HOUR, -3, GETDATE()) THEN dt.ov_amount * 1.21 ELSE 0 END) as OverdueAmount,
+        (SUM(CASE WHEN dt.due_date < DATEADD(HOUR, -3, GETDATE()) THEN dt.ov_amount * 1.21 ELSE 0 END) / 
          NULLIF(SUM(dt.ov_amount * 1.21), 0)) * 100 as OverduePercentage
     FROM [0_debtor_trans] dt
     INNER JOIN [0_debtors_master] dm ON dt.debtor_no = dm.debtor_no
@@ -97,8 +97,8 @@ class FinancialQueries:
         SUM(PaymentAmount) as ActualPayments,
         COUNT(*) as TransactionCount
     FROM Transactions 
-    WHERE PaymentDate >= DATEADD(MONTH, -{months}, GETDATE())
-    AND PaymentDate <= GETDATE()
+    WHERE PaymentDate >= DATEADD(MONTH, -{months}, DATEADD(HOUR, -3, GETDATE()))
+    AND PaymentDate <= DATEADD(HOUR, -3, GETDATE())
     AND PaymentDate != '0001-01-01 00:00:00'
     AND PaymentDate > '2020-01-01'
     GROUP BY YEAR(PaymentDate), MONTH(PaymentDate)
@@ -140,15 +140,31 @@ class FinancialQueries:
     SPISA_BILLED_MONTHLY = """
     SELECT Sum(InvoiceAmount) as InvoiceAmount
     FROM Transactions t
-    WHERE MONTH(InvoiceDate) = MONTH(GETDATE()) AND YEAR(InvoiceDate) = YEAR(GETDATE())
+    WHERE MONTH(InvoiceDate) = MONTH(DATEADD(HOUR, -3, GETDATE())) 
+    AND YEAR(InvoiceDate) = YEAR(DATEADD(HOUR, -3, GETDATE()))
     AND Type=1
     """
     
     SPISA_BILLED_TODAY = """
     SELECT COALESCE(Sum(InvoiceAmount),0) as InvoiceAmount
     FROM Transactions t
-    WHERE CAST(InvoiceDate AS DATE) = CAST(GETDATE() AS DATE)
+    WHERE CAST(InvoiceDate AS DATE) = CAST(DATEADD(HOUR, -3, GETDATE()) AS DATE)
     AND Type=1
+    """
+    
+    SPISA_COLLECTED_MONTHLY = """
+    SELECT 
+        COALESCE(SUM(PaymentAmount), 0) as TotalPayments,
+        COALESCE(SUM(CASE WHEN Type = 1 THEN PaymentAmount ELSE 0 END), 0) as CashPayments,
+        COALESCE(SUM(CASE WHEN Type = 0 THEN PaymentAmount ELSE 0 END), 0) as ElectronicPayments,
+        COUNT(*) as TransactionCount,
+        COUNT(CASE WHEN Type = 1 THEN 1 END) as CashCount,
+        COUNT(CASE WHEN Type = 0 THEN 1 END) as ElectronicCount
+    FROM Transactions t
+    WHERE MONTH(PaymentDate) = MONTH(DATEADD(HOUR, -3, GETDATE()))
+    AND YEAR(PaymentDate) = YEAR(DATEADD(HOUR, -3, GETDATE()))
+    AND PaymentDate != '0001-01-01 00:00:00'
+    AND PaymentDate > '2020-01-01'
     """
     
     CUSTOMER_PROFITABILITY = """
@@ -505,12 +521,12 @@ class SalesQueries:
     WITH FC AS (
       SELECT COALESCE(SUM(Total) * 1.21, 0) AS BilledMonthlyFC FROM [0_debtor_trans] dt
       INNER JOIN [0_sales_orders] so ON so.ID = dt.order_
-      WHERE dt.Type=10 AND MONTH(ord_date) = MONTH(GETDATE()) AND YEAR(ord_date) = YEAR(GETDATE())
+      WHERE dt.Type=10 AND MONTH(ord_date) = MONTH(DATEADD(HOUR, -3, GETDATE())) AND YEAR(ord_date) = YEAR(DATEADD(HOUR, -3, GETDATE()))
     ),
     NC AS (
       SELECT COALESCE(SUM(Total) * 1.21, 0) AS BilledMonthlyNC FROM [0_debtor_trans] dt
       INNER JOIN [0_sales_orders] so ON so.ID = dt.order_
-      WHERE dt.Type=11 AND MONTH(ord_date) = MONTH(GETDATE()) AND YEAR(ord_date) = YEAR(GETDATE())
+      WHERE dt.Type=11 AND MONTH(ord_date) = MONTH(DATEADD(HOUR, -3, GETDATE())) AND YEAR(ord_date) = YEAR(DATEADD(HOUR, -3, GETDATE()))
     )
     SELECT (BilledMonthlyFC - BilledMonthlyNC) AS BilledMonthly
     FROM FC, NC
@@ -520,12 +536,12 @@ class SalesQueries:
     WITH FC AS (
       SELECT COALESCE(SUM(Total) * 1.21, 0) AS BilledTodayFC FROM [0_debtor_trans] dt
       INNER JOIN [0_sales_orders] so ON so.ID = dt.order_
-      WHERE dt.Type=10 AND CAST(ord_date AS DATE) = CAST(GETDATE() AS DATE)
+      WHERE dt.Type=10 AND CAST(ord_date AS DATE) = CAST(DATEADD(HOUR, -3, GETDATE()) AS DATE)
     ),
     NC AS (
       SELECT COALESCE(SUM(Total) * 1.21, 0) AS BilledTodayNC FROM [0_debtor_trans] dt
       INNER JOIN [0_sales_orders] so ON so.ID = dt.order_
-      WHERE dt.Type=11 AND CAST(ord_date AS DATE) = CAST(GETDATE() AS DATE)
+      WHERE dt.Type=11 AND CAST(ord_date AS DATE) = CAST(DATEADD(HOUR, -3, GETDATE()) AS DATE)
     )
     SELECT (BilledTodayFC - BilledTodayNC) AS BilledToday
     FROM FC, NC
@@ -549,9 +565,9 @@ class SalesQueries:
       INNER JOIN [0_debtors_master] dm on dm.debtor_no = so.debtor_no
       WHERE dt.Type=10 AND 
         (('{view_filter}' = 'month' AND 
-    MONTH(ord_date) = MONTH(GETDATE()) AND YEAR(ord_date) = YEAR(GETDATE())) OR
+    MONTH(ord_date) = MONTH(DATEADD(HOUR, -3, GETDATE())) AND YEAR(ord_date) = YEAR(DATEADD(HOUR, -3, GETDATE()))) OR
        ('{view_filter}' = 'day' 
-    AND CAST(ord_date AS DATE) = CAST(GETDATE() AS DATE)))
+    AND CAST(ord_date AS DATE) = CAST(DATEADD(HOUR, -3, GETDATE()) AS DATE)))
     """
 
 class CrossSystemQueries:

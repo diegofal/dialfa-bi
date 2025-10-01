@@ -96,6 +96,19 @@ def billing_today():
         logger.error(f"Today billing error: {e}")
         return jsonify({'error': str(e), 'status': 'error'}), 500
 
+@financial_bp.route('/api/collected-monthly')
+def collected_monthly():
+    """Get monthly collections from SPISA"""
+    try:
+        data = current_app.financial_analytics.get_spisa_collected_monthly()
+        return jsonify({
+            'data': data,
+            'status': 'success'
+        })
+    except Exception as e:
+        logger.error(f"Monthly collections error: {e}")
+        return jsonify({'error': str(e), 'status': 'error'}), 500
+
 @financial_bp.route('/api/top-customers')
 def top_customers():
     """Get top customers by balance"""
