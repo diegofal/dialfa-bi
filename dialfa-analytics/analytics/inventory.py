@@ -8,6 +8,7 @@ from datetime import datetime, timedelta
 import logging
 from .utils import format_currency, categorize_stock_movement, calculate_carrying_cost, clean_dataframe
 from database.queries import InventoryQueries
+from cache_config import cache, get_cache_timeout
 
 class InventoryAnalytics:
     def __init__(self, db_manager):
@@ -75,8 +76,10 @@ class InventoryAnalytics:
             self.logger.error(f"Error in slow moving analysis: {e}")
             return []
     
+    @cache.cached(timeout=get_cache_timeout('category_analysis'), key_prefix='inventory_category')
     def get_category_analysis(self):
         """Analyze inventory by category"""
+        self.logger.info("Executing get_category_analysis (cache miss or expired)")
         try:
             df = self.db.execute_query(self.queries.CATEGORY_ANALYSIS, 'SPISA')
             df = clean_dataframe(df)
@@ -153,8 +156,10 @@ class InventoryAnalytics:
             self.logger.error(f"Error in reorder recommendations: {e}")
             return []
     
+    @cache.cached(timeout=get_cache_timeout('abc_analysis'), key_prefix='inventory_abc')
     def get_abc_analysis(self):
         """Perform ABC analysis on inventory"""
+        self.logger.info("Executing get_abc_analysis (cache miss or expired)")
         try:
             # Get inventory with sales data
             abc_query = """
@@ -270,8 +275,10 @@ class InventoryAnalytics:
         else:
             return 'C'
     
+    @cache.cached(timeout=get_cache_timeout('stock_alerts'), key_prefix='inventory_alerts')
     def get_stock_alerts(self):
         """Get stock level alerts"""
+        self.logger.info("Executing get_stock_alerts (cache miss or expired)")
         try:
             alerts_query = """
             SELECT 

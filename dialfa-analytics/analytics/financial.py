@@ -8,6 +8,7 @@ from datetime import datetime, timedelta
 import logging
 from .utils import format_currency, calculate_growth_rate, calculate_risk_score, clean_dataframe
 from database.queries import FinancialQueries
+from cache_config import cache, get_cache_timeout
 
 class FinancialAnalytics:
     def __init__(self, db_manager):
@@ -15,8 +16,10 @@ class FinancialAnalytics:
         self.logger = logging.getLogger(__name__)
         self.queries = FinancialQueries()
     
+    @cache.cached(timeout=get_cache_timeout('executive_summary'), key_prefix='financial_exec_summary')
     def get_executive_summary(self):
         """Get key financial metrics for executive dashboard"""
+        self.logger.info("Executing get_executive_summary (cache miss or expired)")
         try:
             df = self.db.execute_query(self.queries.EXECUTIVE_SUMMARY, 'SPISA')
             
@@ -39,8 +42,10 @@ class FinancialAnalytics:
             self.logger.error(f"Error getting executive summary: {e}")
             return {}
     
+    @cache.cached(timeout=get_cache_timeout('credit_risk'), key_prefix='financial_credit_risk')
     def get_credit_risk_analysis(self):
         """Analyze customer credit risk"""
+        self.logger.info("Executing get_credit_risk_analysis (cache miss or expired)")
         try:
             df = self.db.execute_query(self.queries.CREDIT_RISK_ANALYSIS, 'SPISA')
             df = clean_dataframe(df)
@@ -60,8 +65,10 @@ class FinancialAnalytics:
             self.logger.error(f"Error in credit risk analysis: {e}")
             return []
     
+    @cache.cached(timeout=get_cache_timeout('cash_flow'), key_prefix='financial_cash_flow_%(months)s')
     def get_cash_flow_history(self, months=12):
         """Get historical cash flow data"""
+        self.logger.info(f"Executing get_cash_flow_history for {months} months (cache miss or expired)")
         try:
             query = self.queries.CASH_FLOW_FORECAST.format(months=months)
             df = self.db.execute_query(query, 'SPISA')
@@ -322,8 +329,10 @@ class FinancialAnalytics:
         
         return forecasts
     
+    @cache.cached(timeout=get_cache_timeout('top_customers'), key_prefix='financial_top_customers_%(limit)s')
     def get_top_customers(self, limit=10):
         """Get top customers by outstanding balance"""
+        self.logger.info(f"Executing get_top_customers (top {limit}) (cache miss or expired)")
         try:
             query = self.queries.TOP_CUSTOMERS.format(limit=limit)
             df = self.db.execute_query(query, 'SPISA')
@@ -358,8 +367,10 @@ class FinancialAnalytics:
             self.logger.error(f"Error in customer profitability analysis: {e}")
             return []
     
+    @cache.cached(timeout=get_cache_timeout('aging_analysis'), key_prefix='financial_aging')
     def get_aging_analysis(self):
         """Analyze accounts receivable aging"""
+        self.logger.info("Executing get_aging_analysis (cache miss or expired)")
         try:
             # Custom aging query
             aging_query = """

@@ -12,6 +12,9 @@ from flask_babel import Babel, _, get_locale
 from flask_login import LoginManager, login_required, current_user
 from config import Config
 
+# Import cache configuration
+from cache_config import init_cache, cache
+
 # Import our custom modules
 from database.connection import DatabaseManager
 from analytics.financial import FinancialAnalytics
@@ -27,6 +30,7 @@ from routes.financial import financial_bp
 from routes.inventory import inventory_bp
 from routes.sales import sales_bp
 from routes.retool_compat import retool_bp
+from routes.cache_admin import cache_admin_bp
 from auth.routes import auth_bp
 
 def create_app():
@@ -49,6 +53,10 @@ def create_app():
     def load_user(user_id):
         """Load user by ID for Flask-Login"""
         return get_user_by_id(user_id)
+    
+    # Initialize cache
+    init_cache(app)
+    app.logger.info("Cache system initialized")
     
     # Initialize Babel for internationalization
     babel = Babel()
@@ -114,6 +122,7 @@ def create_app():
     
     # Register blueprints
     app.register_blueprint(auth_bp, url_prefix='/auth')
+    app.register_blueprint(cache_admin_bp)  # Cache admin routes
     app.register_blueprint(dashboard_bp)
     app.register_blueprint(financial_bp, url_prefix='/financial')
     app.register_blueprint(inventory_bp, url_prefix='/inventory')

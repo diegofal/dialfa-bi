@@ -8,6 +8,7 @@ from datetime import datetime, timedelta
 import logging
 from .utils import format_currency, calculate_growth_rate, clean_dataframe
 from database.queries import SalesQueries
+from cache_config import cache, get_cache_timeout
 
 class SalesAnalytics:
     def __init__(self, db_manager):
@@ -38,8 +39,10 @@ class SalesAnalytics:
             self.logger.error(f"Error getting sales summary: {e}")
             return {}
     
+    @cache.cached(timeout=get_cache_timeout('monthly_trends'), key_prefix='sales_monthly_trends')
     def get_monthly_trends(self):
         """Get monthly sales trends from xERP database"""
+        self.logger.info("Executing get_monthly_trends (cache miss or expired)")
         try:
             df = self.db.execute_query(self.queries.XERP_MONTHLY_SALES_TREND, 'xERP')
             df = clean_dataframe(df)
@@ -163,8 +166,10 @@ class SalesAnalytics:
             self.logger.error(f"Error getting sales performance by {period}: {e}")
             return []
     
+    @cache.cached(timeout=get_cache_timeout('customer_segmentation'), key_prefix='sales_customer_segmentation')
     def get_customer_segmentation(self):
         """Segment customers based on sales behavior"""
+        self.logger.info("Executing get_customer_segmentation (cache miss or expired)")
         try:
             segmentation_query = """
             WITH CustomerSales AS (

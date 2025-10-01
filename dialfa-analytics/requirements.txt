@@ -1,6 +1,7 @@
 Flask>=3.0.0
 Flask-Babel>=4.0.0
 Flask-Login>=0.6.3
+Flask-Caching>=2.1.0
 pandas>=2.0.0
 numpy>=1.24.0
 plotly>=5.17.0
