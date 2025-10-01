@@ -65,6 +65,7 @@ CACHE_TIMEOUTS = {
     'category_analysis': 1200,    # 20 minutes
     'abc_analysis': 1800,         # 30 minutes
     'inventory_kpis': 600,        # 10 minutes
+    'stock_value_evolution': 3600, # 60 minutes - stock snapshots daily
     
     # Medium queries
     'dashboard_overview': 300,    # 5 minutes

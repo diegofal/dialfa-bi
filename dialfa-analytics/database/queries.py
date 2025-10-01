@@ -105,6 +105,7 @@ class FinancialQueries:
     AND PaymentDate <= DATEADD(HOUR, -3, GETDATE())
     AND PaymentDate != '0001-01-01 00:00:00'
     AND PaymentDate > '2020-01-01'
+    AND PaymentAmount > 0  -- Solo pagos reales (excluir registros sin pago)
     GROUP BY YEAR(PaymentDate), MONTH(PaymentDate)
     ORDER BY Year, Month
     """
@@ -169,6 +170,7 @@ class FinancialQueries:
     AND YEAR(PaymentDate) = YEAR(DATEADD(HOUR, -3, GETDATE()))
     AND PaymentDate != '0001-01-01 00:00:00'
     AND PaymentDate > '2020-01-01'
+    AND PaymentAmount > 0  -- Solo pagos reales
     """
     
     CUSTOMER_PROFITABILITY = """
@@ -407,6 +409,18 @@ class InventoryQueries:
     FROM VelocityAnalysis
     WHERE CurrentStock >= 0
     ORDER BY AnnualSalesValue DESC, StockValue DESC
+    """
+    
+    STOCK_VALUE_EVOLUTION = """
+    SELECT 
+        Date,
+        StockValue,
+        YEAR(Date) as Year,
+        MONTH(Date) as Month,
+        DATENAME(MONTH, Date) as MonthName
+    FROM StockSnapshots
+    WHERE Date >= DATEADD(MONTH, -{months}, GETDATE())
+    ORDER BY Date ASC
     """
 
 class SalesQueries:

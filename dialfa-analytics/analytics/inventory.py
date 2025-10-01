@@ -432,3 +432,23 @@ class InventoryAnalytics:
         except Exception as e:
             self.logger.error(f"Error calculating stock variation KPIs: {e}")
             return {}
+    
+    @cache.cached(timeout=get_cache_timeout('stock_value_evolution'), key_prefix='inventory_stock_value_evolution_%(months)s')
+    def get_stock_value_evolution(self, months=12):
+        """Get historical stock value evolution from StockSnapshots"""
+        self.logger.info(f"Executing get_stock_value_evolution for {months} months (cache miss or expired)")
+        try:
+            query = self.queries.STOCK_VALUE_EVOLUTION.format(months=months)
+            df = self.db.execute_query(query, 'SPISA')
+            df = clean_dataframe(df)
+            
+            if not df.empty:
+                # Format dates
+                df['FormattedDate'] = pd.to_datetime(df['Date']).dt.strftime('%Y-%m-%d')
+                df['FormattedValue'] = df['StockValue'].apply(lambda x: format_currency(x, 'USD', 'SPISA'))
+                
+                return df.to_dict('records')
+            return []
+        except Exception as e:
+            self.logger.error(f"Error getting stock value evolution: {e}")
+            return []

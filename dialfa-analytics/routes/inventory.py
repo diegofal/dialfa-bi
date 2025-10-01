@@ -172,3 +172,18 @@ def stock_variation_kpis():
     except Exception as e:
         logger.error(f"Stock variation KPIs error: {e}")
         return jsonify({'error': str(e), 'status': 'error'}), 500
+
+@inventory_bp.route('/api/stock-value-evolution')
+def stock_value_evolution():
+    """Get historical stock value evolution"""
+    try:
+        months = request.args.get('months', 12, type=int)
+        evolution_data = current_app.inventory_analytics.get_stock_value_evolution(months)
+        return jsonify({
+            'data': evolution_data,
+            'total_records': len(evolution_data),
+            'status': 'success'
+        })
+    except Exception as e:
+        logger.error(f"Stock value evolution error: {e}")
+        return jsonify({'error': str(e), 'status': 'error'}), 500

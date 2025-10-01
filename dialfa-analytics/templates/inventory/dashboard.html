@@ -30,6 +30,17 @@
                 <i class="bi bi-currency-dollar text-success mb-2" style="font-size: 2rem;"></i>
                 <h3 id="total-value" class="text-success">Loading...</h3>
                 <p class="card-text">Total Value</p>
+                <hr class="my-2">
+                <div style="font-size: 0.75rem;">
+                    <div class="d-flex justify-content-between mb-1">
+                        <span class="text-muted">Healthy:</span>
+                        <strong id="healthy-stock-value" class="text-success">-</strong>
+                    </div>
+                    <div class="d-flex justify-content-between">
+                        <span class="text-muted">Dead:</span>
+                        <strong id="dead-stock-value-card" class="text-danger">-</strong>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -78,6 +89,60 @@
             </div>
             <div class="card-body">
                 <div id="stock-health-chart" class="chart-container"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Stock Value Evolution Chart -->
+<div class="row mb-4">
+    <div class="col-lg-8">
+        <div class="card h-100">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="card-title mb-0">
+                    <i class="bi bi-graph-up"></i>
+                    {{ _('Stock Value Evolution') }}
+                </h5>
+                <div class="btn-group btn-group-sm" role="group">
+                    <button type="button" class="btn btn-outline-primary" onclick="loadStockValueData(6)">6M</button>
+                    <button type="button" class="btn btn-outline-primary active" onclick="loadStockValueData(12)">12M</button>
+                    <button type="button" class="btn btn-outline-primary" onclick="loadStockValueData(24)">24M</button>
+                </div>
+            </div>
+            <div class="card-body">
+                <div id="stock-value-evolution-chart" class="chart-container"></div>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-4">
+        <div class="card h-100">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="bi bi-calendar3"></i>
+                    {{ _('Monthly Breakdown') }}
+                </h5>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive" style="max-height: 500px; overflow-y: auto;">
+                    <table class="table table-sm table-hover mb-0">
+                        <thead class="table-light sticky-top">
+                            <tr>
+                                <th>{{ _('Month') }}</th>
+                                <th class="text-end">{{ _('Value') }}</th>
+                                <th class="text-end">{{ _('Change') }}</th>
+                            </tr>
+                        </thead>
+                        <tbody id="stock-value-breakdown-table">
+                            <tr>
+                                <td colspan="3" class="text-center text-muted">
+                                    <div class="spinner-border spinner-border-sm" role="status">
+                                        <span class="visually-hidden">Loading...</span>
+                                    </div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </div>
     </div>
@@ -705,6 +770,17 @@
 </div>
 
 <script>
+// Utility function to format currency
+function formatCurrency(amount, currency = 'USD') {
+    if (amount >= 1000000) {
+        return `${currency} ${(amount/1000000).toFixed(1)}M`;
+    } else if (amount >= 1000) {
+        return `${currency} ${(amount/1000).toFixed(1)}K`;
+    } else {
+        return `${currency} ${amount.toFixed(2)}`;
+    }
+}
+
 // Load inventory data when page loads
 document.addEventListener('DOMContentLoaded', function() {
     // Initialize Bootstrap tooltips
@@ -716,6 +792,7 @@ document.addEventListener('DOMContentLoaded', function() {
     loadInventoryData();
     loadCategoryChart();
     loadStockHealthChart();
+    loadStockValueData(12);
     loadStockAlerts();
     loadDeadStockAnalysis();
     loadTopStockAnalysis();
@@ -725,6 +802,7 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 function loadInventoryData() {
+    // Load basic summary
     fetch('/inventory/api/summary')
         .then(response => response.json())
         .then(data => {
@@ -733,17 +811,37 @@ function loadInventoryData() {
                 document.getElementById('total-products').textContent = summary.total_products.toLocaleString();
                 document.getElementById('total-value').textContent = summary.formatted.total_value;
                 
-                // Calculate additional metrics
-                const avgProductValue = summary.total_value / summary.total_products;
-                const healthyStockPercentage = ((summary.in_stock_products || summary.total_products) / summary.total_products * 100).toFixed(1);
+                const totalValue = summary.total_value;
                 
-                // Update slow moving and dead stock (will be updated by actual data later)
-                document.getElementById('slow-moving').textContent = Math.floor(summary.total_products * 0.15);
-                document.getElementById('dead-stock').textContent = Math.floor(summary.total_products * 0.08);
-                
-                // Add contextual information
-                console.log(`Average product value: ${formatCurrency(avgProductValue)}`);
-                console.log(`Healthy stock percentage: ${healthyStockPercentage}%`);
+                // Now get dead stock to calculate healthy stock correctly
+                fetch('/inventory/api/slow-moving')
+                    .then(response => response.json())
+                    .then(slowData => {
+                        if (slowData.status === 'success') {
+                            const slowMoving = slowData.data || [];
+                            
+                            // Calculate dead stock value (Dead Stock category)
+                            const deadStockItems = slowMoving.filter(item => item.StockCategory === 'Dead Stock');
+                            const deadStockValue = deadStockItems.reduce((sum, item) => sum + (item.StockValue || 0), 0);
+                            
+                            // Calculate slow moving count
+                            const slowMovingCount = slowMoving.filter(item => 
+                                item.StockCategory === 'Slow Moving' || item.StockCategory === 'Dead Stock'
+                            ).length;
+                            
+                            // Healthy stock = Total - Dead Stock
+                            const healthyStockValue = totalValue - deadStockValue;
+                            
+                            // Update cards
+                            document.getElementById('healthy-stock-value').textContent = formatCurrency(healthyStockValue);
+                            document.getElementById('dead-stock-value-card').textContent = formatCurrency(deadStockValue);
+                            document.getElementById('slow-moving').textContent = slowMovingCount;
+                            document.getElementById('dead-stock').textContent = deadStockItems.length;
+                            
+                            console.log(`Total: ${formatCurrency(totalValue)}, Dead: ${formatCurrency(deadStockValue)}, Healthy: ${formatCurrency(healthyStockValue)}`);
+                        }
+                    })
+                    .catch(error => console.error('Error loading slow moving data:', error));
             }
         })
         .catch(error => console.error('Error loading inventory data:', error));
@@ -1507,6 +1605,139 @@ function getTrendIcon(trendPercentage) {
     if (trendPercentage > 5) return '📈';
     if (trendPercentage < -5) return '📉';
     return '➡️';
+}
+
+// Stock Value Evolution Chart and Table
+function loadStockValueData(months = 12) {
+    // Update button states
+    document.querySelectorAll('.btn-group button').forEach(btn => {
+        btn.classList.remove('active');
+        if (btn.textContent.includes(months)) {
+            btn.classList.add('active');
+        }
+    });
+    
+    fetch(`/inventory/api/stock-value-evolution?months=${months}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success') {
+                createStockValueEvolutionChart(data.data);
+                createStockValueBreakdownTable(data.data);
+            }
+        })
+        .catch(error => console.error('Error loading stock value evolution:', error));
+}
+
+function createStockValueEvolutionChart(data) {
+    if (!data || data.length === 0) {
+        document.getElementById('stock-value-evolution-chart').innerHTML = '<div class="alert alert-info">No stock value data available</div>';
+        return;
+    }
+    
+    const dates = data.map(d => d.FormattedDate);
+    const values = data.map(d => d.StockValue);
+    
+    const trace = {
+        x: dates,
+        y: values,
+        type: 'scatter',
+        mode: 'lines+markers',
+        name: 'Stock Value',
+        line: { 
+            color: '#033663',
+            width: 2.5
+        },
+        marker: {
+            size: 5,
+            color: '#033663'
+        },
+        fill: 'tozeroy',
+        fillcolor: 'rgba(3, 54, 99, 0.1)'
+    };
+    
+    const layout = {
+        title: '',
+        xaxis: { 
+            title: 'Date',
+            showgrid: true,
+            gridcolor: '#e9ecef'
+        },
+        yaxis: { 
+            title: 'Stock Value (USD)',
+            tickformat: '$,.0f',
+            showgrid: true,
+            gridcolor: '#e9ecef'
+        },
+        margin: { t: 20, r: 40, b: 60, l: 80 },
+        plot_bgcolor: 'rgba(0,0,0,0)',
+        paper_bgcolor: 'rgba(0,0,0,0)',
+        hovermode: 'x unified'
+    };
+    
+    Plotly.newPlot('stock-value-evolution-chart', [trace], layout, {responsive: true});
+    console.log('Stock value evolution chart created successfully');
+}
+
+function createStockValueBreakdownTable(data) {
+    if (!data || data.length === 0) {
+        document.getElementById('stock-value-breakdown-table').innerHTML = 
+            '<tr><td colspan="3" class="text-center text-muted">No data available</td></tr>';
+        return;
+    }
+    
+    // Group by month and get last value of each month
+    const monthlyData = {};
+    data.forEach(item => {
+        const date = new Date(item.Date);
+        const monthKey = `${item.Year}-${String(item.Month).padStart(2, '0')}`;
+        const monthLabel = `${item.MonthName} ${item.Year}`;
+        
+        if (!monthlyData[monthKey] || new Date(monthlyData[monthKey].Date) < date) {
+            monthlyData[monthKey] = {
+                ...item,
+                monthLabel: monthLabel,
+                sortKey: monthKey
+            };
+        }
+    });
+    
+    // Convert to array and sort by date (most recent first)
+    const monthlyArray = Object.values(monthlyData).sort((a, b) => b.sortKey.localeCompare(a.sortKey));
+    
+    // Calculate month-over-month changes
+    const tableRows = monthlyArray.map((item, index) => {
+        const prevItem = monthlyArray[index + 1];
+        let change = 0;
+        let changeClass = '';
+        let changeIcon = '';
+        
+        if (prevItem) {
+            change = ((item.StockValue - prevItem.StockValue) / prevItem.StockValue) * 100;
+            if (change > 0) {
+                changeClass = 'text-success';
+                changeIcon = '↗';
+            } else if (change < 0) {
+                changeClass = 'text-danger';
+                changeIcon = '↘';
+            } else {
+                changeClass = 'text-muted';
+                changeIcon = '→';
+            }
+        }
+        
+        return `
+            <tr>
+                <td><strong>${item.monthLabel}</strong></td>
+                <td class="text-end">${item.FormattedValue}</td>
+                <td class="text-end ${changeClass}">
+                    ${prevItem ? `${changeIcon} ${Math.abs(change).toFixed(1)}%` : '-'}
+                </td>
+            </tr>
+        `;
+    }).join('');
+    
+    document.getElementById('stock-value-breakdown-table').innerHTML = tableRows;
+    console.log('Stock value breakdown table created successfully');
 }
 </script>
 {% endblock %}

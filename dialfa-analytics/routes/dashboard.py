@@ -39,8 +39,8 @@ def dashboard_overview():
 def dashboard_charts():
     """Get chart data for dashboard"""
     try:
-        # Cash flow chart
-        cash_flow = current_app.financial_analytics.get_cash_flow_forecast()
+        # Cash flow chart with payment type breakdown
+        cash_flow = current_app.financial_analytics.get_cash_flow_history()
         
         # Top customers chart
         top_customers = current_app.financial_analytics.get_top_customers(5)
