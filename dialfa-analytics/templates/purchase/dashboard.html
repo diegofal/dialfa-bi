@@ -4,12 +4,28 @@
 
 {% block content %}
 <div class="row mb-4">
-    <div class="col">
+    <div class="col-md-8">
         <h1 class="h2">
             <i class="bi bi-cart-check"></i>
             {{ _('Purchase Orders & Reorder Analysis') }}
         </h1>
         <p class="text-muted">Intelligent reorder recommendations and supplier performance</p>
+    </div>
+    <div class="col-md-4">
+        <div class="input-group">
+            <span class="input-group-text">{{ _('Demand based on') }}</span>
+            <input type="number" class="form-control" id="demand-days" 
+                   value="90" min="1" max="730" style="max-width: 100px;">
+            <span class="input-group-text">{{ _('days') }}</span>
+            <button class="btn btn-primary" onclick="loadReorderData()">
+                <i class="bi bi-calculator"></i> {{ _('Calculate') }}
+            </button>
+        </div>
+        <small class="text-muted d-block">{{ _('Lead Time') }}: 135 {{ _('days') }} (90 + 45)</small>
+        <small class="text-muted d-block">
+            <i class="bi bi-info-circle"></i> 
+            CRITICAL &lt;20% | URGENT &lt;40% | HIGH &lt;60% | MEDIUM &lt;100%
+        </small>
     </div>
 </div>
 
@@ -113,40 +129,56 @@
                     <i class="bi bi-list-check"></i>
                     {{ _('Reorder Recommendations') }}
                 </h5>
-                <div class="btn-group btn-group-sm" role="group">
-                    <button type="button" class="btn btn-outline-danger active" onclick="filterByPriority('URGENT')">
-                        {{ _('Urgent') }}
+                <div class="btn-group btn-group-sm me-2" role="group">
+                    <button type="button" class="btn btn-outline-danger active" data-filter="priority" onclick="filterByPriority('CRITICAL_URGENT')">
+                        {{ _('Critical') }}/{{ _('Urgent') }}
                     </button>
-                    <button type="button" class="btn btn-outline-warning" onclick="filterByPriority('HIGH')">
+                    <button type="button" class="btn btn-outline-warning" data-filter="priority" onclick="filterByPriority('HIGH')">
                         {{ _('High') }}
                     </button>
-                    <button type="button" class="btn btn-outline-info" onclick="filterByPriority('ALL')">
+                    <button type="button" class="btn btn-outline-info" data-filter="priority" onclick="filterByPriority('ALL')">
                         {{ _('All') }}
+                    </button>
+                </div>
+                <div class="btn-group btn-group-sm" role="group">
+                    <button type="button" class="btn btn-outline-primary active" data-filter="abc" onclick="filterByABC('ALL')">
+                        {{ _('All') }} ABC
+                    </button>
+                    <button type="button" class="btn btn-outline-success" data-filter="abc" onclick="filterByABC('A')">
+                        A
+                    </button>
+                    <button type="button" class="btn btn-outline-warning" data-filter="abc" onclick="filterByABC('B')">
+                        B
+                    </button>
+                    <button type="button" class="btn btn-outline-secondary" data-filter="abc" onclick="filterByABC('C')">
+                        C
                     </button>
                 </div>
             </div>
             <div class="card-body p-0">
                 <div class="table-responsive" style="max-height: 600px;">
                     <table class="table table-sm table-hover mb-0">
-                        <thead class="table-dark sticky-top">
-                            <tr>
-                                <th>{{ _('Priority') }}</th>
-                                <th>{{ _('Product Code') }}</th>
-                                <th>{{ _('Description') }}</th>
-                                <th>{{ _('Supplier') }}</th>
-                                <th class="text-end">{{ _('Current Stock') }}</th>
-                                <th class="text-end">{{ _('Reorder Point') }}</th>
-                                <th class="text-end">{{ _('Suggested Qty') }}</th>
-                                <th class="text-end">{{ _('Order Value') }}</th>
-                                <th class="text-end">{{ _('Days Coverage') }}</th>
-                                <th>{{ _('Stockout Date') }}</th>
-                            </tr>
-                        </thead>
-                        <tbody id="reorder-recommendations-tbody">
-                            <tr>
-                                <td colspan="10" class="text-center">{{ _('Loading...') }}</td>
-                            </tr>
-                        </tbody>
+                                <thead class="table-dark sticky-top">
+                                    <tr>
+                                        <th>{{ _('Priority') }}</th>
+                                        <th>{{ _('ABC Class') }}</th>
+                                        <th>{{ _('Product Code') }}</th>
+                                        <th>{{ _('Description') }}</th>
+                                        <th>{{ _('Supplier') }}</th>
+                                        <th class="text-end">{{ _('Current Stock') }}</th>
+                                        <th class="text-end">{{ _('Reorder Point') }}</th>
+                                        <th class="text-end">{{ _('Suggested Qty') }}</th>
+                                        <th class="text-end">{{ _('Order Value') }}</th>
+                                        <th class="text-end">{{ _('Days Coverage') }}</th>
+                                        <th class="text-end">{{ _('Coverage %') }}</th>
+                                        <th>{{ _('Stockout Date') }}</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="reorder-recommendations-tbody">
+                                    <tr>
+                                        <td colspan="12" class="text-center">{{ _('Loading...') }}</td>
+                                    </tr>
+                                </tbody>
                     </table>
                 </div>
             </div>
@@ -172,16 +204,25 @@
 <script>
 // Global data storage
 let reorderData = [];
-let currentFilter = 'URGENT';
+let currentPriorityFilter = 'CRITICAL_URGENT';
+let currentABCFilter = 'ALL';
 
 // Load all data when page loads
 document.addEventListener('DOMContentLoaded', function() {
     loadReorderAnalysis();
     loadSupplierPerformance();
+    
+    // Allow Enter key to trigger calculation
+    document.getElementById('demand-days').addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+            loadReorderData();
+        }
+    });
 });
 
 function loadReorderAnalysis() {
-    fetch('/purchase/api/reorder-analysis')
+    const demandDays = document.getElementById('demand-days').value;
+    fetch(`/purchase/api/reorder-analysis?demand_days=${demandDays}`)
         .then(response => response.json())
         .then(data => {
             if (data.status === 'success') {
@@ -189,9 +230,16 @@ function loadReorderAnalysis() {
                 updateKPIs(data.summary);
                 populateReorderTable(reorderData);
                 createPriorityChart(data.summary.by_priority);
+            } else if (data.error) {
+                alert('Error: ' + data.error);
             }
         })
         .catch(error => console.error('Error loading reorder analysis:', error));
+}
+
+// Alias for consistency
+function loadReorderData() {
+    loadReorderAnalysis();
 }
 
 function updateKPIs(summary) {
@@ -205,12 +253,19 @@ function populateReorderTable(data) {
     const tbody = document.getElementById('reorder-recommendations-tbody');
     tbody.innerHTML = '';
     
-    // Filter by current selection
+    // Apply filters
     let filtered = data;
-    if (currentFilter === 'URGENT') {
-        filtered = data.filter(item => ['OUT_OF_STOCK', 'URGENT'].includes(item.Priority));
-    } else if (currentFilter === 'HIGH') {
-        filtered = data.filter(item => item.Priority === 'HIGH');
+    
+    // Priority filter
+    if (currentPriorityFilter === 'CRITICAL_URGENT') {
+        filtered = filtered.filter(item => ['OUT_OF_STOCK', 'CRITICAL', 'URGENT'].includes(item.Priority));
+    } else if (currentPriorityFilter === 'HIGH') {
+        filtered = filtered.filter(item => item.Priority === 'HIGH');
+    }
+    
+    // ABC filter
+    if (currentABCFilter !== 'ALL') {
+        filtered = filtered.filter(item => item.ABCClass === currentABCFilter);
     }
     
     // Update footer
@@ -218,54 +273,91 @@ function populateReorderTable(data) {
     document.getElementById('filtered-count').textContent = filtered.length;
     document.getElementById('filtered-value').textContent = formatCurrency(totalValue);
     
-    if (filtered.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="10" class="text-center text-muted">{{ _("No items match the current filter") }}</td></tr>';
-        return;
-    }
+            if (filtered.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="12" class="text-center text-muted">{{ _("No items match the current filter") }}</td></tr>';
+                return;
+            }
     
-    filtered.forEach(item => {
-        const priorityBadge = getPriorityBadge(item.Priority);
-        const rowClass = item.Priority === 'OUT_OF_STOCK' ? 'table-danger' : 
-                        item.Priority === 'URGENT' ? 'table-warning' : '';
-        
-        const row = document.createElement('tr');
-        row.className = rowClass;
-        row.innerHTML = `
-            <td>${priorityBadge}</td>
-            <td><strong>${item.ProductCode}</strong></td>
-            <td>${item.ProductName}</td>
-            <td>
-                <span class="badge bg-secondary">${item.PreferredSupplier || 'N/A'}</span>
-                <small class="text-muted">${item.SupplierCountry || ''}</small>
-            </td>
-            <td class="text-end">${item.CurrentStock.toFixed(0)}</td>
-            <td class="text-end">${item.FormattedReorderPoint}</td>
-            <td class="text-end"><strong>${item.SuggestedOrderQuantity.toFixed(0)}</strong></td>
-            <td class="text-end"><strong>${item.FormattedOrderValue}</strong></td>
-            <td class="text-end">${item.FormattedDaysOfCoverage}</td>
-            <td><small>${item.FormattedExpectedStockoutDate || '-'}</small></td>
-        `;
-        tbody.appendChild(row);
-    });
+            filtered.forEach(item => {
+                const priorityBadge = getPriorityBadge(item.Priority);
+                const abcBadge = getABCBadge(item.ABCClass);
+                const rowClass = item.Priority === 'OUT_OF_STOCK' || item.Priority === 'CRITICAL' ? 'table-danger' :
+                                item.Priority === 'URGENT' ? 'table-warning' : '';
+                
+                // Format coverage percent
+                const coveragePercent = item.CoveragePercent < 999 ? 
+                    `${item.CoveragePercent.toFixed(0)}%` : '∞';
+                
+                // Add color coding for coverage percent
+                let coverageClass = '';
+                if (item.CoveragePercent < 20) coverageClass = 'text-danger fw-bold';
+                else if (item.CoveragePercent < 40) coverageClass = 'text-warning fw-bold';
+                else if (item.CoveragePercent < 60) coverageClass = 'text-warning';
+                else if (item.CoveragePercent < 100) coverageClass = 'text-info';
+                
+                const row = document.createElement('tr');
+                row.className = rowClass;
+                row.innerHTML = `
+                    <td>${priorityBadge}</td>
+                    <td>${abcBadge}</td>
+                    <td><strong>${item.ProductCode}</strong></td>
+                    <td>${item.ProductName}</td>
+                    <td>
+                        <span class="badge bg-secondary">${item.PreferredSupplier || 'N/A'}</span>
+                        <small class="text-muted">${item.SupplierCountry || ''}</small>
+                    </td>
+                    <td class="text-end">${item.CurrentStock.toFixed(0)}</td>
+                    <td class="text-end">${item.FormattedReorderPoint}</td>
+                    <td class="text-end"><strong>${item.SuggestedOrderQuantity.toFixed(0)}</strong></td>
+                    <td class="text-end"><strong>${item.FormattedOrderValue}</strong></td>
+                    <td class="text-end">${item.FormattedDaysOfCoverage}</td>
+                    <td class="text-end ${coverageClass}">${coveragePercent}</td>
+                    <td><small>${item.FormattedExpectedStockoutDate || '-'}</small></td>
+                `;
+                tbody.appendChild(row);
+            });
 }
 
 function getPriorityBadge(priority) {
     const badges = {
-        'OUT_OF_STOCK': '<span class="badge bg-danger">OUT OF STOCK</span>',
-        'URGENT': '<span class="badge bg-danger">URGENT</span>',
-        'HIGH': '<span class="badge bg-warning text-dark">HIGH</span>',
-        'MEDIUM': '<span class="badge bg-info text-dark">MEDIUM</span>',
-        'LOW': '<span class="badge bg-secondary">LOW</span>',
-        'ADEQUATE': '<span class="badge bg-success">ADEQUATE</span>'
+        'OUT_OF_STOCK': '<span class="badge bg-danger"><i class="bi bi-exclamation-triangle-fill"></i> SIN STOCK</span>',
+        'CRITICAL': '<span class="badge bg-danger"><i class="bi bi-lightning-fill"></i> CRITICO</span>',
+        'URGENT': '<span class="badge bg-warning text-dark"><i class="bi bi-exclamation-circle-fill"></i> URGENTE</span>',
+        'HIGH': '<span class="badge bg-warning text-dark">ALTO</span>',
+        'MEDIUM': '<span class="badge bg-info text-dark">MEDIO</span>',
+        'LOW': '<span class="badge bg-secondary">BAJO</span>',
+        'ADEQUATE': '<span class="badge bg-success">ADECUADO</span>'
     };
     return badges[priority] || '<span class="badge bg-secondary">' + priority + '</span>';
 }
 
+function getABCBadge(abcClass) {
+    const badges = {
+        'A': '<span class="badge bg-success">A</span>',
+        'B': '<span class="badge bg-warning text-dark">B</span>',
+        'C': '<span class="badge bg-secondary">C</span>'
+    };
+    return badges[abcClass] || '<span class="badge bg-light text-dark">?</span>';
+}
+
 function filterByPriority(priority) {
-    currentFilter = priority;
+    currentPriorityFilter = priority;
     
     // Update button states
-    document.querySelectorAll('.btn-group button').forEach(btn => {
+    document.querySelectorAll('[data-filter="priority"]').forEach(btn => {
+        btn.classList.remove('active');
+    });
+    event.target.classList.add('active');
+    
+    // Refilter table
+    populateReorderTable(reorderData);
+}
+
+function filterByABC(abcClass) {
+    currentABCFilter = abcClass;
+    
+    // Update button states
+    document.querySelectorAll('[data-filter="abc"]').forEach(btn => {
         btn.classList.remove('active');
     });
     event.target.classList.add('active');

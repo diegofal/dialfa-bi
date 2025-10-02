@@ -495,7 +495,33 @@ class PurchaseQueries:
     """Purchase order and supplier analysis SQL queries"""
     
     REORDER_ANALYSIS = """
-    WITH ProductDemand AS (
+    -- ABC Classification based on revenue contribution (last 365 days)
+    WITH ProductRevenue AS (
+        SELECT 
+            a.idArticulo,
+            SUM(npi.Cantidad) * a.preciounitario as TotalRevenue
+        FROM Articulos a
+        INNER JOIN NotaPedido_Items npi ON a.idArticulo = npi.IdArticulo
+        INNER JOIN NotaPedidos np ON npi.IdNotaPedido = np.IdNotaPedido
+        WHERE np.FechaEmision >= DATEADD(YEAR, -1, GETDATE())
+        GROUP BY a.idArticulo, a.preciounitario
+    ),
+    ABCClassification AS (
+        SELECT 
+            IdArticulo,
+            TotalRevenue,
+            SUM(TotalRevenue) OVER (ORDER BY TotalRevenue DESC) * 100.0 / 
+                SUM(TotalRevenue) OVER () as CumulativeRevenuePercent,
+            CASE 
+                WHEN SUM(TotalRevenue) OVER (ORDER BY TotalRevenue DESC) * 100.0 / 
+                     SUM(TotalRevenue) OVER () <= 80 THEN 'A'
+                WHEN SUM(TotalRevenue) OVER (ORDER BY TotalRevenue DESC) * 100.0 / 
+                     SUM(TotalRevenue) OVER () <= 95 THEN 'B'
+                ELSE 'C'
+            END as ABCClass
+        FROM ProductRevenue
+    ),
+    ProductDemand AS (
         SELECT 
             a.idArticulo,
             a.codigo as ProductCode,
@@ -507,13 +533,16 @@ class PurchaseQueries:
             s.Name as PreferredSupplier,
             s.Country as SupplierCountry,
             a.proveedor as SupplierId,
+            COALESCE(abc.ABCClass, 'C') as ABCClass,
+            COALESCE(abc.TotalRevenue, 0) as AnnualRevenue,
             -- Demand calculations
             COALESCE(sales.Last30DaysSales, 0) as Last30DaysSales,
             COALESCE(sales.Last90DaysSales, 0) as Last90DaysSales,
             COALESCE(sales.Last180DaysSales, 0) as Last180DaysSales,
             COALESCE(sales.Last365DaysSales, 0) as Last365DaysSales,
-            -- Average daily demand (last 90 days)
-            COALESCE(sales.Last90DaysSales, 0) / 90.0 as AvgDailyDemand,
+            COALESCE(sales.DemandWindowSales, 0) as DemandWindowSales,
+            -- Average daily demand (based on user-selected window)
+            COALESCE(sales.DemandWindowSales, 0) / {demand_days}.0 as AvgDailyDemand,
             -- Standard deviation estimate (simplified)
             CASE 
                 WHEN sales.Last90DaysSales > 0 THEN 
@@ -521,10 +550,12 @@ class PurchaseQueries:
                 ELSE 0
             END as DemandStdDev,
             COALESCE(sales.LastSaleDate, '1900-01-01') as LastSaleDate,
-            DATEDIFF(DAY, COALESCE(sales.LastSaleDate, '1900-01-01'), GETDATE()) as DaysSinceLastSale
+            DATEDIFF(DAY, COALESCE(sales.LastSaleDate, '1900-01-01'), GETDATE()) as DaysSinceLastSale,
+            {demand_days} as DemandWindowDays
         FROM Articulos a
         INNER JOIN Categorias c ON a.IdCategoria = c.IdCategoria
         LEFT JOIN Suppliers s ON CAST(a.proveedor AS VARCHAR(50)) = CAST(s.InternalId AS VARCHAR(50))
+        LEFT JOIN ABCClassification abc ON a.idArticulo = abc.IdArticulo
         LEFT JOIN (
             SELECT 
                 npi.IdArticulo,
@@ -532,7 +563,8 @@ class PurchaseQueries:
                 SUM(CASE WHEN np.FechaEmision >= DATEADD(DAY, -30, GETDATE()) THEN npi.Cantidad ELSE 0 END) as Last30DaysSales,
                 SUM(CASE WHEN np.FechaEmision >= DATEADD(DAY, -90, GETDATE()) THEN npi.Cantidad ELSE 0 END) as Last90DaysSales,
                 SUM(CASE WHEN np.FechaEmision >= DATEADD(DAY, -180, GETDATE()) THEN npi.Cantidad ELSE 0 END) as Last180DaysSales,
-                SUM(CASE WHEN np.FechaEmision >= DATEADD(DAY, -365, GETDATE()) THEN npi.Cantidad ELSE 0 END) as Last365DaysSales
+                SUM(CASE WHEN np.FechaEmision >= DATEADD(DAY, -365, GETDATE()) THEN npi.Cantidad ELSE 0 END) as Last365DaysSales,
+                SUM(CASE WHEN np.FechaEmision >= DATEADD(DAY, -{demand_days}, GETDATE()) THEN npi.Cantidad ELSE 0 END) as DemandWindowSales
             FROM NotaPedido_Items npi
             INNER JOIN NotaPedidos np ON npi.IdNotaPedido = np.IdNotaPedido
             WHERE np.FechaEmision >= DATEADD(YEAR, -2, GETDATE())
@@ -543,30 +575,32 @@ class PurchaseQueries:
     ReorderCalculations AS (
         SELECT 
             *,
-            -- Lead time estimation (default 60 days for overseas, can be refined)
+            -- Lead time: FIXED at 135 days (90 production + 45 shipping)
+            135 as EstimatedLeadTimeDays,
+            
+            -- Safety stock adjusted by ABC class
+            -- A: 95% SL (Z=1.65), B: 90% SL (Z=1.28), C: 80% SL (Z=0.84)
             CASE 
-                WHEN SupplierCountry = 'China' THEN 60
-                WHEN SupplierCountry = 'India' THEN 45
-                ELSE 30
-            END as EstimatedLeadTimeDays,
-            -- Safety stock (1.65 * std dev * sqrt(lead time)) for 95% service level
-            CASE 
-                WHEN SupplierCountry = 'China' THEN DemandStdDev * SQRT(60.0) * 1.65
-                WHEN SupplierCountry = 'India' THEN DemandStdDev * SQRT(45.0) * 1.65
-                ELSE DemandStdDev * SQRT(30.0) * 1.65
+                WHEN ABCClass = 'A' THEN DemandStdDev * SQRT(135.0) * 1.65
+                WHEN ABCClass = 'B' THEN DemandStdDev * SQRT(135.0) * 1.28
+                ELSE DemandStdDev * SQRT(135.0) * 0.84
             END as SafetyStock,
-            -- Reorder point calculation
+            
+            -- Reorder point = (Avg Daily Demand × Lead Time) + Safety Stock
+            (AvgDailyDemand * 135) + 
             CASE 
-                WHEN SupplierCountry = 'China' THEN (AvgDailyDemand * 60) + (DemandStdDev * SQRT(60.0) * 1.65)
-                WHEN SupplierCountry = 'India' THEN (AvgDailyDemand * 45) + (DemandStdDev * SQRT(45.0) * 1.65)
-                ELSE (AvgDailyDemand * 30) + (DemandStdDev * SQRT(30.0) * 1.65)
+                WHEN ABCClass = 'A' THEN DemandStdDev * SQRT(135.0) * 1.65
+                WHEN ABCClass = 'B' THEN DemandStdDev * SQRT(135.0) * 1.28
+                ELSE DemandStdDev * SQRT(135.0) * 0.84
             END as ReorderPoint,
-            -- Economic Order Quantity (simplified Wilson formula)
+            
+            -- Order quantity adjusted by ABC class (coverage multipliers)
+            -- A: 2x lead time, B: 1.5x lead time, C: 1.2x lead time
             CASE 
-                WHEN AvgDailyDemand > 0 AND UnitPrice > 0 THEN
-                    SQRT((2 * AvgDailyDemand * 365 * 100) / (UnitPrice * 0.25))
-                ELSE 0
-            END as EOQ,
+                WHEN ABCClass = 'A' THEN AvgDailyDemand * 135 * 2.0
+                WHEN ABCClass = 'B' THEN AvgDailyDemand * 135 * 1.5
+                ELSE AvgDailyDemand * 135 * 1.2
+            END as OptimalOrderQuantity,
             -- Days of coverage remaining
             CASE 
                 WHEN AvgDailyDemand > 0 THEN CurrentStock / AvgDailyDemand
@@ -577,22 +611,31 @@ class PurchaseQueries:
     FinalCalculations AS (
         SELECT 
             *,
-            -- Quantity to order
+            -- Quantity to order (gap to reorder point + optimal order quantity)
             CASE 
                 WHEN CurrentStock < ReorderPoint THEN 
-                    CEILING(CASE WHEN EOQ > (ReorderPoint - CurrentStock + SafetyStock) 
-                                 THEN EOQ 
+                    CEILING(CASE WHEN OptimalOrderQuantity > (ReorderPoint - CurrentStock + SafetyStock)
+                                 THEN OptimalOrderQuantity 
                                  ELSE (ReorderPoint - CurrentStock + SafetyStock) 
                             END)
                 ELSE 0
             END as SuggestedOrderQuantity,
-            -- Priority classification
+            
+            -- Calculate coverage percentage relative to demand window
+            CASE 
+                WHEN DaysOfCoverage < 999 THEN (DaysOfCoverage / {demand_days}.0) * 100
+                ELSE 999
+            END as CoveragePercent,
+            
+            -- Priority classification based on PERCENTAGE of coverage vs demand window
+            -- CRITICAL: < 20% | URGENT: < 40% | HIGH: < 60% | MEDIUM: < 100% | LOW: < 150%
             CASE 
                 WHEN DaysOfCoverage <= 0 THEN 'OUT_OF_STOCK'
-                WHEN CurrentStock < ReorderPoint AND DaysOfCoverage <= 15 THEN 'URGENT'
-                WHEN CurrentStock < ReorderPoint AND DaysOfCoverage <= 30 THEN 'HIGH'
-                WHEN CurrentStock < ReorderPoint AND DaysOfCoverage <= 60 THEN 'MEDIUM'
-                WHEN CurrentStock < ReorderPoint THEN 'LOW'
+                WHEN DaysOfCoverage < 999 AND (DaysOfCoverage / {demand_days}.0) * 100 < 20 THEN 'CRITICAL'
+                WHEN DaysOfCoverage < 999 AND (DaysOfCoverage / {demand_days}.0) * 100 < 40 THEN 'URGENT'
+                WHEN DaysOfCoverage < 999 AND (DaysOfCoverage / {demand_days}.0) * 100 < 60 THEN 'HIGH'
+                WHEN DaysOfCoverage < 999 AND (DaysOfCoverage / {demand_days}.0) * 100 < 100 THEN 'MEDIUM'
+                WHEN DaysOfCoverage < 999 AND (DaysOfCoverage / {demand_days}.0) * 100 < 150 THEN 'LOW'
                 ELSE 'ADEQUATE'
             END as Priority,
             -- Expected stockout date
@@ -604,27 +647,34 @@ class PurchaseQueries:
             -- Order value
             CASE 
                 WHEN CurrentStock < ReorderPoint THEN 
-                    CEILING(CASE WHEN EOQ > (ReorderPoint - CurrentStock + SafetyStock) 
-                                 THEN EOQ 
+                    CEILING(CASE WHEN OptimalOrderQuantity > (ReorderPoint - CurrentStock + SafetyStock) 
+                                 THEN OptimalOrderQuantity 
                                  ELSE (ReorderPoint - CurrentStock + SafetyStock) 
                             END) * UnitPrice
                 ELSE 0
             END as SuggestedOrderValue
         FROM ReorderCalculations
-        WHERE Last90DaysSales > 0  -- Only products with recent demand
+        WHERE DemandWindowSales > 0  -- Only products with recent demand in selected window
     )
     SELECT *
     FROM FinalCalculations
     ORDER BY 
         CASE Priority
             WHEN 'OUT_OF_STOCK' THEN 1
-            WHEN 'URGENT' THEN 2
-            WHEN 'HIGH' THEN 3
-            WHEN 'MEDIUM' THEN 4
-            WHEN 'LOW' THEN 5
-            ELSE 6
+            WHEN 'CRITICAL' THEN 2
+            WHEN 'URGENT' THEN 3
+            WHEN 'HIGH' THEN 4
+            WHEN 'MEDIUM' THEN 5
+            WHEN 'LOW' THEN 6
+            ELSE 7
         END,
-        DaysOfCoverage ASC
+        -- Secondary sort: A products first, then by revenue impact
+        CASE ABCClass
+            WHEN 'A' THEN 1
+            WHEN 'B' THEN 2
+            ELSE 3
+        END,
+        SuggestedOrderValue DESC
     """
     
     SUPPLIER_PERFORMANCE = """

@@ -25,13 +25,24 @@ def purchase_dashboard():
 def reorder_analysis():
     """Get detailed reorder analysis"""
     try:
-        analysis_data = current_app.purchase_analytics.get_reorder_analysis()
+        # Get demand_days parameter (default: 90)
+        demand_days = request.args.get('demand_days', 90, type=int)
+        
+        # Validate parameter
+        if demand_days < 1 or demand_days > 730:
+            return jsonify({
+                'error': 'demand_days must be between 1 and 730',
+                'status': 'error'
+            }), 400
+        
+        analysis_data = current_app.purchase_analytics.get_reorder_analysis(demand_days)
         summary = current_app.purchase_analytics.get_reorder_summary()
         
         return jsonify({
             'data': analysis_data,
             'summary': summary,
             'total_records': len(analysis_data),
+            'demand_days': demand_days,
             'status': 'success'
         })
     except Exception as e:

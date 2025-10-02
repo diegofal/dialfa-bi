@@ -16,12 +16,25 @@ class PurchaseAnalytics:
         self.logger = logging.getLogger(__name__)
         self.queries = PurchaseQueries()
     
-    @cache.cached(timeout=get_cache_timeout('reorder_analysis'), key_prefix='purchase_reorder_analysis')
-    def get_reorder_analysis(self):
-        """Get comprehensive reorder analysis with priorities"""
-        self.logger.info("Executing get_reorder_analysis (cache miss or expired)")
+    def get_reorder_analysis(self, demand_days=90):
+        """Get comprehensive reorder analysis with priorities
+        
+        Args:
+            demand_days: Number of days to calculate average demand (default: 90)
+        """
+        cache_key = f'purchase_reorder_analysis_{demand_days}'
+        
+        # Check cache first
+        cached_data = cache.get(cache_key)
+        if cached_data:
+            self.logger.info(f"Returning cached reorder analysis for {demand_days} days")
+            return cached_data
+        
+        self.logger.info(f"Executing get_reorder_analysis for {demand_days} days (cache miss or expired)")
         try:
-            df = self.db.execute_query(self.queries.REORDER_ANALYSIS, 'SPISA')
+            # Format query with demand_days parameter
+            query = self.queries.REORDER_ANALYSIS.format(demand_days=demand_days)
+            df = self.db.execute_query(query, 'SPISA')
             df = clean_dataframe(df)
             
             if not df.empty:
@@ -39,7 +52,12 @@ class PurchaseAnalytics:
                     lambda x: x.strftime('%Y-%m-%d') if pd.notna(x) and x is not pd.NaT else None
                 )
                 
-                return df.to_dict('records')
+                result = df.to_dict('records')
+                
+                # Cache the result
+                cache.set(cache_key, result, timeout=get_cache_timeout('reorder_analysis'))
+                
+                return result
             return []
         except Exception as e:
             self.logger.error(f"Error in reorder analysis: {e}")

@@ -685,3 +685,27 @@ msgstr "Exportar a Excel"
 
 msgid "No items match the current filter"
 msgstr "No hay artículos que coincidan con el filtro actual"
+
+msgid "Critical"
+msgstr "Crítico"
+
+msgid "ABC Class"
+msgstr "Clasificación ABC"
+
+msgid "Annual Revenue"
+msgstr "Ingreso Anual"
+
+msgid "Lead Time"
+msgstr "Tiempo de Reposición"
+
+msgid "days"
+msgstr "días"
+
+msgid "Demand based on"
+msgstr "Demanda basada en"
+
+msgid "Calculate"
+msgstr "Calcular"
+
+msgid "Coverage %"
+msgstr "% Cobertura"

@@ -124,3 +124,53 @@ def init_cache(app):
     
     return cache
 
+
+# ==========================================
+# REORDER POINT CONFIGURATION
+# ==========================================
+REORDER_CONFIG = {
+    # Lead time: Production (90 days) + Shipping (45 days) = 135 days total
+    'lead_time_days': 135,
+    
+    # Service levels by ABC classification (Z-score for safety stock)
+    'service_levels': {
+        'A': 1.65,  # 95% service level - Critical/high rotation products
+        'B': 1.28,  # 90% service level - Medium rotation products  
+        'C': 0.84,  # 80% service level - Low rotation products
+    },
+    
+    # Coverage multipliers (how many lead times to cover)
+    'coverage_multipliers': {
+        'A': 2.0,   # 2x lead time coverage for A products (270 days stock)
+        'B': 1.5,   # 1.5x lead time coverage for B products (202 days stock)
+        'C': 1.2,   # 1.2x lead time coverage for C products (162 days stock)
+    },
+    
+    # ABC Classification thresholds (cumulative revenue %)
+    'abc_thresholds': {
+        'A': 80,  # Top products contributing 80% of revenue
+        'B': 95,  # Next products contributing to 95% of revenue
+        'C': 100, # Remaining products
+    },
+    
+    # Demand calculation window
+    'demand_window_days': 90,  # Use last 90 days to calculate average demand
+    
+    # Priority thresholds (days of coverage remaining)
+    'priority_thresholds': {
+        'critical': 30,   # Less than 30 days coverage
+        'urgent': 60,     # Less than 60 days coverage  
+        'high': 90,       # Less than 90 days coverage
+        'medium': 135,    # Less than lead time (135 days)
+    },
+    
+    # Minimum order quantity
+    'min_order_quantity': 1,
+}
+
+def get_reorder_config(key=None):
+    """Get reorder configuration value"""
+    if key:
+        return REORDER_CONFIG.get(key)
+    return REORDER_CONFIG
+
