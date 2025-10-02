@@ -186,3 +186,29 @@ def financial_kpis():
     except Exception as e:
         logger.error(f"Financial KPIs error: {e}")
         return jsonify({'error': str(e), 'status': 'error'}), 500
+
+@financial_bp.route('/api/expected-collections')
+def expected_collections():
+    """Get expected collections based on invoice aging"""
+    try:
+        collections = current_app.financial_analytics.get_expected_collections()
+        return jsonify({
+            'data': collections,
+            'status': 'success'
+        })
+    except Exception as e:
+        logger.error(f"Expected collections error: {e}")
+        return jsonify({'error': str(e), 'status': 'error'}), 500
+
+@financial_bp.route('/api/collection-performance')
+def collection_performance():
+    """Get collection performance metrics (DSO, on-time %)"""
+    try:
+        performance = current_app.financial_analytics.get_collection_performance()
+        return jsonify({
+            'data': performance,
+            'status': 'success'
+        })
+    except Exception as e:
+        logger.error(f"Collection performance error: {e}")
+        return jsonify({'error': str(e), 'status': 'error'}), 500

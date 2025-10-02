@@ -202,6 +202,118 @@ class FinancialQueries:
     FROM CustomerMetrics
     ORDER BY TotalRevenue DESC
     """
+    
+    # Expected Collections based on invoice aging (xERP)
+    XERP_EXPECTED_COLLECTIONS = """
+    WITH AgingBuckets AS (
+        SELECT 
+            dt.trans_no,
+            dt.debtor_no,
+            dm.name as CustomerName,
+            dt.ov_amount * 1.21 as InvoiceAmount,
+            (dt.ov_amount - dt.alloc) * 1.21 as OutstandingAmount,
+            dt.due_date as DueDate,
+            DATEDIFF(DAY, DATEADD(HOUR, -3, GETDATE()), dt.due_date) as DaysUntilDue,
+            CASE 
+                WHEN DATEDIFF(DAY, DATEADD(HOUR, -3, GETDATE()), dt.due_date) > 0 THEN 'NotYetDue'
+                WHEN DATEDIFF(DAY, dt.due_date, DATEADD(HOUR, -3, GETDATE())) BETWEEN 0 AND 30 THEN 'Overdue_0_30'
+                WHEN DATEDIFF(DAY, dt.due_date, DATEADD(HOUR, -3, GETDATE())) BETWEEN 31 AND 60 THEN 'Overdue_31_60'
+                WHEN DATEDIFF(DAY, dt.due_date, DATEADD(HOUR, -3, GETDATE())) BETWEEN 61 AND 90 THEN 'Overdue_61_90'
+                ELSE 'Overdue_90_Plus'
+            END as AgingBucket
+        FROM [0_debtor_trans] dt
+        INNER JOIN [0_debtors_master] dm ON dt.debtor_no = dm.debtor_no
+        WHERE dt.Type = 10  -- Invoices
+        AND dt.ov_amount > 0
+        AND dt.alloc < dt.ov_amount  -- Not fully paid
+    )
+    SELECT 
+        AgingBucket,
+        COUNT(*) as InvoiceCount,
+        SUM(OutstandingAmount) as TotalAmount,
+        AVG(OutstandingAmount) as AvgAmount,
+        MIN(DaysUntilDue) as MinDays,
+        MAX(DaysUntilDue) as MaxDays
+    FROM AgingBuckets
+    GROUP BY AgingBucket
+    ORDER BY 
+        CASE AgingBucket
+            WHEN 'NotYetDue' THEN 1
+            WHEN 'Overdue_0_30' THEN 2
+            WHEN 'Overdue_31_60' THEN 3
+            WHEN 'Overdue_61_90' THEN 4
+            WHEN 'Overdue_90_Plus' THEN 5
+        END
+    """
+    
+    # Collection Performance - Using allocations table (xERP)
+    XERP_COLLECTION_PERFORMANCE = """
+    WITH InvoicePayments AS (
+        SELECT 
+            inv.trans_no as InvoiceNo,
+            YEAR(inv.tran_date) as Year,
+            MONTH(inv.tran_date) as Month,
+            inv.debtor_no,
+            inv.ov_amount * 1.21 as InvoiceAmount,
+            inv.alloc * 1.21 as AllocatedAmount,
+            inv.due_date,
+            inv.tran_date as InvoiceDate,
+            -- First payment date from allocations
+            (
+                SELECT MIN(alloc.date_alloc)
+                FROM [0_cust_allocations] alloc
+                WHERE alloc.trans_type_to = 10
+                AND alloc.trans_no_to = inv.trans_no
+            ) as FirstPaymentDate,
+            -- Check if fully paid
+            CASE WHEN inv.alloc >= inv.ov_amount THEN 1 ELSE 0 END as IsFullyPaid
+        FROM [0_debtor_trans] inv
+        WHERE inv.Type = 10  -- Invoices only
+        AND inv.tran_date >= DATEADD(MONTH, -12, DATEADD(HOUR, -3, GETDATE()))
+        AND inv.tran_date <= DATEADD(HOUR, -3, GETDATE())
+        AND inv.ov_amount > 0
+    )
+    SELECT 
+        Year,
+        Month,
+        SUM(InvoiceAmount) as MonthlySales,
+        SUM(InvoiceAmount - AllocatedAmount) as OutstandingAmount,
+        COUNT(*) as TotalInvoices,
+        SUM(IsFullyPaid) as InvoicesPaid,
+        -- Invoices paid within 30 days of due date
+        SUM(CASE 
+            WHEN FirstPaymentDate IS NOT NULL 
+            AND DATEDIFF(DAY, due_date, FirstPaymentDate) <= 30 
+            THEN 1 
+            ELSE 0 
+        END) as InvoicesPaidOnTime,
+        -- Average days from due date to first payment
+        AVG(CASE 
+            WHEN FirstPaymentDate IS NOT NULL 
+            THEN DATEDIFF(DAY, due_date, FirstPaymentDate)
+            ELSE NULL
+        END) as AvgDaysToPayment,
+        -- DSO: (Outstanding / Monthly Sales) * 30 days
+        CASE 
+            WHEN SUM(InvoiceAmount) > 0 
+            THEN (SUM(InvoiceAmount - AllocatedAmount) / SUM(InvoiceAmount)) * 30
+            ELSE 0
+        END as DSO,
+        -- On-time payment percentage (all invoices with payment activity)
+        CASE 
+            WHEN COUNT(*) > 0 
+            THEN (CAST(SUM(CASE 
+                WHEN FirstPaymentDate IS NOT NULL 
+                AND DATEDIFF(DAY, due_date, FirstPaymentDate) <= 30 
+                THEN 1 
+                ELSE 0 
+            END) AS FLOAT) / NULLIF(SUM(CASE WHEN FirstPaymentDate IS NOT NULL THEN 1 ELSE 0 END), 0)) * 100
+            ELSE 0
+        END as OnTimePaymentPercentage
+    FROM InvoicePayments
+    GROUP BY Year, Month
+    ORDER BY Year DESC, Month DESC
+    """
 
 class InventoryQueries:
     """Inventory analysis SQL queries"""

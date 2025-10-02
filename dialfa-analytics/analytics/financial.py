@@ -626,3 +626,159 @@ class FinancialAnalytics:
                 'CashPercentage': 0,
                 'ElectronicPercentage': 0
             }
+    
+    @cache.cached(timeout=get_cache_timeout('expected_collections'), key_prefix='financial_expected_collections')
+    def get_expected_collections(self):
+        """Get expected collections based on invoice aging with probability adjustments"""
+        self.logger.info("Executing get_expected_collections (cache miss or expired)")
+        try:
+            df = self.db.execute_query(self.queries.XERP_EXPECTED_COLLECTIONS, 'xERP')
+            df = clean_dataframe(df)
+            
+            if df.empty:
+                return []
+            
+            # Collection probability rates based on aging (industry standards + our data)
+            collection_rates = {
+                'NotYetDue': 0.95,       # 95% collection rate for not yet due
+                'Overdue_0_30': 0.85,    # 85% for 0-30 days overdue
+                'Overdue_31_60': 0.70,   # 70% for 31-60 days
+                'Overdue_61_90': 0.50,   # 50% for 61-90 days
+                'Overdue_90_Plus': 0.30  # 30% for 90+ days
+            }
+            
+            # Friendly labels for UI
+            bucket_labels = {
+                'NotYetDue': 'Por Vencer',
+                'Overdue_0_30': 'Vencido 0-30 días',
+                'Overdue_31_60': 'Vencido 31-60 días',
+                'Overdue_61_90': 'Vencido 61-90 días',
+                'Overdue_90_Plus': 'Vencido +90 días'
+            }
+            
+            result = []
+            total_outstanding = 0
+            total_expected = 0
+            
+            for _, row in df.iterrows():
+                bucket = row['AgingBucket']
+                total_amount = float(row['TotalAmount'])
+                collection_rate = collection_rates.get(bucket, 0.5)
+                expected_amount = total_amount * collection_rate
+                
+                total_outstanding += total_amount
+                total_expected += expected_amount
+                
+                result.append({
+                    'AgingBucket': bucket,
+                    'Label': bucket_labels.get(bucket, bucket),
+                    'InvoiceCount': int(row['InvoiceCount']),
+                    'TotalAmount': total_amount,
+                    'ExpectedCollection': expected_amount,
+                    'CollectionRate': collection_rate * 100,
+                    'RiskAmount': total_amount - expected_amount,
+                    'FormattedTotal': format_currency(total_amount, 'ARS', 'xERP'),
+                    'FormattedExpected': format_currency(expected_amount, 'ARS', 'xERP'),
+                    'FormattedRisk': format_currency(total_amount - expected_amount, 'ARS', 'xERP')
+                })
+            
+            # Add summary
+            summary = {
+                'TotalOutstanding': total_outstanding,
+                'TotalExpectedCollection': total_expected,
+                'TotalAtRisk': total_outstanding - total_expected,
+                'OverallCollectionRate': (total_expected / total_outstanding * 100) if total_outstanding > 0 else 0,
+                'FormattedTotalOutstanding': format_currency(total_outstanding, 'ARS', 'xERP'),
+                'FormattedTotalExpected': format_currency(total_expected, 'ARS', 'xERP'),
+                'FormattedTotalAtRisk': format_currency(total_outstanding - total_expected, 'ARS', 'xERP')
+            }
+            
+            return {
+                'aging_buckets': result,
+                'summary': summary
+            }
+            
+        except Exception as e:
+            self.logger.error(f"Error in expected collections analysis: {e}")
+            return []
+    
+    @cache.cached(timeout=get_cache_timeout('collection_performance'), key_prefix='financial_collection_performance')
+    def get_collection_performance(self):
+        """Get collection performance metrics including DSO and on-time payment %"""
+        self.logger.info("Executing get_collection_performance (cache miss or expired)")
+        try:
+            df = self.db.execute_query(self.queries.XERP_COLLECTION_PERFORMANCE, 'xERP')
+            df = clean_dataframe(df)
+            
+            if df.empty:
+                return {
+                    'monthly_metrics': [],
+                    'current_metrics': {},
+                    'trends': {}
+                }
+            
+            # Sort by date for proper trending
+            df = df.sort_values(['Year', 'Month'])
+            
+            # Calculate trends
+            df['MonthYear'] = df.apply(lambda x: f"{int(x['Year'])}-{int(x['Month']):02d}", axis=1)
+            
+            # Format values
+            df['FormattedSales'] = df['MonthlySales'].apply(lambda x: format_currency(x, 'ARS', 'xERP'))
+            df['FormattedOutstanding'] = df['OutstandingAmount'].apply(lambda x: format_currency(x, 'ARS', 'xERP'))
+            
+            monthly_metrics = df.to_dict('records')
+            
+            # Current month metrics (most recent)
+            if not df.empty:
+                latest = df.iloc[-1]
+                current_metrics = {
+                    'DSO': float(latest['DSO']) if pd.notna(latest['DSO']) else 0,
+                    'OnTimePaymentPercentage': float(latest['OnTimePaymentPercentage']) if pd.notna(latest['OnTimePaymentPercentage']) else 0,
+                    'TotalInvoices': int(latest['TotalInvoices']),
+                    'InvoicesPaid': int(latest['InvoicesPaid']) if pd.notna(latest['InvoicesPaid']) else 0,
+                    'InvoicesPaidOnTime': int(latest['InvoicesPaidOnTime']),
+                    'MonthlySales': float(latest['MonthlySales']),
+                    'AvgDaysToPayment': float(latest['AvgDaysToPayment']) if pd.notna(latest['AvgDaysToPayment']) else 0,
+                    'FormattedSales': format_currency(latest['MonthlySales'], 'ARS', 'xERP'),
+                    'FormattedOutstanding': format_currency(latest['OutstandingAmount'], 'ARS', 'xERP')
+                }
+            else:
+                current_metrics = {}
+            
+            # Calculate trends (compare last 3 months vs previous 3 months)
+            if len(df) >= 6:
+                recent_dso = df.tail(3)['DSO'].mean()
+                previous_dso = df.iloc[-6:-3]['DSO'].mean()
+                dso_trend = ((recent_dso - previous_dso) / previous_dso * 100) if previous_dso > 0 else 0
+                
+                recent_ontime = df.tail(3)['OnTimePaymentPercentage'].mean()
+                previous_ontime = df.iloc[-6:-3]['OnTimePaymentPercentage'].mean()
+                ontime_trend = recent_ontime - previous_ontime  # Percentage point change
+                
+                trends = {
+                    'DSO_Trend': float(dso_trend),
+                    'DSO_Direction': 'improving' if dso_trend < 0 else 'worsening',
+                    'OnTimePayment_Trend': float(ontime_trend),
+                    'OnTimePayment_Direction': 'improving' if ontime_trend > 0 else 'worsening',
+                    'AvgDSO_Last3Months': float(recent_dso),
+                    'AvgOnTimePayment_Last3Months': float(recent_ontime)
+                }
+            else:
+                trends = {}
+            
+            return {
+                'monthly_metrics': monthly_metrics,
+                'current_metrics': current_metrics,
+                'trends': trends
+            }
+            
+        except Exception as e:
+            self.logger.error(f"Error in collection performance analysis: {e}")
+            import traceback
+            self.logger.error(traceback.format_exc())
+            return {
+                'monthly_metrics': [],
+                'current_metrics': {},
+                'trends': {}
+            }

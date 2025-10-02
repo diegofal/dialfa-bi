@@ -75,6 +75,8 @@ CACHE_TIMEOUTS = {
     'dashboard_charts': 300,      # 5 minutes
     'top_customers': 600,         # 10 minutes
     'cash_flow': 900,             # 15 minutes
+    'expected_collections': 600,  # 10 minutes - invoice aging analysis
+    'collection_performance': 1800, # 30 minutes - historical DSO metrics
     
     # Lighter queries or more dynamic
     'dashboard_alerts': 120,      # 2 minutes - should be relatively fresh
