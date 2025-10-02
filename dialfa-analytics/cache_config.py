@@ -67,6 +67,8 @@ CACHE_TIMEOUTS = {
     'inventory_kpis': 600,        # 10 minutes
     'stock_value_evolution': 3600, # 60 minutes - stock snapshots daily
     'out_of_stock_analysis': 300,  # 5 minutes - changes frequently, critical for operations
+    'reorder_analysis': 600,       # 10 minutes - reorder calculations
+    'supplier_performance': 1800,  # 30 minutes - supplier metrics
     
     # Medium queries
     'dashboard_overview': 300,    # 5 minutes

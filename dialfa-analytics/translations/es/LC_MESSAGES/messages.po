@@ -582,3 +582,106 @@ msgstr "Inglés"
 
 msgid "Spanish"
 msgstr "Español"
+
+# Purchase Orders / Reorder Management
+msgid "Purchase Orders"
+msgstr "Órdenes de Compra"
+
+msgid "Purchase Orders & Reorder Analysis"
+msgstr "Órdenes de Compra y Análisis de Reposición"
+
+msgid "Intelligent reorder recommendations and supplier performance"
+msgstr "Recomendaciones inteligentes de reposición y rendimiento de proveedores"
+
+msgid "Urgent Items"
+msgstr "Artículos Urgentes"
+
+msgid "Need immediate order"
+msgstr "Necesitan pedido inmediato"
+
+msgid "High Priority"
+msgstr "Alta Prioridad"
+
+msgid "Order within 30 days"
+msgstr "Pedir dentro de 30 días"
+
+msgid "Total Items to Reorder"
+msgstr "Total de Artículos a Reponer"
+
+msgid "All priorities"
+msgstr "Todas las prioridades"
+
+msgid "Total Order Value"
+msgstr "Valor Total de Pedido"
+
+msgid "Supplier Performance"
+msgstr "Rendimiento de Proveedores"
+
+msgid "Supplier"
+msgstr "Proveedor"
+
+msgid "Country"
+msgstr "País"
+
+msgid "Products"
+msgstr "Productos"
+
+msgid "Stock Value"
+msgstr "Valor de Stock"
+
+msgid "Avg Lead Time"
+msgstr "Tiempo de Espera Promedio"
+
+msgid "Orders by Priority"
+msgstr "Pedidos por Prioridad"
+
+msgid "Reorder Recommendations"
+msgstr "Recomendaciones de Reposición"
+
+msgid "Urgent"
+msgstr "Urgente"
+
+msgid "High"
+msgstr "Alto"
+
+msgid "All"
+msgstr "Todos"
+
+msgid "Priority"
+msgstr "Prioridad"
+
+msgid "Product Code"
+msgstr "Código de Producto"
+
+msgid "Description"
+msgstr "Descripción"
+
+msgid "Current Stock"
+msgstr "Stock Actual"
+
+msgid "Reorder Point"
+msgstr "Punto de Reorden"
+
+msgid "Suggested Qty"
+msgstr "Cantidad Sugerida"
+
+msgid "Order Value"
+msgstr "Valor de Pedido"
+
+msgid "Days Coverage"
+msgstr "Días de Cobertura"
+
+msgid "Stockout Date"
+msgstr "Fecha de Agotamiento"
+
+msgid "Total Items:"
+msgstr "Total de Artículos:"
+
+msgid "Total Order Value:"
+msgstr "Valor Total de Pedido:"
+
+msgid "Export to Excel"
+msgstr "Exportar a Excel"
+
+msgid "No items match the current filter"
+msgstr "No hay artículos que coincidan con el filtro actual"

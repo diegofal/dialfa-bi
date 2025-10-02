@@ -491,6 +491,184 @@ class InventoryQueries:
     ORDER BY Priority DESC, EstimatedLostSales DESC
     """
 
+class PurchaseQueries:
+    """Purchase order and supplier analysis SQL queries"""
+    
+    REORDER_ANALYSIS = """
+    WITH ProductDemand AS (
+        SELECT 
+            a.idArticulo,
+            a.codigo as ProductCode,
+            a.descripcion as ProductName,
+            a.cantidad as CurrentStock,
+            a.preciounitario as UnitPrice,
+            a.cantidad * a.preciounitario as StockValue,
+            c.Descripcion as Category,
+            s.Name as PreferredSupplier,
+            s.Country as SupplierCountry,
+            a.proveedor as SupplierId,
+            -- Demand calculations
+            COALESCE(sales.Last30DaysSales, 0) as Last30DaysSales,
+            COALESCE(sales.Last90DaysSales, 0) as Last90DaysSales,
+            COALESCE(sales.Last180DaysSales, 0) as Last180DaysSales,
+            COALESCE(sales.Last365DaysSales, 0) as Last365DaysSales,
+            -- Average daily demand (last 90 days)
+            COALESCE(sales.Last90DaysSales, 0) / 90.0 as AvgDailyDemand,
+            -- Standard deviation estimate (simplified)
+            CASE 
+                WHEN sales.Last90DaysSales > 0 THEN 
+                    SQRT(COALESCE(sales.Last90DaysSales, 0) / 90.0) * 1.5
+                ELSE 0
+            END as DemandStdDev,
+            COALESCE(sales.LastSaleDate, '1900-01-01') as LastSaleDate,
+            DATEDIFF(DAY, COALESCE(sales.LastSaleDate, '1900-01-01'), GETDATE()) as DaysSinceLastSale
+        FROM Articulos a
+        INNER JOIN Categorias c ON a.IdCategoria = c.IdCategoria
+        LEFT JOIN Suppliers s ON CAST(a.proveedor AS VARCHAR(50)) = CAST(s.InternalId AS VARCHAR(50))
+        LEFT JOIN (
+            SELECT 
+                npi.IdArticulo,
+                MAX(np.FechaEmision) as LastSaleDate,
+                SUM(CASE WHEN np.FechaEmision >= DATEADD(DAY, -30, GETDATE()) THEN npi.Cantidad ELSE 0 END) as Last30DaysSales,
+                SUM(CASE WHEN np.FechaEmision >= DATEADD(DAY, -90, GETDATE()) THEN npi.Cantidad ELSE 0 END) as Last90DaysSales,
+                SUM(CASE WHEN np.FechaEmision >= DATEADD(DAY, -180, GETDATE()) THEN npi.Cantidad ELSE 0 END) as Last180DaysSales,
+                SUM(CASE WHEN np.FechaEmision >= DATEADD(DAY, -365, GETDATE()) THEN npi.Cantidad ELSE 0 END) as Last365DaysSales
+            FROM NotaPedido_Items npi
+            INNER JOIN NotaPedidos np ON npi.IdNotaPedido = np.IdNotaPedido
+            WHERE np.FechaEmision >= DATEADD(YEAR, -2, GETDATE())
+            GROUP BY npi.IdArticulo
+        ) sales ON a.idArticulo = sales.IdArticulo
+        WHERE a.Discontinuado = 0
+    ),
+    ReorderCalculations AS (
+        SELECT 
+            *,
+            -- Lead time estimation (default 60 days for overseas, can be refined)
+            CASE 
+                WHEN SupplierCountry = 'China' THEN 60
+                WHEN SupplierCountry = 'India' THEN 45
+                ELSE 30
+            END as EstimatedLeadTimeDays,
+            -- Safety stock (1.65 * std dev * sqrt(lead time)) for 95% service level
+            CASE 
+                WHEN SupplierCountry = 'China' THEN DemandStdDev * SQRT(60.0) * 1.65
+                WHEN SupplierCountry = 'India' THEN DemandStdDev * SQRT(45.0) * 1.65
+                ELSE DemandStdDev * SQRT(30.0) * 1.65
+            END as SafetyStock,
+            -- Reorder point calculation
+            CASE 
+                WHEN SupplierCountry = 'China' THEN (AvgDailyDemand * 60) + (DemandStdDev * SQRT(60.0) * 1.65)
+                WHEN SupplierCountry = 'India' THEN (AvgDailyDemand * 45) + (DemandStdDev * SQRT(45.0) * 1.65)
+                ELSE (AvgDailyDemand * 30) + (DemandStdDev * SQRT(30.0) * 1.65)
+            END as ReorderPoint,
+            -- Economic Order Quantity (simplified Wilson formula)
+            CASE 
+                WHEN AvgDailyDemand > 0 AND UnitPrice > 0 THEN
+                    SQRT((2 * AvgDailyDemand * 365 * 100) / (UnitPrice * 0.25))
+                ELSE 0
+            END as EOQ,
+            -- Days of coverage remaining
+            CASE 
+                WHEN AvgDailyDemand > 0 THEN CurrentStock / AvgDailyDemand
+                ELSE 999
+            END as DaysOfCoverage
+        FROM ProductDemand
+    ),
+    FinalCalculations AS (
+        SELECT 
+            *,
+            -- Quantity to order
+            CASE 
+                WHEN CurrentStock < ReorderPoint THEN 
+                    CEILING(CASE WHEN EOQ > (ReorderPoint - CurrentStock + SafetyStock) 
+                                 THEN EOQ 
+                                 ELSE (ReorderPoint - CurrentStock + SafetyStock) 
+                            END)
+                ELSE 0
+            END as SuggestedOrderQuantity,
+            -- Priority classification
+            CASE 
+                WHEN DaysOfCoverage <= 0 THEN 'OUT_OF_STOCK'
+                WHEN CurrentStock < ReorderPoint AND DaysOfCoverage <= 15 THEN 'URGENT'
+                WHEN CurrentStock < ReorderPoint AND DaysOfCoverage <= 30 THEN 'HIGH'
+                WHEN CurrentStock < ReorderPoint AND DaysOfCoverage <= 60 THEN 'MEDIUM'
+                WHEN CurrentStock < ReorderPoint THEN 'LOW'
+                ELSE 'ADEQUATE'
+            END as Priority,
+            -- Expected stockout date
+            CASE 
+                WHEN AvgDailyDemand > 0 AND DaysOfCoverage < 999 THEN 
+                    DATEADD(DAY, CAST(DaysOfCoverage AS INT), GETDATE())
+                ELSE NULL
+            END as ExpectedStockoutDate,
+            -- Order value
+            CASE 
+                WHEN CurrentStock < ReorderPoint THEN 
+                    CEILING(CASE WHEN EOQ > (ReorderPoint - CurrentStock + SafetyStock) 
+                                 THEN EOQ 
+                                 ELSE (ReorderPoint - CurrentStock + SafetyStock) 
+                            END) * UnitPrice
+                ELSE 0
+            END as SuggestedOrderValue
+        FROM ReorderCalculations
+        WHERE Last90DaysSales > 0  -- Only products with recent demand
+    )
+    SELECT *
+    FROM FinalCalculations
+    ORDER BY 
+        CASE Priority
+            WHEN 'OUT_OF_STOCK' THEN 1
+            WHEN 'URGENT' THEN 2
+            WHEN 'HIGH' THEN 3
+            WHEN 'MEDIUM' THEN 4
+            WHEN 'LOW' THEN 5
+            ELSE 6
+        END,
+        DaysOfCoverage ASC
+    """
+    
+    SUPPLIER_PERFORMANCE = """
+    WITH SupplierStock AS (
+        SELECT 
+            s.Id,
+            s.Name as SupplierName,
+            s.Country,
+            s.InternalId,
+            COUNT(DISTINCT a.idArticulo) as ProductCount,
+            SUM(a.cantidad * a.preciounitario) as CurrentStockValue
+        FROM Suppliers s
+        LEFT JOIN Articulos a ON CAST(a.proveedor AS VARCHAR(50)) = CAST(s.InternalId AS VARCHAR(50))
+            AND a.Discontinuado = 0
+        GROUP BY s.Id, s.Name, s.Country, s.InternalId
+    ),
+    SupplierOrders AS (
+        SELECT 
+            CAST(po.supplierId AS VARCHAR(50)) as SupplierId,
+            COUNT(DISTINCT po.id) as TotalOrders,
+            AVG(CASE 
+                WHEN po.boardingDate IS NOT NULL AND po.nationalizationDate IS NOT NULL
+                AND TRY_CAST(po.boardingDate AS DATE) IS NOT NULL
+                AND TRY_CAST(po.nationalizationDate AS DATE) IS NOT NULL
+                THEN DATEDIFF(DAY, TRY_CAST(po.boardingDate AS DATE), TRY_CAST(po.nationalizationDate AS DATE))
+                ELSE NULL
+            END) as AvgLeadTimeDays,
+            SUM(po.totalAmount) as TotalPurchaseValue
+        FROM PurchaseOrders po
+        GROUP BY CAST(po.supplierId AS VARCHAR(50))
+    )
+    SELECT 
+        ss.SupplierName,
+        ss.Country,
+        COALESCE(so.TotalOrders, 0) as TotalOrders,
+        ss.ProductCount,
+        COALESCE(ss.CurrentStockValue, 0) as CurrentStockValue,
+        so.AvgLeadTimeDays,
+        so.TotalPurchaseValue
+    FROM SupplierStock ss
+    LEFT JOIN SupplierOrders so ON CAST(ss.InternalId AS VARCHAR(50)) = so.SupplierId
+    ORDER BY CurrentStockValue DESC
+    """
+
 class SalesQueries:
     """Sales analysis SQL queries"""
     

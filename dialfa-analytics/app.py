@@ -20,6 +20,7 @@ from database.connection import DatabaseManager
 from analytics.financial import FinancialAnalytics
 from analytics.inventory import InventoryAnalytics
 from analytics.sales import SalesAnalytics
+from analytics.purchase import PurchaseAnalytics
 
 # Import authentication
 from auth.models import get_user_by_id
@@ -29,6 +30,7 @@ from routes.dashboard import dashboard_bp
 from routes.financial import financial_bp
 from routes.inventory import inventory_bp
 from routes.sales import sales_bp
+from routes.purchase import purchase_bp
 from routes.retool_compat import retool_bp
 from routes.cache_admin import cache_admin_bp
 from auth.routes import auth_bp
@@ -109,6 +111,7 @@ def create_app():
         financial_analytics = FinancialAnalytics(db_manager)
         inventory_analytics = InventoryAnalytics(db_manager)
         sales_analytics = SalesAnalytics(db_manager)
+        purchase_analytics = PurchaseAnalytics(db_manager)
         app.logger.info("Analytics modules initialized successfully")
     except Exception as e:
         app.logger.error(f"Failed to initialize analytics modules: {e}")
@@ -119,6 +122,7 @@ def create_app():
     app.financial_analytics = financial_analytics
     app.inventory_analytics = inventory_analytics
     app.sales_analytics = sales_analytics
+    app.purchase_analytics = purchase_analytics
     
     # Register blueprints
     app.register_blueprint(auth_bp, url_prefix='/auth')
@@ -127,6 +131,7 @@ def create_app():
     app.register_blueprint(financial_bp, url_prefix='/financial')
     app.register_blueprint(inventory_bp, url_prefix='/inventory')
     app.register_blueprint(sales_bp, url_prefix='/sales')
+    app.register_blueprint(purchase_bp, url_prefix='/purchase')
     app.register_blueprint(retool_bp)
     
     @app.route('/')

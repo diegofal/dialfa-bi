@@ -1,0 +1,367 @@
+{% extends "base.html" %}
+
+{% block title %}{{ _('Purchase Orders & Reorder Analysis') }} - Dialfa BI{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col">
+        <h1 class="h2">
+            <i class="bi bi-cart-check"></i>
+            {{ _('Purchase Orders & Reorder Analysis') }}
+        </h1>
+        <p class="text-muted">Intelligent reorder recommendations and supplier performance</p>
+    </div>
+</div>
+
+<!-- Key Reorder Metrics -->
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card metric-card border-danger">
+            <div class="card-body text-center">
+                <i class="bi bi-exclamation-triangle text-danger mb-2" style="font-size: 2rem;"></i>
+                <h3 id="urgent-items" class="text-danger">-</h3>
+                <p class="card-text">{{ _('Urgent Items') }}</p>
+                <small class="text-muted">{{ _('Need immediate order') }}</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card metric-card border-warning">
+            <div class="card-body text-center">
+                <i class="bi bi-clock text-warning mb-2" style="font-size: 2rem;"></i>
+                <h3 id="high-priority-items" class="text-warning">-</h3>
+                <p class="card-text">{{ _('High Priority') }}</p>
+                <small class="text-muted">{{ _('Order within 30 days') }}</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card metric-card border-info">
+            <div class="card-body text-center">
+                <i class="bi bi-cart-plus text-info mb-2" style="font-size: 2rem;"></i>
+                <h3 id="total-items-reorder" class="text-info">-</h3>
+                <p class="card-text">{{ _('Total Items to Reorder') }}</p>
+                <small class="text-muted">{{ _('All priorities') }}</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card metric-card border-success">
+            <div class="card-body text-center">
+                <i class="bi bi-currency-dollar text-success mb-2" style="font-size: 2rem;"></i>
+                <h3 id="total-order-value" class="text-success">-</h3>
+                <p class="card-text">{{ _('Total Order Value') }}</p>
+                <small class="text-muted">{{ _('USD') }}</small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Supplier Performance -->
+<div class="row mb-4">
+    <div class="col-lg-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="bi bi-building"></i>
+                    {{ _('Supplier Performance') }}
+                </h5>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>{{ _('Supplier') }}</th>
+                                <th>{{ _('Country') }}</th>
+                                <th class="text-end">{{ _('Products') }}</th>
+                                <th class="text-end">{{ _('Stock Value') }}</th>
+                                <th class="text-end">{{ _('Avg Lead Time') }}</th>
+                            </tr>
+                        </thead>
+                        <tbody id="supplier-performance-tbody">
+                            <tr>
+                                <td colspan="5" class="text-center">{{ _('Loading...') }}</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="bi bi-pie-chart"></i>
+                    {{ _('Orders by Priority') }}
+                </h5>
+            </div>
+            <div class="card-body">
+                <div id="priority-distribution-chart" style="height: 300px;"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Reorder Recommendations Table -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="card-title mb-0">
+                    <i class="bi bi-list-check"></i>
+                    {{ _('Reorder Recommendations') }}
+                </h5>
+                <div class="btn-group btn-group-sm" role="group">
+                    <button type="button" class="btn btn-outline-danger active" onclick="filterByPriority('URGENT')">
+                        {{ _('Urgent') }}
+                    </button>
+                    <button type="button" class="btn btn-outline-warning" onclick="filterByPriority('HIGH')">
+                        {{ _('High') }}
+                    </button>
+                    <button type="button" class="btn btn-outline-info" onclick="filterByPriority('ALL')">
+                        {{ _('All') }}
+                    </button>
+                </div>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive" style="max-height: 600px;">
+                    <table class="table table-sm table-hover mb-0">
+                        <thead class="table-dark sticky-top">
+                            <tr>
+                                <th>{{ _('Priority') }}</th>
+                                <th>{{ _('Product Code') }}</th>
+                                <th>{{ _('Description') }}</th>
+                                <th>{{ _('Supplier') }}</th>
+                                <th class="text-end">{{ _('Current Stock') }}</th>
+                                <th class="text-end">{{ _('Reorder Point') }}</th>
+                                <th class="text-end">{{ _('Suggested Qty') }}</th>
+                                <th class="text-end">{{ _('Order Value') }}</th>
+                                <th class="text-end">{{ _('Days Coverage') }}</th>
+                                <th>{{ _('Stockout Date') }}</th>
+                            </tr>
+                        </thead>
+                        <tbody id="reorder-recommendations-tbody">
+                            <tr>
+                                <td colspan="10" class="text-center">{{ _('Loading...') }}</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="card-footer">
+                <div class="row">
+                    <div class="col-md-4">
+                        <strong>{{ _('Total Items:') }}</strong> <span id="filtered-count">0</span>
+                    </div>
+                    <div class="col-md-4">
+                        <strong>{{ _('Total Order Value:') }}</strong> <span id="filtered-value">USD 0</span>
+                    </div>
+                    <div class="col-md-4 text-end">
+                        <button class="btn btn-sm btn-primary" onclick="exportToExcel()">
+                            <i class="bi bi-file-earmark-excel"></i> {{ _('Export to Excel') }}
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Global data storage
+let reorderData = [];
+let currentFilter = 'URGENT';
+
+// Load all data when page loads
+document.addEventListener('DOMContentLoaded', function() {
+    loadReorderAnalysis();
+    loadSupplierPerformance();
+});
+
+function loadReorderAnalysis() {
+    fetch('/purchase/api/reorder-analysis')
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success') {
+                reorderData = data.data;
+                updateKPIs(data.summary);
+                populateReorderTable(reorderData);
+                createPriorityChart(data.summary.by_priority);
+            }
+        })
+        .catch(error => console.error('Error loading reorder analysis:', error));
+}
+
+function updateKPIs(summary) {
+    document.getElementById('urgent-items').textContent = summary.urgent_items || 0;
+    document.getElementById('high-priority-items').textContent = summary.high_priority_items || 0;
+    document.getElementById('total-items-reorder').textContent = summary.total_items_to_reorder || 0;
+    document.getElementById('total-order-value').textContent = summary.formatted?.total_order_value || 'USD 0';
+}
+
+function populateReorderTable(data) {
+    const tbody = document.getElementById('reorder-recommendations-tbody');
+    tbody.innerHTML = '';
+    
+    // Filter by current selection
+    let filtered = data;
+    if (currentFilter === 'URGENT') {
+        filtered = data.filter(item => ['OUT_OF_STOCK', 'URGENT'].includes(item.Priority));
+    } else if (currentFilter === 'HIGH') {
+        filtered = data.filter(item => item.Priority === 'HIGH');
+    }
+    
+    // Update footer
+    const totalValue = filtered.reduce((sum, item) => sum + (item.SuggestedOrderValue || 0), 0);
+    document.getElementById('filtered-count').textContent = filtered.length;
+    document.getElementById('filtered-value').textContent = formatCurrency(totalValue);
+    
+    if (filtered.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="10" class="text-center text-muted">{{ _("No items match the current filter") }}</td></tr>';
+        return;
+    }
+    
+    filtered.forEach(item => {
+        const priorityBadge = getPriorityBadge(item.Priority);
+        const rowClass = item.Priority === 'OUT_OF_STOCK' ? 'table-danger' : 
+                        item.Priority === 'URGENT' ? 'table-warning' : '';
+        
+        const row = document.createElement('tr');
+        row.className = rowClass;
+        row.innerHTML = `
+            <td>${priorityBadge}</td>
+            <td><strong>${item.ProductCode}</strong></td>
+            <td>${item.ProductName}</td>
+            <td>
+                <span class="badge bg-secondary">${item.PreferredSupplier || 'N/A'}</span>
+                <small class="text-muted">${item.SupplierCountry || ''}</small>
+            </td>
+            <td class="text-end">${item.CurrentStock.toFixed(0)}</td>
+            <td class="text-end">${item.FormattedReorderPoint}</td>
+            <td class="text-end"><strong>${item.SuggestedOrderQuantity.toFixed(0)}</strong></td>
+            <td class="text-end"><strong>${item.FormattedOrderValue}</strong></td>
+            <td class="text-end">${item.FormattedDaysOfCoverage}</td>
+            <td><small>${item.FormattedExpectedStockoutDate || '-'}</small></td>
+        `;
+        tbody.appendChild(row);
+    });
+}
+
+function getPriorityBadge(priority) {
+    const badges = {
+        'OUT_OF_STOCK': '<span class="badge bg-danger">OUT OF STOCK</span>',
+        'URGENT': '<span class="badge bg-danger">URGENT</span>',
+        'HIGH': '<span class="badge bg-warning text-dark">HIGH</span>',
+        'MEDIUM': '<span class="badge bg-info text-dark">MEDIUM</span>',
+        'LOW': '<span class="badge bg-secondary">LOW</span>',
+        'ADEQUATE': '<span class="badge bg-success">ADEQUATE</span>'
+    };
+    return badges[priority] || '<span class="badge bg-secondary">' + priority + '</span>';
+}
+
+function filterByPriority(priority) {
+    currentFilter = priority;
+    
+    // Update button states
+    document.querySelectorAll('.btn-group button').forEach(btn => {
+        btn.classList.remove('active');
+    });
+    event.target.classList.add('active');
+    
+    // Refilter table
+    populateReorderTable(reorderData);
+}
+
+function loadSupplierPerformance() {
+    fetch('/purchase/api/supplier-performance')
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success') {
+                populateSupplierTable(data.data);
+            }
+        })
+        .catch(error => console.error('Error loading supplier performance:', error));
+}
+
+function populateSupplierTable(suppliers) {
+    const tbody = document.getElementById('supplier-performance-tbody');
+    tbody.innerHTML = '';
+    
+    suppliers.forEach(supplier => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <td><strong>${supplier.SupplierName}</strong></td>
+            <td><span class="badge bg-primary">${supplier.Country}</span></td>
+            <td class="text-end">${supplier.ProductCount}</td>
+            <td class="text-end">${supplier.FormattedStockValue}</td>
+            <td class="text-end">${supplier.FormattedLeadTime}</td>
+        `;
+        tbody.appendChild(row);
+    });
+}
+
+function createPriorityChart(priorityData) {
+    if (!priorityData || Object.keys(priorityData).length === 0) {
+        document.getElementById('priority-distribution-chart').innerHTML = 
+            '<div class="alert alert-info">No data available</div>';
+        return;
+    }
+    
+    const labels = [];
+    const values = [];
+    const colors = {
+        'OUT_OF_STOCK': '#dc3545',
+        'URGENT': '#dc3545',
+        'HIGH': '#ffc107',
+        'MEDIUM': '#17a2b8',
+        'LOW': '#6c757d'
+    };
+    
+    Object.keys(priorityData).forEach(priority => {
+        labels.push(priority);
+        values.push(priorityData[priority].idArticulo || 0);
+    });
+    
+    const trace = {
+        labels: labels,
+        values: values,
+        type: 'pie',
+        marker: {
+            colors: labels.map(label => colors[label] || '#6c757d')
+        },
+        textinfo: 'label+percent',
+        textposition: 'outside'
+    };
+    
+    const layout = {
+        margin: { t: 20, r: 20, b: 20, l: 20 },
+        showlegend: true,
+        legend: {
+            orientation: 'h',
+            yanchor: 'bottom',
+            y: -0.2
+        }
+    };
+    
+    Plotly.newPlot('priority-distribution-chart', [trace], layout, {responsive: true});
+}
+
+function formatCurrency(amount) {
+    if (amount >= 1000000) {
+        return `USD ${(amount/1000000).toFixed(1)}M`;
+    } else if (amount >= 1000) {
+        return `USD ${(amount/1000).toFixed(1)}K`;
+    } else {
+        return `USD ${amount.toFixed(2)}`;
+    }
+}
+
+function exportToExcel() {
+    alert('Export functionality will be implemented soon!');
+    // TODO: Implement Excel export
+}
+</script>
+{% endblock %}
+
