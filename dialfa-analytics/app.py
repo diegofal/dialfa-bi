@@ -108,8 +108,10 @@ def create_app():
     
     # Initialize analytics modules
     try:
-        financial_analytics = FinancialAnalytics(db_manager)
-        inventory_analytics = InventoryAnalytics(db_manager)
+        from database.spisa_api_client import SpisaApiClient
+        spisa_api = SpisaApiClient() if Config.SPISA_API_URL else None
+        financial_analytics = FinancialAnalytics(db_manager, spisa_api=spisa_api)
+        inventory_analytics = InventoryAnalytics(db_manager, spisa_api=spisa_api)
         sales_analytics = SalesAnalytics(db_manager)
         purchase_analytics = PurchaseAnalytics(db_manager)
         app.logger.info("Analytics modules initialized successfully")
