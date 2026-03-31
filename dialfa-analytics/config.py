@@ -13,6 +13,10 @@ class Config:
     DB_PASSWORD = os.environ.get('DB_PASSWORD', 'Ab1234,,,')
     SPISA_DB = os.environ.get('SPISA_DB', 'SPISA')
     XERP_DB = os.environ.get('XERP_DB', 'xERP')
+
+    # SPISA New System API (Railway)
+    SPISA_API_URL = os.environ.get('SPISA_API_URL', '')
+    SPISA_API_KEY = os.environ.get('SPISA_API_KEY', '')
     
     # Connection string template - working configuration
     CONNECTION_STRING = (
