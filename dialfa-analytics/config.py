@@ -14,9 +14,8 @@ class Config:
     SPISA_DB = os.environ.get('SPISA_DB', 'SPISA')
     XERP_DB = os.environ.get('XERP_DB', 'xERP')
 
-    # SPISA New System API (Railway)
-    SPISA_API_URL = os.environ.get('SPISA_API_URL', '')
-    SPISA_API_KEY = os.environ.get('SPISA_API_KEY', '')
+    # SPISA PostgreSQL (Railway) - direct connection for analytics queries
+    SPISA_PG_URL = os.environ.get('SPISA_PG_URL', '')
     
     # Connection string template - working configuration
     CONNECTION_STRING = (

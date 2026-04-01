@@ -5,195 +5,194 @@ Based on the comprehensive database analysis
 
 class FinancialQueries:
     """Financial analysis SQL queries"""
-    
+
     # xERP-based financial queries (ARS currency)
     XERP_EXECUTIVE_SUMMARY = """
-    SELECT 
+    SELECT
         COUNT(DISTINCT dm.debtor_no) as UniqueCustomers,
         SUM(dt.ov_amount * 1.21) as TotalOutstanding,
         SUM(CASE WHEN dt.due_date < DATEADD(HOUR, -3, GETDATE()) THEN dt.ov_amount * 1.21 ELSE 0 END) as TotalOverdue,
         AVG(dt.ov_amount * 1.21) as AvgBalance
     FROM [0_debtor_trans] dt
     INNER JOIN [0_debtors_master] dm ON dt.debtor_no = dm.debtor_no
-    WHERE dt.Type = 10 
+    WHERE dt.Type = 10
     AND dt.ov_amount > 0
     AND dt.alloc < dt.ov_amount  -- Not fully paid
     """
-    
+
     XERP_CREDIT_RISK_ANALYSIS = """
-    SELECT 
+    SELECT
         dm.name as Name,
         SUM(dt.ov_amount * 1.21) as CurrentBalance,
         SUM(CASE WHEN dt.due_date < DATEADD(HOUR, -3, GETDATE()) THEN dt.ov_amount * 1.21 ELSE 0 END) as OverdueAmount,
-        (SUM(CASE WHEN dt.due_date < DATEADD(HOUR, -3, GETDATE()) THEN dt.ov_amount * 1.21 ELSE 0 END) / 
+        (SUM(CASE WHEN dt.due_date < DATEADD(HOUR, -3, GETDATE()) THEN dt.ov_amount * 1.21 ELSE 0 END) /
          NULLIF(SUM(dt.ov_amount * 1.21), 0)) * 100 as OverduePercentage,
-        CASE 
-            WHEN (SUM(CASE WHEN dt.due_date < DATEADD(HOUR, -3, GETDATE()) THEN dt.ov_amount * 1.21 ELSE 0 END) / 
+        CASE
+            WHEN (SUM(CASE WHEN dt.due_date < DATEADD(HOUR, -3, GETDATE()) THEN dt.ov_amount * 1.21 ELSE 0 END) /
                   NULLIF(SUM(dt.ov_amount * 1.21), 0)) > 0.5 THEN 'HIGH RISK'
-            WHEN (SUM(CASE WHEN dt.due_date < DATEADD(HOUR, -3, GETDATE()) THEN dt.ov_amount * 1.21 ELSE 0 END) / 
+            WHEN (SUM(CASE WHEN dt.due_date < DATEADD(HOUR, -3, GETDATE()) THEN dt.ov_amount * 1.21 ELSE 0 END) /
                   NULLIF(SUM(dt.ov_amount * 1.21), 0)) > 0.2 THEN 'MEDIUM RISK'
             ELSE 'LOW RISK'
         END as RiskLevel
     FROM [0_debtor_trans] dt
     INNER JOIN [0_debtors_master] dm ON dt.debtor_no = dm.debtor_no
-    WHERE dt.Type = 10 
+    WHERE dt.Type = 10
     AND dt.ov_amount > 0
     AND dt.alloc < dt.ov_amount  -- Not fully paid
     GROUP BY dm.debtor_no, dm.name
     HAVING SUM(dt.ov_amount * 1.21) > 1000
     ORDER BY OverduePercentage DESC
     """
-    
+
     XERP_TOP_CUSTOMERS_FINANCIAL = """
     SELECT TOP {limit}
         dm.name as Name,
         'Customer' as Type,
         SUM(dt.ov_amount * 1.21) as OutstandingBalance,
         SUM(CASE WHEN dt.due_date < DATEADD(HOUR, -3, GETDATE()) THEN dt.ov_amount * 1.21 ELSE 0 END) as OverdueAmount,
-        (SUM(CASE WHEN dt.due_date < DATEADD(HOUR, -3, GETDATE()) THEN dt.ov_amount * 1.21 ELSE 0 END) / 
+        (SUM(CASE WHEN dt.due_date < DATEADD(HOUR, -3, GETDATE()) THEN dt.ov_amount * 1.21 ELSE 0 END) /
          NULLIF(SUM(dt.ov_amount * 1.21), 0)) * 100 as OverduePercentage
     FROM [0_debtor_trans] dt
     INNER JOIN [0_debtors_master] dm ON dt.debtor_no = dm.debtor_no
-    WHERE dt.Type = 10 
+    WHERE dt.Type = 10
     AND dt.ov_amount > 0
     AND dt.alloc < dt.ov_amount  -- Not fully paid
     GROUP BY dm.debtor_no, dm.name
     HAVING SUM(dt.ov_amount * 1.21) > 100
     ORDER BY OutstandingBalance DESC
     """
-    
-    # SPISA financial queries (USD currency) - kept for reference
+
+    # SPISA financial queries (USD currency)
     EXECUTIVE_SUMMARY = """
-    SELECT 
-        COUNT(DISTINCT CustomerId) as UniqueCustomers,
-        SUM(Amount) as TotalOutstanding,
-        SUM(Due) as TotalOverdue,
-        AVG(Amount) as AvgBalance
-    FROM Balances 
-    WHERE Amount > 100
+    SELECT
+        COUNT(DISTINCT customer_id) as UniqueCustomers,
+        SUM(amount) as TotalOutstanding,
+        SUM(due) as TotalOverdue,
+        AVG(amount) as AvgBalance
+    FROM sync_balances
+    WHERE amount > 100
     """
-    
+
     CREDIT_RISK_ANALYSIS = """
-    SELECT 
-        c.Name,
-        b.Amount as CurrentBalance,
-        b.Due as OverdueAmount,
-        (b.Due / NULLIF(b.Amount, 0)) * 100 as OverduePercentage,
-        CASE 
-            WHEN b.Due > b.Amount * 0.5 THEN 'HIGH RISK'
-            WHEN b.Due > b.Amount * 0.2 THEN 'MEDIUM RISK'
+    SELECT
+        c.name,
+        b.amount as CurrentBalance,
+        b.due as OverdueAmount,
+        (b.due / NULLIF(b.amount, 0)) * 100 as OverduePercentage,
+        CASE
+            WHEN b.due > b.amount * 0.5 THEN 'HIGH RISK'
+            WHEN b.due > b.amount * 0.2 THEN 'MEDIUM RISK'
             ELSE 'LOW RISK'
         END as RiskLevel
-    FROM Customers c
-    INNER JOIN Balances b ON c.Id = b.CustomerId
-    WHERE b.Amount > 1000
+    FROM sync_customers c
+    INNER JOIN sync_balances b ON c.id = b.customer_id
+    WHERE b.amount > 1000
     ORDER BY OverduePercentage DESC
     """
-    
+
     CASH_FLOW_FORECAST = """
-    SELECT 
-        YEAR(PaymentDate) as Year,
-        MONTH(PaymentDate) as Month,
-        SUM(PaymentAmount) as ActualPayments,
-        SUM(CASE WHEN Type = 1 THEN PaymentAmount ELSE 0 END) as CashPayments,
-        SUM(CASE WHEN Type = 0 THEN PaymentAmount ELSE 0 END) as ElectronicPayments,
+    SELECT
+        EXTRACT(YEAR FROM payment_date)::int as Year,
+        EXTRACT(MONTH FROM payment_date)::int as Month,
+        SUM(payment_amount) as ActualPayments,
+        SUM(CASE WHEN type = 1 THEN payment_amount ELSE 0 END) as CashPayments,
+        SUM(CASE WHEN type = 0 THEN payment_amount ELSE 0 END) as ElectronicPayments,
         COUNT(*) as TransactionCount,
-        COUNT(CASE WHEN Type = 1 THEN 1 END) as CashCount,
-        COUNT(CASE WHEN Type = 0 THEN 1 END) as ElectronicCount
-    FROM Transactions 
-    WHERE PaymentDate >= DATEADD(MONTH, -{months}, DATEADD(HOUR, -3, GETDATE()))
-    AND PaymentDate <= DATEADD(HOUR, -3, GETDATE())
-    AND PaymentDate != '0001-01-01 00:00:00'
-    AND PaymentDate > '2020-01-01'
-    AND PaymentAmount > 0  -- Solo pagos reales (excluir registros sin pago)
-    GROUP BY YEAR(PaymentDate), MONTH(PaymentDate)
+        COUNT(CASE WHEN type = 1 THEN 1 END) as CashCount,
+        COUNT(CASE WHEN type = 0 THEN 1 END) as ElectronicCount
+    FROM sync_transactions
+    WHERE payment_date >= NOW() - INTERVAL '{months} months'
+    AND payment_date <= NOW()
+    AND payment_date IS NOT NULL AND payment_date > '2020-01-01'
+    AND payment_amount > 0  -- Solo pagos reales (excluir registros sin pago)
+    GROUP BY EXTRACT(YEAR FROM payment_date)::int, EXTRACT(MONTH FROM payment_date)::int
     ORDER BY Year, Month
     """
-    
+
     TOP_CUSTOMERS = """
-    SELECT TOP {limit}
-        c.Name,
-        c.Type,
-        b.Amount as OutstandingBalance,
-        b.Due as OverdueAmount,
-        (b.Due / NULLIF(b.Amount, 0)) * 100 as OverduePercentage
-    FROM Customers c
-    INNER JOIN Balances b ON c.Id = b.CustomerId
-    WHERE b.Amount > 100
-    ORDER BY b.Amount DESC
+    SELECT
+        c.name,
+        c.type,
+        b.amount as OutstandingBalance,
+        b.due as OverdueAmount,
+        (b.due / NULLIF(b.amount, 0)) * 100 as OverduePercentage
+    FROM sync_customers c
+    INNER JOIN sync_balances b ON c.id = b.customer_id
+    WHERE b.amount > 100
+    ORDER BY b.amount DESC
+    LIMIT {limit}
     """
-    
+
     # Retool-compatible queries
     SPISA_BALANCES = """
-    SELECT c.Name, b.Amount, b.Due, c.Type
-    FROM Balances b
-    INNER JOIN Customers c on c.Id = b.CustomerId
-    WHERE b.Amount > 100
+    SELECT c.name, b.amount, b.due, c.type
+    FROM sync_balances b
+    INNER JOIN sync_customers c on c.id = b.customer_id
+    WHERE b.amount > 100
     """
-    
+
     SPISA_FUTURE_PAYMENTS = """
-    SELECT COALESCE(Sum(PaymentAmount),0) as PaymentAmount
-    FROM Transactions t
-    WHERE t.Type=0 and t.PaymentAmount<>0 and PaymentDate >= GETDATE()
+    SELECT COALESCE(Sum(payment_amount),0) as PaymentAmount
+    FROM sync_transactions t
+    WHERE t.type=0 and t.payment_amount<>0 and payment_date >= NOW()
     """
-    
+
     SPISA_DUE_BALANCE = """
-    SELECT Sum(Due) as Due
-    FROM Balances b
+    SELECT Sum(due) as Due
+    FROM sync_balances b
     """
-    
+
     SPISA_BILLED_MONTHLY = """
-    SELECT Sum(InvoiceAmount) as InvoiceAmount
-    FROM Transactions t
-    WHERE MONTH(InvoiceDate) = MONTH(DATEADD(HOUR, -3, GETDATE())) 
-    AND YEAR(InvoiceDate) = YEAR(DATEADD(HOUR, -3, GETDATE()))
-    AND Type=1
+    SELECT Sum(invoice_amount) as InvoiceAmount
+    FROM sync_transactions t
+    WHERE EXTRACT(MONTH FROM invoice_date)::int = EXTRACT(MONTH FROM NOW())::int
+    AND EXTRACT(YEAR FROM invoice_date)::int = EXTRACT(YEAR FROM NOW())::int
+    AND type=1
     """
-    
+
     SPISA_BILLED_TODAY = """
-    SELECT COALESCE(Sum(InvoiceAmount),0) as InvoiceAmount
-    FROM Transactions t
-    WHERE CAST(InvoiceDate AS DATE) = CAST(DATEADD(HOUR, -3, GETDATE()) AS DATE)
-    AND Type=1
+    SELECT COALESCE(Sum(invoice_amount),0) as InvoiceAmount
+    FROM sync_transactions t
+    WHERE invoice_date::date = NOW()::date
+    AND type=1
     """
-    
+
     SPISA_COLLECTED_MONTHLY = """
-    SELECT 
-        COALESCE(SUM(PaymentAmount), 0) as TotalPayments,
-        COALESCE(SUM(CASE WHEN Type = 1 THEN PaymentAmount ELSE 0 END), 0) as CashPayments,
-        COALESCE(SUM(CASE WHEN Type = 0 THEN PaymentAmount ELSE 0 END), 0) as ElectronicPayments,
+    SELECT
+        COALESCE(SUM(payment_amount), 0) as TotalPayments,
+        COALESCE(SUM(CASE WHEN type = 1 THEN payment_amount ELSE 0 END), 0) as CashPayments,
+        COALESCE(SUM(CASE WHEN type = 0 THEN payment_amount ELSE 0 END), 0) as ElectronicPayments,
         COUNT(*) as TransactionCount,
-        COUNT(CASE WHEN Type = 1 THEN 1 END) as CashCount,
-        COUNT(CASE WHEN Type = 0 THEN 1 END) as ElectronicCount
-    FROM Transactions t
-    WHERE MONTH(PaymentDate) = MONTH(DATEADD(HOUR, -3, GETDATE()))
-    AND YEAR(PaymentDate) = YEAR(DATEADD(HOUR, -3, GETDATE()))
-    AND PaymentDate != '0001-01-01 00:00:00'
-    AND PaymentDate > '2020-01-01'
-    AND PaymentAmount > 0  -- Solo pagos reales
+        COUNT(CASE WHEN type = 1 THEN 1 END) as CashCount,
+        COUNT(CASE WHEN type = 0 THEN 1 END) as ElectronicCount
+    FROM sync_transactions t
+    WHERE EXTRACT(MONTH FROM payment_date)::int = EXTRACT(MONTH FROM NOW())::int
+    AND EXTRACT(YEAR FROM payment_date)::int = EXTRACT(YEAR FROM NOW())::int
+    AND payment_date IS NOT NULL AND payment_date > '2020-01-01'
+    AND payment_amount > 0  -- Solo pagos reales
     """
-    
+
     CUSTOMER_PROFITABILITY = """
     WITH CustomerMetrics AS (
-        SELECT 
-            c.Name,
-            COUNT(DISTINCT t.Id) as TransactionCount,
-            SUM(CASE WHEN t.Type = 1 THEN t.InvoiceAmount ELSE 0 END) as TotalRevenue,
-            SUM(CASE WHEN t.Type = 0 THEN t.PaymentAmount ELSE 0 END) as TotalPayments,
-            AVG(t.InvoiceAmount) as AvgInvoiceSize,
-            DATEDIFF(DAY, MIN(t.InvoiceDate), MAX(t.InvoiceDate)) as CustomerLifespanDays,
-            b.Amount as CurrentBalance,
-            b.Due as OverdueAmount
-        FROM Customers c
-        INNER JOIN Transactions t ON c.Id = t.CustomerId
-        LEFT JOIN Balances b ON c.Id = b.CustomerId
-        WHERE t.InvoiceDate >= '2020-01-01'
-        GROUP BY c.Id, c.Name, b.Amount, b.Due
+        SELECT
+            c.name,
+            COUNT(DISTINCT t.id) as TransactionCount,
+            SUM(CASE WHEN t.type = 1 THEN t.invoice_amount ELSE 0 END) as TotalRevenue,
+            SUM(CASE WHEN t.type = 0 THEN t.payment_amount ELSE 0 END) as TotalPayments,
+            AVG(t.invoice_amount) as AvgInvoiceSize,
+            EXTRACT(EPOCH FROM (MAX(t.invoice_date) - MIN(t.invoice_date))) / 86400 as CustomerLifespanDays,
+            b.amount as CurrentBalance,
+            b.due as OverdueAmount
+        FROM sync_customers c
+        INNER JOIN sync_transactions t ON c.id = t.customer_id
+        LEFT JOIN sync_balances b ON c.id = b.customer_id
+        WHERE t.invoice_date >= '2020-01-01'
+        GROUP BY c.id, c.name, b.amount, b.due
     )
-    SELECT 
+    SELECT
         *,
         TotalRevenue / NULLIF(CustomerLifespanDays, 0) * 365 as AnnualizedRevenue,
-        CASE 
+        CASE
             WHEN TotalRevenue > 1000000 AND OverdueAmount < TotalRevenue * 0.1 THEN 'Premium'
             WHEN TotalRevenue > 500000 AND OverdueAmount < TotalRevenue * 0.2 THEN 'Gold'
             WHEN TotalRevenue > 100000 THEN 'Silver'
@@ -202,11 +201,11 @@ class FinancialQueries:
     FROM CustomerMetrics
     ORDER BY TotalRevenue DESC
     """
-    
+
     # Expected Collections based on invoice aging (xERP)
     XERP_EXPECTED_COLLECTIONS = """
     WITH AgingBuckets AS (
-        SELECT 
+        SELECT
             dt.trans_no,
             dt.debtor_no,
             dm.name as CustomerName,
@@ -214,7 +213,7 @@ class FinancialQueries:
             (dt.ov_amount - dt.alloc) * 1.21 as OutstandingAmount,
             dt.due_date as DueDate,
             DATEDIFF(DAY, DATEADD(HOUR, -3, GETDATE()), dt.due_date) as DaysUntilDue,
-            CASE 
+            CASE
                 WHEN DATEDIFF(DAY, DATEADD(HOUR, -3, GETDATE()), dt.due_date) > 0 THEN 'NotYetDue'
                 WHEN DATEDIFF(DAY, dt.due_date, DATEADD(HOUR, -3, GETDATE())) BETWEEN 0 AND 30 THEN 'Overdue_0_30'
                 WHEN DATEDIFF(DAY, dt.due_date, DATEADD(HOUR, -3, GETDATE())) BETWEEN 31 AND 60 THEN 'Overdue_31_60'
@@ -227,7 +226,7 @@ class FinancialQueries:
         AND dt.ov_amount > 0
         AND dt.alloc < dt.ov_amount  -- Not fully paid
     )
-    SELECT 
+    SELECT
         AgingBucket,
         COUNT(*) as InvoiceCount,
         SUM(OutstandingAmount) as TotalAmount,
@@ -236,7 +235,7 @@ class FinancialQueries:
         MAX(DaysUntilDue) as MaxDays
     FROM AgingBuckets
     GROUP BY AgingBucket
-    ORDER BY 
+    ORDER BY
         CASE AgingBucket
             WHEN 'NotYetDue' THEN 1
             WHEN 'Overdue_0_30' THEN 2
@@ -245,11 +244,11 @@ class FinancialQueries:
             WHEN 'Overdue_90_Plus' THEN 5
         END
     """
-    
+
     # Collection Performance - Using allocations table (xERP)
     XERP_COLLECTION_PERFORMANCE = """
     WITH InvoicePayments AS (
-        SELECT 
+        SELECT
             inv.trans_no as InvoiceNo,
             YEAR(inv.tran_date) as Year,
             MONTH(inv.tran_date) as Month,
@@ -273,7 +272,7 @@ class FinancialQueries:
         AND inv.tran_date <= DATEADD(HOUR, -3, GETDATE())
         AND inv.ov_amount > 0
     )
-    SELECT 
+    SELECT
         Year,
         Month,
         SUM(InvoiceAmount) as MonthlySales,
@@ -281,32 +280,32 @@ class FinancialQueries:
         COUNT(*) as TotalInvoices,
         SUM(IsFullyPaid) as InvoicesPaid,
         -- Invoices paid within 30 days of due date
-        SUM(CASE 
-            WHEN FirstPaymentDate IS NOT NULL 
-            AND DATEDIFF(DAY, due_date, FirstPaymentDate) <= 30 
-            THEN 1 
-            ELSE 0 
+        SUM(CASE
+            WHEN FirstPaymentDate IS NOT NULL
+            AND DATEDIFF(DAY, due_date, FirstPaymentDate) <= 30
+            THEN 1
+            ELSE 0
         END) as InvoicesPaidOnTime,
         -- Average days from due date to first payment
-        AVG(CASE 
-            WHEN FirstPaymentDate IS NOT NULL 
+        AVG(CASE
+            WHEN FirstPaymentDate IS NOT NULL
             THEN DATEDIFF(DAY, due_date, FirstPaymentDate)
             ELSE NULL
         END) as AvgDaysToPayment,
         -- DSO: (Outstanding / Monthly Sales) * 30 days
-        CASE 
-            WHEN SUM(InvoiceAmount) > 0 
+        CASE
+            WHEN SUM(InvoiceAmount) > 0
             THEN (SUM(InvoiceAmount - AllocatedAmount) / SUM(InvoiceAmount)) * 30
             ELSE 0
         END as DSO,
         -- On-time payment percentage (all invoices with payment activity)
-        CASE 
-            WHEN COUNT(*) > 0 
-            THEN (CAST(SUM(CASE 
-                WHEN FirstPaymentDate IS NOT NULL 
-                AND DATEDIFF(DAY, due_date, FirstPaymentDate) <= 30 
-                THEN 1 
-                ELSE 0 
+        CASE
+            WHEN COUNT(*) > 0
+            THEN (CAST(SUM(CASE
+                WHEN FirstPaymentDate IS NOT NULL
+                AND DATEDIFF(DAY, due_date, FirstPaymentDate) <= 30
+                THEN 1
+                ELSE 0
             END) AS FLOAT) / NULLIF(SUM(CASE WHEN FirstPaymentDate IS NOT NULL THEN 1 ELSE 0 END), 0)) * 100
             ELSE 0
         END as OnTimePaymentPercentage
@@ -317,57 +316,64 @@ class FinancialQueries:
 
 class InventoryQueries:
     """Inventory analysis SQL queries"""
-    
+
     INVENTORY_SUMMARY = """
-    SELECT 
+    SELECT
         COUNT(*) as TotalProducts,
-        SUM(cantidad) as TotalQuantity,
-        SUM(cantidad * preciounitario) as TotalValue,
-        COUNT(CASE WHEN cantidad > 0 THEN 1 END) as InStockProducts,
-        COUNT(CASE WHEN Discontinuado = 1 THEN 1 END) as DiscontinuedProducts
-    FROM Articulos
+        SUM(a.stock) as TotalQuantity,
+        SUM(a.stock * a.unit_price) as TotalValue,
+        COUNT(CASE WHEN a.stock > 0 THEN 1 END) as InStockProducts,
+        COUNT(CASE WHEN a.is_discontinued = true THEN 1 END) as DiscontinuedProducts
+    FROM articles a
+    WHERE a.deleted_at IS NULL
     """
-    
+
     TOP_STOCK_VALUE = """
-    SELECT TOP {limit}
-        a.descripcion,
-        a.cantidad as CurrentStock,
-        a.preciounitario as UnitPrice,
-        a.cantidad * a.preciounitario as StockValue,
-        c.Descripcion as Category
-    FROM Articulos a
-    INNER JOIN Categorias c ON a.IdCategoria = c.IdCategoria
-    WHERE a.cantidad > 0
+    SELECT
+        a.description,
+        a.stock as CurrentStock,
+        a.unit_price as UnitPrice,
+        a.stock * a.unit_price as StockValue,
+        c.name as Category
+    FROM articles a
+    INNER JOIN categories c ON a.category_id = c.id
+    WHERE a.stock > 0
+    AND a.deleted_at IS NULL
+    AND c.deleted_at IS NULL
     ORDER BY StockValue DESC
+    LIMIT {limit}
     """
-    
+
     SLOW_MOVING_ANALYSIS = """
     WITH InventoryAnalysis AS (
-        SELECT 
-            a.descripcion,
-            a.cantidad as CurrentStock,
-            a.preciounitario * a.cantidad as StockValue,
-            c.Descripcion as Category,
-            COALESCE(sales.LastSaleDate, '1900-01-01') as LastSaleDate,
+        SELECT
+            a.description,
+            a.stock as CurrentStock,
+            a.unit_price * a.stock as StockValue,
+            c.name as Category,
+            COALESCE(sales.LastSaleDate, '1900-01-01'::date) as LastSaleDate,
             COALESCE(sales.TotalSold, 0) as TotalSold,
-            DATEDIFF(DAY, COALESCE(sales.LastSaleDate, '1900-01-01'), GETDATE()) as DaysSinceLastSale
-        FROM Articulos a
-        INNER JOIN Categorias c ON a.IdCategoria = c.IdCategoria
+            EXTRACT(EPOCH FROM (NOW() - COALESCE(sales.LastSaleDate, '1900-01-01'::date))) / 86400 as DaysSinceLastSale
+        FROM articles a
+        INNER JOIN categories c ON a.category_id = c.id
         LEFT JOIN (
-            SELECT 
-                npi.IdArticulo,
-                MAX(np.FechaEmision) as LastSaleDate,
-                SUM(npi.Cantidad) as TotalSold
-            FROM NotaPedido_Items npi
-            INNER JOIN NotaPedidos np ON npi.IdNotaPedido = np.IdNotaPedido
-            WHERE np.FechaEmision >= DATEADD(YEAR, -2, GETDATE())
-            GROUP BY npi.IdArticulo
-        ) sales ON a.IdArticulo = sales.IdArticulo
-        WHERE a.cantidad > 0 AND a.Discontinuado = 0
+            SELECT
+                soi.article_id,
+                MAX(so.order_date) as LastSaleDate,
+                SUM(soi.quantity) as TotalSold
+            FROM sales_order_items soi
+            INNER JOIN sales_orders so ON soi.sales_order_id = so.id
+            WHERE so.order_date >= NOW() - INTERVAL '2 years'
+            AND so.deleted_at IS NULL
+            GROUP BY soi.article_id
+        ) sales ON a.id = sales.article_id
+        WHERE a.stock > 0 AND a.is_discontinued = false
+        AND a.deleted_at IS NULL
+        AND c.deleted_at IS NULL
     )
-    SELECT 
+    SELECT
         *,
-        CASE 
+        CASE
             WHEN DaysSinceLastSale > 365 THEN 'Dead Stock'
             WHEN DaysSinceLastSale > 180 THEN 'Slow Moving'
             WHEN DaysSinceLastSale > 90 THEN 'Moderate'
@@ -377,61 +383,65 @@ class InventoryQueries:
     FROM InventoryAnalysis
     ORDER BY StockValue DESC
     """
-    
+
     CATEGORY_ANALYSIS = """
-    SELECT 
-        c.Descripcion as Category,
-        COUNT(a.IdArticulo) as ProductCount,
-        SUM(a.cantidad) as TotalQuantity,
-        SUM(a.cantidad * a.preciounitario) as TotalValue,
-        AVG(a.preciounitario) as AvgUnitPrice
-    FROM Categorias c
-    LEFT JOIN Articulos a ON c.IdCategoria = a.IdCategoria
-    WHERE a.cantidad > 0 AND a.Discontinuado = 0
-    GROUP BY c.IdCategoria, c.Descripcion
+    SELECT
+        c.name as Category,
+        COUNT(a.id) as ProductCount,
+        SUM(a.stock) as TotalQuantity,
+        SUM(a.stock * a.unit_price) as TotalValue,
+        AVG(a.unit_price) as AvgUnitPrice
+    FROM categories c
+    LEFT JOIN articles a ON c.id = a.category_id AND a.deleted_at IS NULL
+    WHERE a.stock > 0 AND a.is_discontinued = false
+    AND c.deleted_at IS NULL
+    GROUP BY c.id, c.name
     ORDER BY TotalValue DESC
     """
-    
+
     STOCK_VARIATION_OVER_TIME = """
     WITH MonthlyStockMovement AS (
-        SELECT 
-            a.IdArticulo,
-            a.descripcion as ProductName,
-            c.Descripcion as Category,
-            a.cantidad as CurrentStock,
-            a.preciounitario as UnitPrice,
-            YEAR(np.FechaEmision) as Year,
-            MONTH(np.FechaEmision) as Month,
-            DATENAME(MONTH, np.FechaEmision) as MonthName,
-            SUM(npi.Cantidad) as QuantitySold,
-            COUNT(npi.IdNotaPedido) as OrderCount,
-            AVG(npi.Cantidad) as AvgOrderSize,
-            SUM(npi.Cantidad * a.preciounitario) as SalesValue
-        FROM Articulos a
-        INNER JOIN Categorias c ON a.IdCategoria = c.IdCategoria
-        LEFT JOIN NotaPedido_Items npi ON a.IdArticulo = npi.IdArticulo
-        LEFT JOIN NotaPedidos np ON npi.IdNotaPedido = np.IdNotaPedido
-        WHERE np.FechaEmision >= DATEADD(MONTH, -12, GETDATE())
-        AND np.FechaEmision > '2020-01-01'
-        AND a.Discontinuado = 0
-        GROUP BY a.IdArticulo, a.descripcion, c.Descripcion, a.cantidad, a.preciounitario,
-                 YEAR(np.FechaEmision), MONTH(np.FechaEmision), DATENAME(MONTH, np.FechaEmision)
+        SELECT
+            a.id,
+            a.description as ProductName,
+            c.name as Category,
+            a.stock as CurrentStock,
+            a.unit_price as UnitPrice,
+            EXTRACT(YEAR FROM so.order_date)::int as Year,
+            EXTRACT(MONTH FROM so.order_date)::int as Month,
+            TO_CHAR(so.order_date, 'Month') as MonthName,
+            SUM(soi.quantity) as QuantitySold,
+            COUNT(soi.sales_order_id) as OrderCount,
+            AVG(soi.quantity) as AvgOrderSize,
+            SUM(soi.quantity * a.unit_price) as SalesValue
+        FROM articles a
+        INNER JOIN categories c ON a.category_id = c.id
+        LEFT JOIN sales_order_items soi ON a.id = soi.article_id
+        LEFT JOIN sales_orders so ON soi.sales_order_id = so.id
+        WHERE so.order_date >= NOW() - INTERVAL '12 months'
+        AND so.order_date > '2020-01-01'
+        AND a.is_discontinued = false
+        AND a.deleted_at IS NULL
+        AND c.deleted_at IS NULL
+        AND so.deleted_at IS NULL
+        GROUP BY a.id, a.description, c.name, a.stock, a.unit_price,
+                 EXTRACT(YEAR FROM so.order_date)::int, EXTRACT(MONTH FROM so.order_date)::int, TO_CHAR(so.order_date, 'Month')
     ),
     StockTurnoverAnalysis AS (
-        SELECT 
+        SELECT
             *,
             -- Calculate stock turnover rate (monthly sales / current stock)
-            CASE 
+            CASE
                 WHEN CurrentStock > 0 THEN QuantitySold / NULLIF(CurrentStock, 0)
                 ELSE 0
             END as TurnoverRate,
             -- Calculate days of stock remaining
-            CASE 
+            CASE
                 WHEN QuantitySold > 0 THEN (CurrentStock / NULLIF(QuantitySold, 0)) * 30
                 ELSE 999
             END as DaysOfStockRemaining,
             -- Calculate velocity category
-            CASE 
+            CASE
                 WHEN QuantitySold = 0 THEN 'No Movement'
                 WHEN (QuantitySold / NULLIF(CurrentStock, 0)) >= 0.5 THEN 'High Velocity'
                 WHEN (QuantitySold / NULLIF(CurrentStock, 0)) >= 0.2 THEN 'Medium Velocity'
@@ -440,14 +450,14 @@ class InventoryQueries:
             END as VelocityCategory
         FROM MonthlyStockMovement
     )
-    SELECT 
+    SELECT
         *,
         -- Add financial impact metrics
         CurrentStock * UnitPrice as StockValue,
         SalesValue as MonthlySalesValue,
         (CurrentStock * UnitPrice) * 0.02 as MonthlyCarryingCost,
         -- Add reorder recommendations
-        CASE 
+        CASE
             WHEN DaysOfStockRemaining < 30 AND QuantitySold > 0 THEN 'URGENT REORDER'
             WHEN DaysOfStockRemaining < 60 AND QuantitySold > 0 THEN 'REORDER SOON'
             WHEN DaysOfStockRemaining > 180 THEN 'OVERSTOCK RISK'
@@ -456,144 +466,149 @@ class InventoryQueries:
     FROM StockTurnoverAnalysis
     ORDER BY Year DESC, Month DESC, SalesValue DESC
     """
-    
+
     STOCK_VELOCITY_SUMMARY = """
     WITH VelocityAnalysis AS (
-        SELECT 
-            a.IdArticulo,
-            a.descripcion as ProductName,
-            c.Descripcion as Category,
-            a.cantidad as CurrentStock,
-            a.preciounitario as UnitPrice,
+        SELECT
+            a.id,
+            a.description as ProductName,
+            c.name as Category,
+            a.stock as CurrentStock,
+            a.unit_price as UnitPrice,
             -- Last 3 months sales
-            COALESCE(SUM(CASE WHEN np.FechaEmision >= DATEADD(MONTH, -3, GETDATE()) THEN npi.Cantidad END), 0) as Last3MonthsSales,
-            -- Last 6 months sales  
-            COALESCE(SUM(CASE WHEN np.FechaEmision >= DATEADD(MONTH, -6, GETDATE()) THEN npi.Cantidad END), 0) as Last6MonthsSales,
+            COALESCE(SUM(CASE WHEN so.order_date >= NOW() - INTERVAL '3 months' THEN soi.quantity END), 0) as Last3MonthsSales,
+            -- Last 6 months sales
+            COALESCE(SUM(CASE WHEN so.order_date >= NOW() - INTERVAL '6 months' THEN soi.quantity END), 0) as Last6MonthsSales,
             -- Last 12 months sales
-            COALESCE(SUM(CASE WHEN np.FechaEmision >= DATEADD(MONTH, -12, GETDATE()) THEN npi.Cantidad END), 0) as Last12MonthsSales,
+            COALESCE(SUM(CASE WHEN so.order_date >= NOW() - INTERVAL '12 months' THEN soi.quantity END), 0) as Last12MonthsSales,
             -- Average monthly sales
-            COALESCE(SUM(npi.Cantidad) / NULLIF(DATEDIFF(MONTH, MIN(np.FechaEmision), GETDATE()), 0), 0) as AvgMonthlySales,
+            COALESCE(SUM(soi.quantity) / NULLIF(EXTRACT(EPOCH FROM (NOW() - MIN(so.order_date))) / 2592000, 0), 0) as AvgMonthlySales,
             -- Last sale date
-            MAX(np.FechaEmision) as LastSaleDate
-        FROM Articulos a
-        INNER JOIN Categorias c ON a.IdCategoria = c.IdCategoria
-        LEFT JOIN NotaPedido_Items npi ON a.IdArticulo = npi.IdArticulo
-        LEFT JOIN NotaPedidos np ON npi.IdNotaPedido = np.IdNotaPedido
-        WHERE a.Discontinuado = 0
-        AND (np.FechaEmision IS NULL OR (np.FechaEmision >= DATEADD(YEAR, -2, GETDATE()) AND np.FechaEmision <= GETDATE()))
-        GROUP BY a.IdArticulo, a.descripcion, c.Descripcion, a.cantidad, a.preciounitario
+            MAX(so.order_date) as LastSaleDate
+        FROM articles a
+        INNER JOIN categories c ON a.category_id = c.id
+        LEFT JOIN sales_order_items soi ON a.id = soi.article_id
+        LEFT JOIN sales_orders so ON soi.sales_order_id = so.id AND so.deleted_at IS NULL
+        WHERE a.is_discontinued = false
+        AND a.deleted_at IS NULL
+        AND c.deleted_at IS NULL
+        AND (so.order_date IS NULL OR (so.order_date >= NOW() - INTERVAL '2 years' AND so.order_date <= NOW()))
+        GROUP BY a.id, a.description, c.name, a.stock, a.unit_price
     )
-    SELECT 
+    SELECT
         *,
         -- Stock turnover metrics
-        CASE 
+        CASE
             WHEN CurrentStock > 0 AND AvgMonthlySales > 0 THEN CurrentStock / AvgMonthlySales
             ELSE 999
         END as MonthsOfStock,
-        
-        CASE 
+
+        CASE
             WHEN AvgMonthlySales > 0 THEN (Last12MonthsSales / 12.0) / NULLIF(CurrentStock, 0) * 100
             ELSE 0
         END as AnnualTurnoverPercentage,
-        
+
         -- Trend analysis (comparing recent vs historical performance)
-        CASE 
-            WHEN Last6MonthsSales > 0 AND Last12MonthsSales > 0 THEN 
-                ((Last3MonthsSales / 3.0) - ((Last12MonthsSales - Last3MonthsSales) / 9.0)) / 
+        CASE
+            WHEN Last6MonthsSales > 0 AND Last12MonthsSales > 0 THEN
+                ((Last3MonthsSales / 3.0) - ((Last12MonthsSales - Last3MonthsSales) / 9.0)) /
                 NULLIF(((Last12MonthsSales - Last3MonthsSales) / 9.0), 0) * 100
             ELSE 0
         END as TrendPercentage,
-        
+
         -- Stock health classification
-        CASE 
+        CASE
             WHEN CurrentStock = 0 THEN 'OUT_OF_STOCK'
             WHEN AvgMonthlySales = 0 AND CurrentStock > 0 THEN 'DEAD_STOCK'
             WHEN CurrentStock / NULLIF(AvgMonthlySales, 0) < 1 THEN 'LOW_STOCK'
             WHEN CurrentStock / NULLIF(AvgMonthlySales, 0) > 6 THEN 'OVERSTOCK'
             ELSE 'HEALTHY'
         END as StockHealthStatus,
-        
+
         -- Financial metrics
         CurrentStock * UnitPrice as StockValue,
         Last12MonthsSales * UnitPrice as AnnualSalesValue,
         (CurrentStock * UnitPrice) * 0.02 as MonthlyCarryingCost
-        
+
     FROM VelocityAnalysis
     WHERE CurrentStock >= 0
     ORDER BY AnnualSalesValue DESC, StockValue DESC
     """
-    
+
     STOCK_VALUE_EVOLUTION = """
-    SELECT 
-        Date,
-        StockValue,
-        YEAR(Date) as Year,
-        MONTH(Date) as Month,
-        DATENAME(MONTH, Date) as MonthName
-    FROM StockSnapshots
-    WHERE Date >= DATEADD(MONTH, -{months}, GETDATE())
-    ORDER BY Date ASC
+    SELECT
+        date,
+        stock_value,
+        EXTRACT(YEAR FROM date)::int as Year,
+        EXTRACT(MONTH FROM date)::int as Month,
+        TO_CHAR(date, 'Month') as MonthName
+    FROM stock_snapshots
+    WHERE date >= NOW() - INTERVAL '{months} months'
+    ORDER BY date ASC
     """
-    
+
     OUT_OF_STOCK_ANALYSIS = """
     WITH OutOfStockAnalysis AS (
-        SELECT 
-            a.IdArticulo,
-            a.descripcion as ProductName,
-            a.preciounitario as UnitPrice,
-            c.Descripcion as Category,
-            a.Discontinuado as IsDiscontinued,
-            COALESCE(sales.LastSaleDate, '1900-01-01') as LastSaleDate,
+        SELECT
+            a.id,
+            a.description as ProductName,
+            a.unit_price as UnitPrice,
+            c.name as Category,
+            a.is_discontinued as IsDiscontinued,
+            COALESCE(sales.LastSaleDate, '1900-01-01'::date) as LastSaleDate,
             COALESCE(sales.TotalSold, 0) as TotalSold,
             COALESCE(sales.Last90DaysSales, 0) as Last90DaysSales,
             COALESCE(sales.Last180DaysSales, 0) as Last180DaysSales,
             COALESCE(sales.Last365DaysSales, 0) as Last365DaysSales,
-            DATEDIFF(DAY, COALESCE(sales.LastSaleDate, '1900-01-01'), GETDATE()) as DaysSinceLastSale,
+            EXTRACT(EPOCH FROM (NOW() - COALESCE(sales.LastSaleDate, '1900-01-01'::date))) / 86400 as DaysSinceLastSale,
             -- Estimate lost sales (average daily sales * days out of stock, capped at 90 days)
-            CASE 
-                WHEN sales.Last90DaysSales > 0 THEN 
-                    (sales.Last90DaysSales / 90.0) * 
-                    CASE WHEN DATEDIFF(DAY, sales.LastSaleDate, GETDATE()) > 90 
-                         THEN 90 
-                         ELSE DATEDIFF(DAY, sales.LastSaleDate, GETDATE()) 
-                    END * a.preciounitario
+            CASE
+                WHEN sales.Last90DaysSales > 0 THEN
+                    (sales.Last90DaysSales / 90.0) *
+                    CASE WHEN EXTRACT(EPOCH FROM (NOW() - sales.LastSaleDate)) / 86400 > 90
+                         THEN 90
+                         ELSE EXTRACT(EPOCH FROM (NOW() - sales.LastSaleDate)) / 86400
+                    END * a.unit_price
                 ELSE 0
             END as EstimatedLostSales
-        FROM Articulos a
-        INNER JOIN Categorias c ON a.IdCategoria = c.IdCategoria
+        FROM articles a
+        INNER JOIN categories c ON a.category_id = c.id
         LEFT JOIN (
-            SELECT 
-                npi.IdArticulo,
-                MAX(np.FechaEmision) as LastSaleDate,
-                SUM(npi.Cantidad) as TotalSold,
-                SUM(CASE WHEN np.FechaEmision >= DATEADD(DAY, -90, GETDATE()) THEN npi.Cantidad ELSE 0 END) as Last90DaysSales,
-                SUM(CASE WHEN np.FechaEmision >= DATEADD(DAY, -180, GETDATE()) THEN npi.Cantidad ELSE 0 END) as Last180DaysSales,
-                SUM(CASE WHEN np.FechaEmision >= DATEADD(DAY, -365, GETDATE()) THEN npi.Cantidad ELSE 0 END) as Last365DaysSales
-            FROM NotaPedido_Items npi
-            INNER JOIN NotaPedidos np ON npi.IdNotaPedido = np.IdNotaPedido
-            WHERE np.FechaEmision >= DATEADD(YEAR, -2, GETDATE())
-            GROUP BY npi.IdArticulo
-        ) sales ON a.IdArticulo = sales.IdArticulo
-        WHERE a.cantidad = 0  -- Out of stock
+            SELECT
+                soi.article_id,
+                MAX(so.order_date) as LastSaleDate,
+                SUM(soi.quantity) as TotalSold,
+                SUM(CASE WHEN so.order_date >= NOW() - INTERVAL '90 days' THEN soi.quantity ELSE 0 END) as Last90DaysSales,
+                SUM(CASE WHEN so.order_date >= NOW() - INTERVAL '180 days' THEN soi.quantity ELSE 0 END) as Last180DaysSales,
+                SUM(CASE WHEN so.order_date >= NOW() - INTERVAL '365 days' THEN soi.quantity ELSE 0 END) as Last365DaysSales
+            FROM sales_order_items soi
+            INNER JOIN sales_orders so ON soi.sales_order_id = so.id
+            WHERE so.order_date >= NOW() - INTERVAL '2 years'
+            AND so.deleted_at IS NULL
+            GROUP BY soi.article_id
+        ) sales ON a.id = sales.article_id
+        WHERE a.stock = 0  -- Out of stock
+        AND a.deleted_at IS NULL
+        AND c.deleted_at IS NULL
     )
-    SELECT 
+    SELECT
         *,
-        CASE 
-            WHEN IsDiscontinued = 1 THEN 'Discontinued'
-            WHEN DaysSinceLastSale > 365 OR LastSaleDate = '1900-01-01' THEN 'Dead Stock'
+        CASE
+            WHEN IsDiscontinued = true THEN 'Discontinued'
+            WHEN DaysSinceLastSale > 365 OR LastSaleDate = '1900-01-01'::date THEN 'Dead Stock'
             WHEN DaysSinceLastSale > 180 THEN 'Slow Moving'
             WHEN DaysSinceLastSale > 90 THEN 'Moderate'
             ELSE 'Healthy'
         END as StockProfile,
-        CASE 
-            WHEN IsDiscontinued = 1 THEN 'No Action'
-            WHEN DaysSinceLastSale > 365 OR LastSaleDate = '1900-01-01' THEN 'Consider Discontinuing'
+        CASE
+            WHEN IsDiscontinued = true THEN 'No Action'
+            WHEN DaysSinceLastSale > 365 OR LastSaleDate = '1900-01-01'::date THEN 'Consider Discontinuing'
             WHEN DaysSinceLastSale > 180 THEN 'Low Priority Reorder'
             WHEN DaysSinceLastSale > 90 THEN 'Monitor & Reorder if Needed'
             ELSE 'URGENT REORDER'
         END as RecommendedAction,
-        CASE 
-            WHEN IsDiscontinued = 1 THEN 0
+        CASE
+            WHEN IsDiscontinued = true THEN 0
             WHEN Last90DaysSales > 0 THEN 4  -- Critical
             WHEN Last180DaysSales > 0 THEN 3  -- High
             WHEN Last365DaysSales > 0 THEN 2  -- Medium
@@ -605,45 +620,46 @@ class InventoryQueries:
 
 class PurchaseQueries:
     """Purchase order and supplier analysis SQL queries"""
-    
+
     REORDER_ANALYSIS = """
     -- ABC Classification based on revenue contribution (last 365 days)
     WITH ProductRevenue AS (
-        SELECT 
-            a.idArticulo,
-            SUM(npi.Cantidad) * a.preciounitario as TotalRevenue
-        FROM Articulos a
-        INNER JOIN NotaPedido_Items npi ON a.idArticulo = npi.IdArticulo
-        INNER JOIN NotaPedidos np ON npi.IdNotaPedido = np.IdNotaPedido
-        WHERE np.FechaEmision >= DATEADD(YEAR, -1, GETDATE())
-        GROUP BY a.idArticulo, a.preciounitario
+        SELECT
+            a.id,
+            SUM(soi.quantity) * a.unit_price as TotalRevenue
+        FROM articles a
+        INNER JOIN sales_order_items soi ON a.id = soi.article_id
+        INNER JOIN sales_orders so ON soi.sales_order_id = so.id
+        WHERE so.order_date >= NOW() - INTERVAL '1 year'
+        AND so.deleted_at IS NULL
+        AND a.deleted_at IS NULL
+        GROUP BY a.id, a.unit_price
     ),
     ABCClassification AS (
-        SELECT 
-            IdArticulo,
+        SELECT
+            id,
             TotalRevenue,
-            SUM(TotalRevenue) OVER (ORDER BY TotalRevenue DESC) * 100.0 / 
+            SUM(TotalRevenue) OVER (ORDER BY TotalRevenue DESC) * 100.0 /
                 SUM(TotalRevenue) OVER () as CumulativeRevenuePercent,
-            CASE 
-                WHEN SUM(TotalRevenue) OVER (ORDER BY TotalRevenue DESC) * 100.0 / 
+            CASE
+                WHEN SUM(TotalRevenue) OVER (ORDER BY TotalRevenue DESC) * 100.0 /
                      SUM(TotalRevenue) OVER () <= 80 THEN 'A'
-                WHEN SUM(TotalRevenue) OVER (ORDER BY TotalRevenue DESC) * 100.0 / 
+                WHEN SUM(TotalRevenue) OVER (ORDER BY TotalRevenue DESC) * 100.0 /
                      SUM(TotalRevenue) OVER () <= 95 THEN 'B'
                 ELSE 'C'
             END as ABCClass
         FROM ProductRevenue
     ),
     ProductDemand AS (
-        SELECT 
-            a.idArticulo,
-            a.codigo as ProductCode,
-            a.descripcion as ProductName,
-            a.cantidad as CurrentStock,
-            a.preciounitario as UnitPrice,
-            a.cantidad * a.preciounitario as StockValue,
-            c.Descripcion as Category,
-            s.Name as PreferredSupplier,
-            s.Country as SupplierCountry,
+        SELECT
+            a.id,
+            a.code as ProductCode,
+            a.description as ProductName,
+            a.stock as CurrentStock,
+            a.unit_price as UnitPrice,
+            a.stock * a.unit_price as StockValue,
+            c.name as Category,
+            s.name as PreferredSupplier,
             a.proveedor as SupplierId,
             COALESCE(abc.ABCClass, 'C') as ABCClass,
             COALESCE(abc.TotalRevenue, 0) as AnnualRevenue,
@@ -656,92 +672,95 @@ class PurchaseQueries:
             -- Average daily demand (based on user-selected window)
             COALESCE(sales.DemandWindowSales, 0) / {demand_days}.0 as AvgDailyDemand,
             -- Standard deviation estimate (simplified)
-            CASE 
-                WHEN sales.Last90DaysSales > 0 THEN 
+            CASE
+                WHEN sales.Last90DaysSales > 0 THEN
                     SQRT(COALESCE(sales.Last90DaysSales, 0) / 90.0) * 1.5
                 ELSE 0
             END as DemandStdDev,
-            COALESCE(sales.LastSaleDate, '1900-01-01') as LastSaleDate,
-            DATEDIFF(DAY, COALESCE(sales.LastSaleDate, '1900-01-01'), GETDATE()) as DaysSinceLastSale,
+            COALESCE(sales.LastSaleDate, '1900-01-01'::date) as LastSaleDate,
+            EXTRACT(EPOCH FROM (NOW() - COALESCE(sales.LastSaleDate, '1900-01-01'::date))) / 86400 as DaysSinceLastSale,
             {demand_days} as DemandWindowDays
-        FROM Articulos a
-        INNER JOIN Categorias c ON a.IdCategoria = c.IdCategoria
-        LEFT JOIN Suppliers s ON CAST(a.proveedor AS VARCHAR(50)) = CAST(s.InternalId AS VARCHAR(50))
-        LEFT JOIN ABCClassification abc ON a.idArticulo = abc.IdArticulo
+        FROM articles a
+        INNER JOIN categories c ON a.category_id = c.id
+        LEFT JOIN suppliers s ON a.proveedor::text = s.code::text
+        LEFT JOIN ABCClassification abc ON a.id = abc.id
         LEFT JOIN (
-            SELECT 
-                npi.IdArticulo,
-                MAX(np.FechaEmision) as LastSaleDate,
-                SUM(CASE WHEN np.FechaEmision >= DATEADD(DAY, -30, GETDATE()) THEN npi.Cantidad ELSE 0 END) as Last30DaysSales,
-                SUM(CASE WHEN np.FechaEmision >= DATEADD(DAY, -90, GETDATE()) THEN npi.Cantidad ELSE 0 END) as Last90DaysSales,
-                SUM(CASE WHEN np.FechaEmision >= DATEADD(DAY, -180, GETDATE()) THEN npi.Cantidad ELSE 0 END) as Last180DaysSales,
-                SUM(CASE WHEN np.FechaEmision >= DATEADD(DAY, -365, GETDATE()) THEN npi.Cantidad ELSE 0 END) as Last365DaysSales,
-                SUM(CASE WHEN np.FechaEmision >= DATEADD(DAY, -{demand_days}, GETDATE()) THEN npi.Cantidad ELSE 0 END) as DemandWindowSales
-            FROM NotaPedido_Items npi
-            INNER JOIN NotaPedidos np ON npi.IdNotaPedido = np.IdNotaPedido
-            WHERE np.FechaEmision >= DATEADD(YEAR, -2, GETDATE())
-            GROUP BY npi.IdArticulo
-        ) sales ON a.idArticulo = sales.IdArticulo
-        WHERE a.Discontinuado = 0
+            SELECT
+                soi.article_id,
+                MAX(so.order_date) as LastSaleDate,
+                SUM(CASE WHEN so.order_date >= NOW() - INTERVAL '30 days' THEN soi.quantity ELSE 0 END) as Last30DaysSales,
+                SUM(CASE WHEN so.order_date >= NOW() - INTERVAL '90 days' THEN soi.quantity ELSE 0 END) as Last90DaysSales,
+                SUM(CASE WHEN so.order_date >= NOW() - INTERVAL '180 days' THEN soi.quantity ELSE 0 END) as Last180DaysSales,
+                SUM(CASE WHEN so.order_date >= NOW() - INTERVAL '365 days' THEN soi.quantity ELSE 0 END) as Last365DaysSales,
+                SUM(CASE WHEN so.order_date >= NOW() - INTERVAL '{demand_days} days' THEN soi.quantity ELSE 0 END) as DemandWindowSales
+            FROM sales_order_items soi
+            INNER JOIN sales_orders so ON soi.sales_order_id = so.id
+            WHERE so.order_date >= NOW() - INTERVAL '2 years'
+            AND so.deleted_at IS NULL
+            GROUP BY soi.article_id
+        ) sales ON a.id = sales.article_id
+        WHERE a.is_discontinued = false
+        AND a.deleted_at IS NULL
+        AND c.deleted_at IS NULL
     ),
     ReorderCalculations AS (
-        SELECT 
+        SELECT
             *,
             -- Lead time: FIXED at 135 days (90 production + 45 shipping)
             135 as EstimatedLeadTimeDays,
-            
+
             -- Safety stock adjusted by ABC class
             -- A: 95% SL (Z=1.65), B: 90% SL (Z=1.28), C: 80% SL (Z=0.84)
-            CASE 
+            CASE
                 WHEN ABCClass = 'A' THEN DemandStdDev * SQRT(135.0) * 1.65
                 WHEN ABCClass = 'B' THEN DemandStdDev * SQRT(135.0) * 1.28
                 ELSE DemandStdDev * SQRT(135.0) * 0.84
             END as SafetyStock,
-            
-            -- Reorder point = (Avg Daily Demand × Lead Time) + Safety Stock
-            (AvgDailyDemand * 135) + 
-            CASE 
+
+            -- Reorder point = (Avg Daily Demand x Lead Time) + Safety Stock
+            (AvgDailyDemand * 135) +
+            CASE
                 WHEN ABCClass = 'A' THEN DemandStdDev * SQRT(135.0) * 1.65
                 WHEN ABCClass = 'B' THEN DemandStdDev * SQRT(135.0) * 1.28
                 ELSE DemandStdDev * SQRT(135.0) * 0.84
             END as ReorderPoint,
-            
+
             -- Order quantity adjusted by ABC class (coverage multipliers)
             -- A: 2x lead time, B: 1.5x lead time, C: 1.2x lead time
-            CASE 
+            CASE
                 WHEN ABCClass = 'A' THEN AvgDailyDemand * 135 * 2.0
                 WHEN ABCClass = 'B' THEN AvgDailyDemand * 135 * 1.5
                 ELSE AvgDailyDemand * 135 * 1.2
             END as OptimalOrderQuantity,
             -- Days of coverage remaining
-            CASE 
+            CASE
                 WHEN AvgDailyDemand > 0 THEN CurrentStock / AvgDailyDemand
                 ELSE 999
             END as DaysOfCoverage
         FROM ProductDemand
     ),
     FinalCalculations AS (
-        SELECT 
+        SELECT
             *,
             -- Quantity to order (gap to reorder point + optimal order quantity)
-            CASE 
-                WHEN CurrentStock < ReorderPoint THEN 
+            CASE
+                WHEN CurrentStock < ReorderPoint THEN
                     CEILING(CASE WHEN OptimalOrderQuantity > (ReorderPoint - CurrentStock + SafetyStock)
-                                 THEN OptimalOrderQuantity 
-                                 ELSE (ReorderPoint - CurrentStock + SafetyStock) 
+                                 THEN OptimalOrderQuantity
+                                 ELSE (ReorderPoint - CurrentStock + SafetyStock)
                             END)
                 ELSE 0
             END as SuggestedOrderQuantity,
-            
+
             -- Calculate coverage percentage relative to demand window
-            CASE 
+            CASE
                 WHEN DaysOfCoverage < 999 THEN (DaysOfCoverage / {demand_days}.0) * 100
                 ELSE 999
             END as CoveragePercent,
-            
+
             -- Priority classification based on PERCENTAGE of coverage vs demand window
             -- CRITICAL: < 20% | URGENT: < 40% | HIGH: < 60% | MEDIUM: < 100% | LOW: < 150%
-            CASE 
+            CASE
                 WHEN DaysOfCoverage <= 0 THEN 'OUT_OF_STOCK'
                 WHEN DaysOfCoverage < 999 AND (DaysOfCoverage / {demand_days}.0) * 100 < 20 THEN 'CRITICAL'
                 WHEN DaysOfCoverage < 999 AND (DaysOfCoverage / {demand_days}.0) * 100 < 40 THEN 'URGENT'
@@ -751,17 +770,17 @@ class PurchaseQueries:
                 ELSE 'ADEQUATE'
             END as Priority,
             -- Expected stockout date
-            CASE 
-                WHEN AvgDailyDemand > 0 AND DaysOfCoverage < 999 THEN 
-                    DATEADD(DAY, CAST(DaysOfCoverage AS INT), GETDATE())
+            CASE
+                WHEN AvgDailyDemand > 0 AND DaysOfCoverage < 999 THEN
+                    NOW() + (DaysOfCoverage::int || ' days')::interval
                 ELSE NULL
             END as ExpectedStockoutDate,
             -- Order value
-            CASE 
-                WHEN CurrentStock < ReorderPoint THEN 
-                    CEILING(CASE WHEN OptimalOrderQuantity > (ReorderPoint - CurrentStock + SafetyStock) 
-                                 THEN OptimalOrderQuantity 
-                                 ELSE (ReorderPoint - CurrentStock + SafetyStock) 
+            CASE
+                WHEN CurrentStock < ReorderPoint THEN
+                    CEILING(CASE WHEN OptimalOrderQuantity > (ReorderPoint - CurrentStock + SafetyStock)
+                                 THEN OptimalOrderQuantity
+                                 ELSE (ReorderPoint - CurrentStock + SafetyStock)
                             END) * UnitPrice
                 ELSE 0
             END as SuggestedOrderValue
@@ -770,7 +789,7 @@ class PurchaseQueries:
     )
     SELECT *
     FROM FinalCalculations
-    ORDER BY 
+    ORDER BY
         CASE Priority
             WHEN 'OUT_OF_STOCK' THEN 1
             WHEN 'CRITICAL' THEN 2
@@ -788,68 +807,60 @@ class PurchaseQueries:
         END,
         SuggestedOrderValue DESC
     """
-    
+
     SUPPLIER_PERFORMANCE = """
     WITH SupplierStock AS (
-        SELECT 
-            s.Id,
-            s.Name as SupplierName,
-            s.Country,
-            s.InternalId,
-            COUNT(DISTINCT a.idArticulo) as ProductCount,
-            SUM(a.cantidad * a.preciounitario) as CurrentStockValue
-        FROM Suppliers s
-        LEFT JOIN Articulos a ON CAST(a.proveedor AS VARCHAR(50)) = CAST(s.InternalId AS VARCHAR(50))
-            AND a.Discontinuado = 0
-        GROUP BY s.Id, s.Name, s.Country, s.InternalId
+        SELECT
+            s.id,
+            s.name as SupplierName,
+            s.code,
+            COUNT(DISTINCT a.id) as ProductCount,
+            SUM(a.stock * a.unit_price) as CurrentStockValue
+        FROM suppliers s
+        LEFT JOIN articles a ON a.proveedor::text = s.code::text
+            AND a.is_discontinued = false
+            AND a.deleted_at IS NULL
+        GROUP BY s.id, s.name, s.code
     ),
     SupplierOrders AS (
-        SELECT 
-            CAST(po.supplierId AS VARCHAR(50)) as SupplierId,
-            COUNT(DISTINCT po.id) as TotalOrders,
-            AVG(CASE 
-                WHEN po.boardingDate IS NOT NULL AND po.nationalizationDate IS NOT NULL
-                AND TRY_CAST(po.boardingDate AS DATE) IS NOT NULL
-                AND TRY_CAST(po.nationalizationDate AS DATE) IS NOT NULL
-                THEN DATEDIFF(DAY, TRY_CAST(po.boardingDate AS DATE), TRY_CAST(po.nationalizationDate AS DATE))
-                ELSE NULL
-            END) as AvgLeadTimeDays,
-            SUM(po.totalAmount) as TotalPurchaseValue
-        FROM PurchaseOrders po
-        GROUP BY CAST(po.supplierId AS VARCHAR(50))
+        SELECT
+            so.supplier_id::text as SupplierId,
+            COUNT(DISTINCT so.id) as TotalOrders,
+            SUM(soi.quantity * soi.unit_price) as TotalPurchaseValue
+        FROM supplier_orders so
+        LEFT JOIN supplier_order_items soi ON so.id = soi.supplier_order_id
+        GROUP BY so.supplier_id::text
     )
-    SELECT 
+    SELECT
         ss.SupplierName,
-        ss.Country,
-        COALESCE(so.TotalOrders, 0) as TotalOrders,
+        COALESCE(sord.TotalOrders, 0) as TotalOrders,
         ss.ProductCount,
         COALESCE(ss.CurrentStockValue, 0) as CurrentStockValue,
-        so.AvgLeadTimeDays,
-        so.TotalPurchaseValue
+        sord.TotalPurchaseValue
     FROM SupplierStock ss
-    LEFT JOIN SupplierOrders so ON CAST(ss.InternalId AS VARCHAR(50)) = so.SupplierId
+    LEFT JOIN SupplierOrders sord ON ss.code::text = sord.SupplierId
     ORDER BY CurrentStockValue DESC
     """
 
 class SalesQueries:
     """Sales analysis SQL queries"""
-    
+
     SALES_SUMMARY = """
-    SELECT 
+    SELECT
         COUNT(*) as TotalTransactions,
-        SUM(CASE WHEN Type = 1 THEN InvoiceAmount ELSE 0 END) as TotalRevenue,
-        COUNT(DISTINCT CustomerId) as UniqueCustomers,
-        AVG(CASE WHEN Type = 1 THEN InvoiceAmount ELSE NULL END) as AvgInvoiceSize
-    FROM Transactions
-    WHERE InvoiceDate >= DATEADD(YEAR, -1, GETDATE())
-    AND InvoiceDate > '2020-01-01'
+        SUM(CASE WHEN type = 1 THEN invoice_amount ELSE 0 END) as TotalRevenue,
+        COUNT(DISTINCT customer_id) as UniqueCustomers,
+        AVG(CASE WHEN type = 1 THEN invoice_amount ELSE NULL END) as AvgInvoiceSize
+    FROM sync_transactions
+    WHERE invoice_date >= NOW() - INTERVAL '1 year'
+    AND invoice_date > '2020-01-01'
     """
-    
+
     XERP_SALES_SUMMARY = """
-    SELECT 
+    SELECT
         COUNT(*) as TotalTransactions,
         SUM(
-            CASE 
+            CASE
                 WHEN dt.Type = 10 THEN (total * 1.21)
                 WHEN dt.Type = 11 THEN (total * -1.21)
                 ELSE 0
@@ -857,7 +868,7 @@ class SalesQueries:
         ) as TotalRevenue,
         COUNT(DISTINCT dm.debtor_no) as UniqueCustomers,
         AVG(
-            CASE 
+            CASE
                 WHEN dt.Type = 10 THEN (total * 1.21)
                 ELSE NULL
             END
@@ -869,30 +880,30 @@ class SalesQueries:
     AND ord_date >= DATEADD(YEAR, -1, GETDATE())
     AND ord_date > '2020-01-01'
     """
-    
+
     MONTHLY_SALES_TREND = """
     WITH MonthlySales AS (
-        SELECT 
-            YEAR(InvoiceDate) as Year,
-            MONTH(InvoiceDate) as Month,
-            DATENAME(MONTH, InvoiceDate) as MonthName,
-            SUM(InvoiceAmount) as MonthlyRevenue,
-            COUNT(DISTINCT CustomerId) as UniqueCustomers,
+        SELECT
+            EXTRACT(YEAR FROM invoice_date)::int as Year,
+            EXTRACT(MONTH FROM invoice_date)::int as Month,
+            TO_CHAR(invoice_date, 'Month') as MonthName,
+            SUM(invoice_amount) as MonthlyRevenue,
+            COUNT(DISTINCT customer_id) as UniqueCustomers,
             COUNT(*) as TransactionCount
-        FROM Transactions 
-        WHERE Type = 1 AND InvoiceDate >= DATEADD(YEAR, -2, GETDATE())
-        AND InvoiceDate > '2020-01-01'
-        GROUP BY YEAR(InvoiceDate), MONTH(InvoiceDate), DATENAME(MONTH, InvoiceDate)
+        FROM sync_transactions
+        WHERE type = 1 AND invoice_date >= NOW() - INTERVAL '2 years'
+        AND invoice_date > '2020-01-01'
+        GROUP BY EXTRACT(YEAR FROM invoice_date)::int, EXTRACT(MONTH FROM invoice_date)::int, TO_CHAR(invoice_date, 'Month')
     )
-    SELECT 
+    SELECT
         *,
         LAG(MonthlyRevenue) OVER (ORDER BY Year, Month) as PreviousMonth,
-        (MonthlyRevenue - LAG(MonthlyRevenue) OVER (ORDER BY Year, Month)) / 
+        (MonthlyRevenue - LAG(MonthlyRevenue) OVER (ORDER BY Year, Month)) /
         NULLIF(LAG(MonthlyRevenue) OVER (ORDER BY Year, Month), 0) * 100 as MonthOverMonthGrowth
     FROM MonthlySales
     ORDER BY Year DESC, Month DESC
     """
-    
+
     XERP_TOP_CUSTOMERS = """
     SELECT TOP {limit}
         dm.name as CustomerName,
@@ -905,12 +916,12 @@ class SalesQueries:
     GROUP BY dm.debtor_no, dm.name
     ORDER BY TotalRevenue DESC
     """
-    
+
     XERP_MONTHLY_SALES_TREND = """
     DECLARE @FromDate DATETIME
     SET @FromDate = DATEADD(MONTH, -12, GETDATE())
 
-    SELECT 
+    SELECT
       CAST(
         CONCAT(
           DATEPART(YEAR, ord_date),
@@ -922,7 +933,7 @@ class SalesQueries:
       DATEPART(MONTH, ord_date) as Month,
       DATENAME(MONTH, ord_date) as MonthName,
       SUM(
-        CASE 
+        CASE
           WHEN dt.Type = 10 THEN (total * 1.21)
           WHEN dt.Type = 11 THEN (total * -1.21)
           ELSE total
@@ -941,7 +952,7 @@ class SalesQueries:
     ORDER BY DATEPART(YEAR, ord_date) DESC,
              DATEPART(MONTH, ord_date) DESC
     """
-    
+
     # Retool-compatible xERP queries
     XERP_BILLED_MONTHLY = """
     WITH FC AS (
@@ -957,7 +968,7 @@ class SalesQueries:
     SELECT (BilledMonthlyFC - BilledMonthlyNC) AS BilledMonthly
     FROM FC, NC
     """
-    
+
     XERP_BILLED_TODAY = """
     WITH FC AS (
       SELECT COALESCE(SUM(Total) * 1.21, 0) AS BilledTodayFC FROM [0_debtor_trans] dt
@@ -972,9 +983,9 @@ class SalesQueries:
     SELECT (BilledTodayFC - BilledTodayNC) AS BilledToday
     FROM FC, NC
     """
-    
+
     XERP_BILLS = """
-    SELECT 
+    SELECT
     order_no ,
     ord_date as invoiceDate,
     [name] as customerName,
@@ -989,27 +1000,27 @@ class SalesQueries:
     FROM [0_debtor_trans] dt
       INNER JOIN [0_sales_orders] so ON so.ID = dt.order_
       INNER JOIN [0_debtors_master] dm on dm.debtor_no = so.debtor_no
-      WHERE dt.Type=10 AND 
-        (('{view_filter}' = 'month' AND 
+      WHERE dt.Type=10 AND
+        (('{view_filter}' = 'month' AND
     MONTH(ord_date) = MONTH(DATEADD(HOUR, -3, GETDATE())) AND YEAR(ord_date) = YEAR(DATEADD(HOUR, -3, GETDATE()))) OR
-       ('{view_filter}' = 'day' 
+       ('{view_filter}' = 'day'
     AND CAST(ord_date AS DATE) = CAST(DATEADD(HOUR, -3, GETDATE()) AS DATE)))
     """
 
 class CrossSystemQueries:
     """Cross-system comparison queries"""
-    
+
     SYSTEM_COMPARISON = """
-    SELECT 
+    SELECT
         'SPISA' as System,
         COUNT(*) as CustomerCount,
-        SUM(Amount) as TotalOutstanding
-    FROM SPISA.dbo.Balances
-    WHERE Amount > 0
+        SUM(amount) as TotalOutstanding
+    FROM sync_balances
+    WHERE amount > 0
     """
-    
+
     XERP_COMPARISON = """
-    SELECT 
+    SELECT
         'xERP' as System,
         COUNT(DISTINCT debtor_no) as CustomerCount,
         SUM(ov_amount) as TotalOutstanding
