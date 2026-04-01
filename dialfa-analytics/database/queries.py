@@ -75,7 +75,7 @@ class FinancialQueries:
 
     CREDIT_RISK_ANALYSIS = """
     SELECT
-        c.name,
+        c.name as "Name",
         b.amount as "CurrentBalance",
         b.due as "OverdueAmount",
         (b.due / NULLIF(b.amount, 0)) * 100 as "OverduePercentage",
@@ -111,8 +111,8 @@ class FinancialQueries:
 
     TOP_CUSTOMERS = """
     SELECT
-        c.name,
-        c.type,
+        c.name as "Name",
+        c.type as "Type",
         b.amount as "OutstandingBalance",
         b.due as "OverdueAmount",
         (b.due / NULLIF(b.amount, 0)) * 100 as "OverduePercentage"
@@ -125,7 +125,7 @@ class FinancialQueries:
 
     # Retool-compatible queries
     SPISA_BALANCES = """
-    SELECT c.name, b.amount, b.due, c.type
+    SELECT c.name as "Name", b.amount as "Amount", b.due as "Due", c.type as "Type"
     FROM sync_balances b
     INNER JOIN sync_customers c on c.id = b.customer_id
     WHERE b.amount > 100
@@ -175,7 +175,7 @@ class FinancialQueries:
     CUSTOMER_PROFITABILITY = """
     WITH CustomerMetrics AS (
         SELECT
-            c.name,
+            c.name as "Name",
             COUNT(DISTINCT t.id) as "TransactionCount",
             SUM(CASE WHEN t.type = 1 THEN t.invoice_amount ELSE 0 END) as "TotalRevenue",
             SUM(CASE WHEN t.type = 0 THEN t.payment_amount ELSE 0 END) as "TotalPayments",
