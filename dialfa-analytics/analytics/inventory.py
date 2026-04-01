@@ -115,7 +115,7 @@ class InventoryAnalytics:
             StockAnalysis AS (
                 SELECT
                     a.id as "IdArticulo",
-                    a.description as "Description",
+                    a.description as "ProductName",
                     a.stock as "CurrentStock",
                     a.unit_price as "UnitPrice",
                     c.name as "Category",
@@ -169,7 +169,7 @@ class InventoryAnalytics:
             WITH InventoryValue AS (
                 SELECT
                     a.id as "IdArticulo",
-                    a.description as "Description",
+                    a.description as "ProductName",
                     a.stock * a.unit_price as "StockValue",
                     COALESCE(sales."TotalSold", 0) as "TotalSold",
                     COALESCE(sales."SalesValue", 0) as "SalesValue"
@@ -291,7 +291,7 @@ class InventoryAnalytics:
         try:
             alerts_query = """
             SELECT
-                a.description as "Description",
+                a.description as "ProductName",
                 a.stock as "CurrentStock",
                 a.unit_price as "UnitPrice",
                 a.stock * a.unit_price as "StockValue",

@@ -330,7 +330,7 @@ class InventoryQueries:
 
     TOP_STOCK_VALUE = """
     SELECT
-        a.description as "Description",
+        a.description as "ProductName",
         a.stock as "CurrentStock",
         a.unit_price as "UnitPrice",
         a.stock * a.unit_price as "StockValue",
@@ -347,7 +347,7 @@ class InventoryQueries:
     SLOW_MOVING_ANALYSIS = """
     WITH InventoryAnalysis AS (
         SELECT
-            a.description as "Description",
+            a.description as "ProductName",
             a.stock as "CurrentStock",
             a.unit_price * a.stock as "StockValue",
             c.name as "Category",
