@@ -102,53 +102,56 @@ class InventoryAnalytics:
         try:
             reorder_query = """
             WITH SalesVelocity AS (
-                SELECT 
-                    npi.IdArticulo,
-                    AVG(npi.Cantidad) as AvgMonthlySales,
-                    COUNT(*) as SalesFrequency
-                FROM NotaPedido_Items npi
-                INNER JOIN NotaPedidos np ON npi.IdNotaPedido = np.IdNotaPedido
-                WHERE np.FechaEmision >= DATEADD(MONTH, -6, GETDATE())
-                GROUP BY npi.IdArticulo
+                SELECT
+                    soi.article_id,
+                    AVG(soi.quantity) as "AvgMonthlySales",
+                    COUNT(*) as "SalesFrequency"
+                FROM sales_order_items soi
+                INNER JOIN sales_orders so ON soi.sales_order_id = so.id
+                WHERE so.order_date >= NOW() - INTERVAL '6 months'
+                AND so.deleted_at IS NULL
+                GROUP BY soi.article_id
             ),
             StockAnalysis AS (
-                SELECT 
-                    a.IdArticulo,
-                    a.descripcion,
-                    a.cantidad as CurrentStock,
-                    a.preciounitario,
-                    c.Descripcion as Category,
-                    COALESCE(sv.AvgMonthlySales, 0) as AvgMonthlySales,
-                    COALESCE(sv.SalesFrequency, 0) as SalesFrequency
-                FROM Articulos a
-                INNER JOIN Categorias c ON a.IdCategoria = c.IdCategoria
-                LEFT JOIN SalesVelocity sv ON a.IdArticulo = sv.IdArticulo
-                WHERE a.Discontinuado = 0
+                SELECT
+                    a.id as "IdArticulo",
+                    a.description as "Description",
+                    a.stock as "CurrentStock",
+                    a.unit_price as "UnitPrice",
+                    c.name as "Category",
+                    COALESCE(sv."AvgMonthlySales", 0) as "AvgMonthlySales",
+                    COALESCE(sv."SalesFrequency", 0) as "SalesFrequency"
+                FROM articles a
+                INNER JOIN categories c ON a.category_id = c.id
+                LEFT JOIN SalesVelocity sv ON a.id = sv.article_id
+                WHERE a.is_discontinued = false
+                AND a.deleted_at IS NULL
+                AND c.deleted_at IS NULL
             )
-            SELECT 
+            SELECT
                 *,
-                CASE 
-                    WHEN AvgMonthlySales > 0 THEN CurrentStock / AvgMonthlySales
+                CASE
+                    WHEN "AvgMonthlySales" > 0 THEN "CurrentStock" / "AvgMonthlySales"
                     ELSE 999
-                END as MonthsOfStock,
-                CASE 
-                    WHEN AvgMonthlySales > 0 AND CurrentStock / AvgMonthlySales < 2 THEN 'URGENT'
-                    WHEN AvgMonthlySales > 0 AND CurrentStock / AvgMonthlySales < 3 THEN 'HIGH'
-                    WHEN AvgMonthlySales > 0 AND CurrentStock / AvgMonthlySales < 6 THEN 'MEDIUM'
+                END as "MonthsOfStock",
+                CASE
+                    WHEN "AvgMonthlySales" > 0 AND "CurrentStock" / "AvgMonthlySales" < 2 THEN 'URGENT'
+                    WHEN "AvgMonthlySales" > 0 AND "CurrentStock" / "AvgMonthlySales" < 3 THEN 'HIGH'
+                    WHEN "AvgMonthlySales" > 0 AND "CurrentStock" / "AvgMonthlySales" < 6 THEN 'MEDIUM'
                     ELSE 'LOW'
-                END as ReorderPriority,
-                AvgMonthlySales * 3 as RecommendedOrderQty
+                END as "ReorderPriority",
+                "AvgMonthlySales" * 3 as "RecommendedOrderQty"
             FROM StockAnalysis
-            WHERE AvgMonthlySales > 0
-            ORDER BY MonthsOfStock ASC
+            WHERE "AvgMonthlySales" > 0
+            ORDER BY "MonthsOfStock" ASC
             """
-            
+
             df = self.db.execute_query(reorder_query, 'SPISA')
             df = clean_dataframe(df)
-            
+
             # Add formatted columns
-            df['FormattedUnitPrice'] = df['preciounitario'].apply(format_currency)
-            df['RecommendedOrderValue'] = df['RecommendedOrderQty'] * df['preciounitario']
+            df['FormattedUnitPrice'] = df['UnitPrice'].apply(format_currency)
+            df['RecommendedOrderValue'] = df['RecommendedOrderQty'] * df['UnitPrice']
             df['FormattedOrderValue'] = df['RecommendedOrderValue'].apply(format_currency)
             
             return df.to_dict('records')
@@ -164,27 +167,30 @@ class InventoryAnalytics:
             # Get inventory with sales data
             abc_query = """
             WITH InventoryValue AS (
-                SELECT 
-                    a.IdArticulo,
-                    a.descripcion,
-                    a.cantidad * a.preciounitario as StockValue,
-                    COALESCE(sales.TotalSold, 0) as TotalSold,
-                    COALESCE(sales.SalesValue, 0) as SalesValue
-                FROM Articulos a
+                SELECT
+                    a.id as "IdArticulo",
+                    a.description as "Description",
+                    a.stock * a.unit_price as "StockValue",
+                    COALESCE(sales."TotalSold", 0) as "TotalSold",
+                    COALESCE(sales."SalesValue", 0) as "SalesValue"
+                FROM articles a
                 LEFT JOIN (
-                    SELECT 
-                        npi.IdArticulo,
-                        SUM(npi.Cantidad) as TotalSold,
-                        SUM(npi.Cantidad * npi.PrecioUnitario) as SalesValue
-                    FROM NotaPedido_Items npi
-                    INNER JOIN NotaPedidos np ON npi.IdNotaPedido = np.IdNotaPedido
-                    WHERE np.FechaEmision >= DATEADD(YEAR, -1, GETDATE())
-                    GROUP BY npi.IdArticulo
-                ) sales ON a.IdArticulo = sales.IdArticulo
-                WHERE a.cantidad > 0 AND a.Discontinuado = 0
+                    SELECT
+                        soi.article_id,
+                        SUM(soi.quantity) as "TotalSold",
+                        SUM(soi.quantity * a2.unit_price) as "SalesValue"
+                    FROM sales_order_items soi
+                    INNER JOIN sales_orders so ON soi.sales_order_id = so.id
+                    INNER JOIN articles a2 ON soi.article_id = a2.id
+                    WHERE so.order_date >= NOW() - INTERVAL '1 year'
+                    AND so.deleted_at IS NULL
+                    GROUP BY soi.article_id
+                ) sales ON a.id = sales.article_id
+                WHERE a.stock > 0 AND a.is_discontinued = false
+                AND a.deleted_at IS NULL
             )
             SELECT * FROM InventoryValue
-            ORDER BY SalesValue DESC
+            ORDER BY "SalesValue" DESC
             """
             
             df = self.db.execute_query(abc_query, 'SPISA')
@@ -214,23 +220,26 @@ class InventoryAnalytics:
             # Inventory turnover calculation
             turnover_query = """
             WITH CurrentInventory AS (
-                SELECT SUM(cantidad * preciounitario) as CurrentValue
-                FROM Articulos
-                WHERE cantidad > 0 AND Discontinuado = 0
+                SELECT SUM(a.stock * a.unit_price) as "CurrentValue"
+                FROM articles a
+                WHERE a.stock > 0 AND a.is_discontinued = false
+                AND a.deleted_at IS NULL
             ),
             YearlySales AS (
-                SELECT SUM(npi.Cantidad * npi.PrecioUnitario) as SalesValue
-                FROM NotaPedido_Items npi
-                INNER JOIN NotaPedidos np ON npi.IdNotaPedido = np.IdNotaPedido
-                WHERE np.FechaEmision >= DATEADD(YEAR, -1, GETDATE())
+                SELECT SUM(soi.quantity * a.unit_price) as "SalesValue"
+                FROM sales_order_items soi
+                INNER JOIN sales_orders so ON soi.sales_order_id = so.id
+                INNER JOIN articles a ON soi.article_id = a.id
+                WHERE so.order_date >= NOW() - INTERVAL '1 year'
+                AND so.deleted_at IS NULL
             )
-            SELECT 
-                ci.CurrentValue,
-                ys.SalesValue,
-                CASE 
-                    WHEN ci.CurrentValue > 0 THEN ys.SalesValue / ci.CurrentValue
+            SELECT
+                ci."CurrentValue",
+                ys."SalesValue",
+                CASE
+                    WHEN ci."CurrentValue" > 0 THEN ys."SalesValue" / ci."CurrentValue"
                     ELSE 0
-                END as TurnoverRatio
+                END as "TurnoverRatio"
             FROM CurrentInventory ci, YearlySales ys
             """
             
@@ -281,26 +290,28 @@ class InventoryAnalytics:
         self.logger.info("Executing get_stock_alerts (cache miss or expired)")
         try:
             alerts_query = """
-            SELECT 
-                a.descripcion,
-                a.cantidad as CurrentStock,
-                a.preciounitario as UnitPrice,
-                a.cantidad * a.preciounitario as StockValue,
-                c.Descripcion as Category,
-                CASE 
-                    WHEN a.cantidad = 0 THEN 'OUT_OF_STOCK'
-                    WHEN a.cantidad < 10 THEN 'LOW_STOCK'
-                    WHEN a.cantidad > 1000 THEN 'OVERSTOCK'
+            SELECT
+                a.description as "Description",
+                a.stock as "CurrentStock",
+                a.unit_price as "UnitPrice",
+                a.stock * a.unit_price as "StockValue",
+                c.name as "Category",
+                CASE
+                    WHEN a.stock = 0 THEN 'OUT_OF_STOCK'
+                    WHEN a.stock < 10 THEN 'LOW_STOCK'
+                    WHEN a.stock > 1000 THEN 'OVERSTOCK'
                     ELSE 'NORMAL'
-                END as AlertType
-            FROM Articulos a
-            INNER JOIN Categorias c ON a.IdCategoria = c.IdCategoria
-            WHERE a.Discontinuado = 0
-            AND (a.cantidad = 0 OR a.cantidad < 10 OR a.cantidad > 1000)
-            ORDER BY 
-                CASE 
-                    WHEN a.cantidad = 0 THEN 1
-                    WHEN a.cantidad < 10 THEN 2
+                END as "AlertType"
+            FROM articles a
+            INNER JOIN categories c ON a.category_id = c.id
+            WHERE a.is_discontinued = false
+            AND a.deleted_at IS NULL
+            AND c.deleted_at IS NULL
+            AND (a.stock = 0 OR a.stock < 10 OR a.stock > 1000)
+            ORDER BY
+                CASE
+                    WHEN a.stock = 0 THEN 1
+                    WHEN a.stock < 10 THEN 2
                     ELSE 3
                 END
             """
