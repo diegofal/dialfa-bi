@@ -537,8 +537,8 @@ class InventoryQueries:
 
     STOCK_VALUE_EVOLUTION = """
     SELECT
-        date,
-        stock_value,
+        date as "Date",
+        stock_value as "StockValue",
         EXTRACT(YEAR FROM date)::int as "Year",
         EXTRACT(MONTH FROM date)::int as "Month",
         TO_CHAR(date, 'Month') as "MonthName"
