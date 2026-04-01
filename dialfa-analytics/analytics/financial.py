@@ -11,9 +11,8 @@ from database.queries import FinancialQueries
 from cache_config import cache, get_cache_timeout
 
 class FinancialAnalytics:
-    def __init__(self, db_manager, spisa_api=None):
+    def __init__(self, db_manager, **kwargs):
         self.db = db_manager
-        self.spisa_api = spisa_api
         self.logger = logging.getLogger(__name__)
         self.queries = FinancialQueries()
     
@@ -22,26 +21,9 @@ class FinancialAnalytics:
         """Get key financial metrics for executive dashboard"""
         self.logger.info("Executing get_executive_summary (cache miss or expired)")
         try:
-            if self.spisa_api:
-                df = self.spisa_api.get_balances()
-                df = df[df['Amount'] > 100] if not df.empty else df
-            else:
-                df = self.db.execute_query(self.queries.EXECUTIVE_SUMMARY, 'SPISA')
+            df = self.db.execute_query(self.queries.EXECUTIVE_SUMMARY, 'SPISA')
 
             if not df.empty:
-                if self.spisa_api:
-                    return {
-                        'unique_customers': int(df['CustomerId'].nunique()),
-                        'total_outstanding': float(df['Amount'].sum()),
-                        'total_overdue': float(df['Due'].sum()),
-                        'avg_balance': float(df['Amount'].mean()),
-                        'overdue_percentage': (float(df['Due'].sum()) / float(df['Amount'].sum())) * 100 if df['Amount'].sum() > 0 else 0,
-                        'formatted': {
-                            'total_outstanding': format_currency(df['Amount'].sum(), 'ARS', 'SPISA'),
-                            'total_overdue': format_currency(df['Due'].sum(), 'ARS', 'SPISA'),
-                            'avg_balance': format_currency(df['Amount'].mean(), 'ARS', 'SPISA')
-                        }
-                    }
                 row = df.iloc[0]
                 return {
                     'unique_customers': int(row['UniqueCustomers']),
@@ -392,29 +374,29 @@ class FinancialAnalytics:
         try:
             # Custom aging query
             aging_query = """
-            SELECT 
-                c.Name,
-                b.Amount as TotalBalance,
-                CASE 
-                    WHEN b.Due = 0 THEN b.Amount
+            SELECT
+                c.name,
+                b.amount as "TotalBalance",
+                CASE
+                    WHEN b.due = 0 THEN b.amount
                     ELSE 0
-                END as Current,
-                CASE 
-                    WHEN b.Due > 0 AND b.Due <= b.Amount * 0.3 THEN b.Due
+                END as "Current",
+                CASE
+                    WHEN b.due > 0 AND b.due <= b.amount * 0.3 THEN b.due
                     ELSE 0
-                END as Days30,
-                CASE 
-                    WHEN b.Due > b.Amount * 0.3 AND b.Due <= b.Amount * 0.6 THEN b.Due
+                END as "Days30",
+                CASE
+                    WHEN b.due > b.amount * 0.3 AND b.due <= b.amount * 0.6 THEN b.due
                     ELSE 0
-                END as Days60,
-                CASE 
-                    WHEN b.Due > b.Amount * 0.6 THEN b.Due
+                END as "Days60",
+                CASE
+                    WHEN b.due > b.amount * 0.6 THEN b.due
                     ELSE 0
-                END as Days90Plus
-            FROM Customers c
-            INNER JOIN Balances b ON c.Id = b.CustomerId
-            WHERE b.Amount > 0
-            ORDER BY b.Amount DESC
+                END as "Days90Plus"
+            FROM sync_customers c
+            INNER JOIN sync_balances b ON c.id = b.customer_id
+            WHERE b.amount > 0
+            ORDER BY b.amount DESC
             """
             
             df = self.db.execute_query(aging_query, 'SPISA')
@@ -433,21 +415,20 @@ class FinancialAnalytics:
         """Analyze payment trends and patterns"""
         try:
             payment_query = """
-            SELECT 
-                YEAR(PaymentDate) as Year,
-                MONTH(PaymentDate) as Month,
-                DATENAME(MONTH, PaymentDate) as MonthName,
-                COUNT(*) as PaymentCount,
-                SUM(PaymentAmount) as TotalPayments,
-                AVG(PaymentAmount) as AvgPaymentSize
-            FROM Transactions
-            WHERE PaymentDate >= DATEADD(MONTH, -12, GETDATE())
-            AND PaymentDate <= GETDATE()
-            AND PaymentDate != '0001-01-01 00:00:00'
-            AND PaymentDate > '2020-01-01'
-            AND PaymentAmount > 0
-            GROUP BY YEAR(PaymentDate), MONTH(PaymentDate), DATENAME(MONTH, PaymentDate)
-            ORDER BY Year DESC, Month DESC
+            SELECT
+                EXTRACT(YEAR FROM payment_date)::int as "Year",
+                EXTRACT(MONTH FROM payment_date)::int as "Month",
+                TO_CHAR(payment_date, 'Month') as "MonthName",
+                COUNT(*) as "PaymentCount",
+                SUM(payment_amount) as "TotalPayments",
+                AVG(payment_amount) as "AvgPaymentSize"
+            FROM sync_transactions
+            WHERE payment_date >= NOW() - INTERVAL '12 months'
+            AND payment_date <= NOW()
+            AND payment_date IS NOT NULL AND payment_date > '2020-01-01'
+            AND payment_amount > 0
+            GROUP BY EXTRACT(YEAR FROM payment_date)::int, EXTRACT(MONTH FROM payment_date)::int, TO_CHAR(payment_date, 'Month')
+            ORDER BY "Year" DESC, "Month" DESC
             """
             
             df = self.db.execute_query(payment_query, 'SPISA')
@@ -492,25 +473,25 @@ class FinancialAnalytics:
         try:
             # Get current month data
             current_month_query = """
-            SELECT 
-                SUM(CASE WHEN Type = 1 THEN InvoiceAmount ELSE 0 END) as CurrentMonthRevenue,
-                SUM(CASE WHEN Type = 0 THEN PaymentAmount ELSE 0 END) as CurrentMonthPayments,
-                COUNT(DISTINCT CustomerId) as ActiveCustomers
-            FROM Transactions
-            WHERE MONTH(InvoiceDate) = MONTH(GETDATE())
-            AND YEAR(InvoiceDate) = YEAR(GETDATE())
+            SELECT
+                SUM(CASE WHEN type = 1 THEN invoice_amount ELSE 0 END) as "CurrentMonthRevenue",
+                SUM(CASE WHEN type = 0 THEN payment_amount ELSE 0 END) as "CurrentMonthPayments",
+                COUNT(DISTINCT customer_id) as "ActiveCustomers"
+            FROM sync_transactions
+            WHERE EXTRACT(MONTH FROM invoice_date)::int = EXTRACT(MONTH FROM NOW())::int
+            AND EXTRACT(YEAR FROM invoice_date)::int = EXTRACT(YEAR FROM NOW())::int
             """
             
             current_df = self.db.execute_query(current_month_query, 'SPISA')
             
             # Get previous month for comparison
             previous_month_query = """
-            SELECT 
-                SUM(CASE WHEN Type = 1 THEN InvoiceAmount ELSE 0 END) as PreviousMonthRevenue,
-                SUM(CASE WHEN Type = 0 THEN PaymentAmount ELSE 0 END) as PreviousMonthPayments
-            FROM Transactions
-            WHERE MONTH(InvoiceDate) = MONTH(DATEADD(MONTH, -1, GETDATE()))
-            AND YEAR(InvoiceDate) = YEAR(DATEADD(MONTH, -1, GETDATE()))
+            SELECT
+                SUM(CASE WHEN type = 1 THEN invoice_amount ELSE 0 END) as "PreviousMonthRevenue",
+                SUM(CASE WHEN type = 0 THEN payment_amount ELSE 0 END) as "PreviousMonthPayments"
+            FROM sync_transactions
+            WHERE EXTRACT(MONTH FROM invoice_date)::int = EXTRACT(MONTH FROM NOW() - INTERVAL '1 month')::int
+            AND EXTRACT(YEAR FROM invoice_date)::int = EXTRACT(YEAR FROM NOW() - INTERVAL '1 month')::int
             """
             
             previous_df = self.db.execute_query(previous_month_query, 'SPISA')
@@ -550,10 +531,6 @@ class FinancialAnalytics:
     def get_spisa_balances(self):
         """Get SPISA balances exactly as in Retool"""
         try:
-            if self.spisa_api:
-                df = self.spisa_api.get_balances()
-                df = df[df['Amount'] > 100] if not df.empty else df
-                return df.to_dict('records')
             df = self.db.execute_query(self.queries.SPISA_BALANCES, 'SPISA')
             df = clean_dataframe(df)
             return df.to_dict('records')
@@ -564,13 +541,6 @@ class FinancialAnalytics:
     def get_spisa_future_payments(self):
         """Get SPISA future payments exactly as in Retool"""
         try:
-            if self.spisa_api:
-                df = self.spisa_api.get_transactions(months=12)
-                if not df.empty:
-                    now = pd.Timestamp.now()
-                    future = df[(df['Type'] == 0) & (df['PaymentAmount'] != 0) & (df['PaymentDate'] >= now)]
-                    return {'PaymentAmount': float(future['PaymentAmount'].sum())}
-                return {'PaymentAmount': 0}
             df = self.db.execute_query(self.queries.SPISA_FUTURE_PAYMENTS, 'SPISA')
             df = clean_dataframe(df)
             if not df.empty:
@@ -583,9 +553,6 @@ class FinancialAnalytics:
     def get_spisa_due_balance(self):
         """Get SPISA due balance exactly as in Retool"""
         try:
-            if self.spisa_api:
-                df = self.spisa_api.get_balances()
-                return {'Due': float(df['Due'].sum()) if not df.empty else 0}
             df = self.db.execute_query(self.queries.SPISA_DUE_BALANCE, 'SPISA')
             df = clean_dataframe(df)
             if not df.empty:
@@ -598,13 +565,6 @@ class FinancialAnalytics:
     def get_spisa_billed_monthly(self):
         """Get SPISA monthly billing exactly as in Retool"""
         try:
-            if self.spisa_api:
-                df = self.spisa_api.get_transactions(months=2)
-                if not df.empty:
-                    now = pd.Timestamp.now()
-                    monthly = df[(df['Type'] == 1) & (df['InvoiceDate'].dt.month == now.month) & (df['InvoiceDate'].dt.year == now.year)]
-                    return {'InvoiceAmount': float(monthly['InvoiceAmount'].sum())}
-                return {'InvoiceAmount': 0}
             df = self.db.execute_query(self.queries.SPISA_BILLED_MONTHLY, 'SPISA')
             df = clean_dataframe(df)
             if not df.empty:
@@ -617,13 +577,6 @@ class FinancialAnalytics:
     def get_spisa_billed_today(self):
         """Get SPISA today billing exactly as in Retool"""
         try:
-            if self.spisa_api:
-                df = self.spisa_api.get_transactions(months=1)
-                if not df.empty:
-                    today = pd.Timestamp.now().normalize()
-                    daily = df[(df['Type'] == 1) & (df['InvoiceDate'].dt.normalize() == today)]
-                    return {'InvoiceAmount': float(daily['InvoiceAmount'].sum())}
-                return {'InvoiceAmount': 0}
             df = self.db.execute_query(self.queries.SPISA_BILLED_TODAY, 'SPISA')
             df = clean_dataframe(df)
             if not df.empty:
@@ -636,34 +589,6 @@ class FinancialAnalytics:
     def get_spisa_collected_monthly(self):
         """Get SPISA monthly collections (payments received this month) with breakdown by type"""
         try:
-            if self.spisa_api:
-                df = self.spisa_api.get_transactions(months=2)
-                if not df.empty:
-                    now = pd.Timestamp.now()
-                    monthly = df[
-                        (df['PaymentDate'].dt.month == now.month) &
-                        (df['PaymentDate'].dt.year == now.year) &
-                        (df['PaymentDate'] > '2020-01-01') &
-                        (df['PaymentAmount'] > 0)
-                    ]
-                    total = float(monthly['PaymentAmount'].sum())
-                    cash = float(monthly[monthly['Type'] == 1]['PaymentAmount'].sum())
-                    electronic = float(monthly[monthly['Type'] == 0]['PaymentAmount'].sum())
-                    return {
-                        'TotalPayments': total,
-                        'CashPayments': cash,
-                        'ElectronicPayments': electronic,
-                        'TransactionCount': int(len(monthly)),
-                        'CashCount': int(len(monthly[monthly['Type'] == 1])),
-                        'ElectronicCount': int(len(monthly[monthly['Type'] == 0])),
-                        'CashPercentage': (cash / total * 100) if total > 0 else 0,
-                        'ElectronicPercentage': (electronic / total * 100) if total > 0 else 0
-                    }
-                return {
-                    'TotalPayments': 0, 'CashPayments': 0, 'ElectronicPayments': 0,
-                    'TransactionCount': 0, 'CashCount': 0, 'ElectronicCount': 0,
-                    'CashPercentage': 0, 'ElectronicPercentage': 0
-                }
             df = self.db.execute_query(self.queries.SPISA_COLLECTED_MONTHLY, 'SPISA')
             df = clean_dataframe(df)
             if not df.empty:

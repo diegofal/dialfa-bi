@@ -11,9 +11,8 @@ from database.queries import InventoryQueries
 from cache_config import cache, get_cache_timeout
 
 class InventoryAnalytics:
-    def __init__(self, db_manager, spisa_api=None):
+    def __init__(self, db_manager, **kwargs):
         self.db = db_manager
-        self.spisa_api = spisa_api
         self.logger = logging.getLogger(__name__)
         from database.queries import InventoryQueries
         self.queries = InventoryQueries()
@@ -441,11 +440,8 @@ class InventoryAnalytics:
         """Get historical stock value evolution from StockSnapshots"""
         self.logger.info(f"Executing get_stock_value_evolution for {months} months (cache miss or expired)")
         try:
-            if self.spisa_api:
-                df = self.spisa_api.get_stock_snapshots(months)
-            else:
-                query = self.queries.STOCK_VALUE_EVOLUTION.format(months=months)
-                df = self.db.execute_query(query, 'SPISA')
+            query = self.queries.STOCK_VALUE_EVOLUTION.format(months=months)
+            df = self.db.execute_query(query, 'SPISA')
             df = clean_dataframe(df)
 
             if not df.empty:

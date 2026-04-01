@@ -172,34 +172,35 @@ class SalesAnalytics:
         self.logger.info("Executing get_customer_segmentation (cache miss or expired)")
         try:
             segmentation_query = """
-            WITH CustomerSales AS (
-                SELECT 
-                    c.Name,
-                    COUNT(t.Id) as TransactionCount,
-                    SUM(t.InvoiceAmount) as TotalRevenue,
-                    AVG(t.InvoiceAmount) as AvgInvoiceSize,
-                    DATEDIFF(DAY, MIN(t.InvoiceDate), MAX(t.InvoiceDate)) as CustomerLifespanDays,
-                    MAX(t.InvoiceDate) as LastPurchaseDate,
-                    DATEDIFF(DAY, MAX(t.InvoiceDate), GETDATE()) as DaysSinceLastPurchase
-                FROM Customers c
-                INNER JOIN Transactions t ON c.Id = t.CustomerId
-                WHERE t.Type = 1 
-                AND t.InvoiceDate >= DATEADD(YEAR, -2, GETDATE())
-                GROUP BY c.Id, c.Name
+            WITH "CustomerSales" AS (
+                SELECT
+                    c.name,
+                    COUNT(t.id) as "TransactionCount",
+                    SUM(t.invoice_amount) as "TotalRevenue",
+                    AVG(t.invoice_amount) as "AvgInvoiceSize",
+                    EXTRACT(EPOCH FROM (MAX(t.invoice_date) - MIN(t.invoice_date))) / 86400 as "CustomerLifespanDays",
+                    MAX(t.invoice_date) as "LastPurchaseDate",
+                    EXTRACT(EPOCH FROM (NOW() - MAX(t.invoice_date))) / 86400 as "DaysSinceLastPurchase"
+                FROM sync_customers c
+                INNER JOIN sync_transactions t ON c.id = t.customer_id
+                WHERE t.type = 1
+                AND t.invoice_date >= NOW() - INTERVAL '2 years'
+                AND t.invoice_date > '2020-01-01'
+                GROUP BY c.id, c.name
             )
-            SELECT 
+            SELECT
                 *,
-                CASE 
-                    WHEN TotalRevenue > 500000 AND DaysSinceLastPurchase < 90 THEN 'Champions'
-                    WHEN TotalRevenue > 200000 AND DaysSinceLastPurchase < 180 THEN 'Loyal Customers'
-                    WHEN TotalRevenue > 100000 AND DaysSinceLastPurchase < 365 THEN 'Potential Loyalists'
-                    WHEN DaysSinceLastPurchase < 90 THEN 'New Customers'
-                    WHEN DaysSinceLastPurchase > 365 THEN 'At Risk'
+                CASE
+                    WHEN "TotalRevenue" > 500000 AND "DaysSinceLastPurchase" < 90 THEN 'Champions'
+                    WHEN "TotalRevenue" > 200000 AND "DaysSinceLastPurchase" < 180 THEN 'Loyal Customers'
+                    WHEN "TotalRevenue" > 100000 AND "DaysSinceLastPurchase" < 365 THEN 'Potential Loyalists'
+                    WHEN "DaysSinceLastPurchase" < 90 THEN 'New Customers'
+                    WHEN "DaysSinceLastPurchase" > 365 THEN 'At Risk'
                     ELSE 'Regular Customers'
-                END as CustomerSegment,
-                TotalRevenue / NULLIF(CustomerLifespanDays, 0) * 365 as AnnualizedRevenue
-            FROM CustomerSales
-            ORDER BY TotalRevenue DESC
+                END as "CustomerSegment",
+                "TotalRevenue" / NULLIF("CustomerLifespanDays", 0) * 365 as "AnnualizedRevenue"
+            FROM "CustomerSales"
+            ORDER BY "TotalRevenue" DESC
             """
             
             df = self.db.execute_query(segmentation_query, 'SPISA')
@@ -219,21 +220,24 @@ class SalesAnalytics:
         """Analyze product sales performance"""
         try:
             product_query = """
-            SELECT 
-                a.descripcion as ProductName,
-                c.Descripcion as Category,
-                SUM(npi.Cantidad) as TotalQuantitySold,
-                SUM(npi.Cantidad * npi.PrecioUnitario) as TotalRevenue,
-                COUNT(DISTINCT np.IdNotaPedido) as OrderCount,
-                AVG(npi.PrecioUnitario) as AvgSellingPrice,
-                MAX(np.FechaEmision) as LastSaleDate
-            FROM NotaPedido_Items npi
-            INNER JOIN NotaPedidos np ON npi.IdNotaPedido = np.IdNotaPedido
-            INNER JOIN Articulos a ON npi.IdArticulo = a.IdArticulo
-            INNER JOIN Categorias c ON a.IdCategoria = c.IdCategoria
-            WHERE np.FechaEmision >= DATEADD(YEAR, -1, GETDATE())
-            GROUP BY a.IdArticulo, a.descripcion, c.Descripcion
-            ORDER BY TotalRevenue DESC
+            SELECT
+                a.description as "ProductName",
+                c.name as "Category",
+                SUM(soi.quantity) as "TotalQuantitySold",
+                SUM(soi.quantity * a.unit_price) as "TotalRevenue",
+                COUNT(DISTINCT so.id) as "OrderCount",
+                AVG(a.unit_price) as "AvgSellingPrice",
+                MAX(so.order_date) as "LastSaleDate"
+            FROM sales_order_items soi
+            INNER JOIN sales_orders so ON soi.sales_order_id = so.id
+            INNER JOIN articles a ON soi.article_id = a.id
+            INNER JOIN categories c ON a.category_id = c.id
+            WHERE so.order_date >= NOW() - INTERVAL '1 years'
+            AND a.deleted_at IS NULL
+            AND so.deleted_at IS NULL
+            AND a.is_discontinued = false
+            GROUP BY a.id, a.description, c.name
+            ORDER BY "TotalRevenue" DESC
             """
             
             df = self.db.execute_query(product_query, 'SPISA')
@@ -258,18 +262,18 @@ class SalesAnalytics:
         """Analyze seasonal sales patterns"""
         try:
             seasonal_query = """
-            SELECT 
-                MONTH(InvoiceDate) as Month,
-                DATENAME(MONTH, InvoiceDate) as MonthName,
-                AVG(InvoiceAmount) as AvgMonthlyRevenue,
-                COUNT(*) as AvgTransactionCount,
-                STDEV(InvoiceAmount) as RevenueVolatility
-            FROM Transactions
-            WHERE Type = 1 
-            AND InvoiceDate >= DATEADD(YEAR, -3, GETDATE())
-            AND InvoiceDate > '2020-01-01'
-            GROUP BY MONTH(InvoiceDate), DATENAME(MONTH, InvoiceDate)
-            ORDER BY Month
+            SELECT
+                EXTRACT(MONTH FROM invoice_date)::int as "Month",
+                TO_CHAR(invoice_date, 'Month') as "MonthName",
+                AVG(invoice_amount) as "AvgMonthlyRevenue",
+                COUNT(*) as "AvgTransactionCount",
+                STDDEV(invoice_amount) as "RevenueVolatility"
+            FROM sync_transactions
+            WHERE type = 1
+            AND invoice_date >= NOW() - INTERVAL '3 years'
+            AND invoice_date > '2020-01-01'
+            GROUP BY EXTRACT(MONTH FROM invoice_date)::int, TO_CHAR(invoice_date, 'Month')
+            ORDER BY "Month"
             """
             
             df = self.db.execute_query(seasonal_query, 'SPISA')
@@ -294,27 +298,27 @@ class SalesAnalytics:
         try:
             # Current vs previous period comparison
             current_period_query = """
-            SELECT 
-                SUM(InvoiceAmount) as CurrentRevenue,
-                COUNT(*) as CurrentTransactions,
-                COUNT(DISTINCT CustomerId) as CurrentCustomers,
-                AVG(InvoiceAmount) as CurrentAvgInvoice
-            FROM Transactions
-            WHERE Type = 1
-            AND InvoiceDate >= DATEADD(MONTH, -1, GETDATE())
-            AND InvoiceDate > '2020-01-01'
+            SELECT
+                SUM(invoice_amount) as "CurrentRevenue",
+                COUNT(*) as "CurrentTransactions",
+                COUNT(DISTINCT customer_id) as "CurrentCustomers",
+                AVG(invoice_amount) as "CurrentAvgInvoice"
+            FROM sync_transactions
+            WHERE type = 1
+            AND invoice_date >= NOW() - INTERVAL '1 months'
+            AND invoice_date > '2020-01-01'
             """
-            
+
             previous_period_query = """
-            SELECT 
-                SUM(InvoiceAmount) as PreviousRevenue,
-                COUNT(*) as PreviousTransactions,
-                COUNT(DISTINCT CustomerId) as PreviousCustomers,
-                AVG(InvoiceAmount) as PreviousAvgInvoice
-            FROM Transactions
-            WHERE Type = 1
-            AND InvoiceDate >= DATEADD(MONTH, -2, GETDATE())
-            AND InvoiceDate < DATEADD(MONTH, -1, GETDATE())
+            SELECT
+                SUM(invoice_amount) as "PreviousRevenue",
+                COUNT(*) as "PreviousTransactions",
+                COUNT(DISTINCT customer_id) as "PreviousCustomers",
+                AVG(invoice_amount) as "PreviousAvgInvoice"
+            FROM sync_transactions
+            WHERE type = 1
+            AND invoice_date >= NOW() - INTERVAL '2 months'
+            AND invoice_date < NOW() - INTERVAL '1 months'
             """
             
             current_df = self.db.execute_query(current_period_query, 'SPISA')
@@ -361,16 +365,16 @@ class SalesAnalytics:
         try:
             # Get historical data for trend analysis
             historical_query = """
-            SELECT 
-                YEAR(InvoiceDate) as Year,
-                MONTH(InvoiceDate) as Month,
-                SUM(InvoiceAmount) as MonthlyRevenue
-            FROM Transactions
-            WHERE Type = 1 
-            AND InvoiceDate >= DATEADD(MONTH, -12, GETDATE())
-            AND InvoiceDate > '2020-01-01'
-            GROUP BY YEAR(InvoiceDate), MONTH(InvoiceDate)
-            ORDER BY Year, Month
+            SELECT
+                EXTRACT(YEAR FROM invoice_date)::int as "Year",
+                EXTRACT(MONTH FROM invoice_date)::int as "Month",
+                SUM(invoice_amount) as "MonthlyRevenue"
+            FROM sync_transactions
+            WHERE type = 1
+            AND invoice_date >= NOW() - INTERVAL '12 months'
+            AND invoice_date > '2020-01-01'
+            GROUP BY EXTRACT(YEAR FROM invoice_date)::int, EXTRACT(MONTH FROM invoice_date)::int
+            ORDER BY "Year", "Month"
             """
             
             df = self.db.execute_query(historical_query, 'SPISA')
