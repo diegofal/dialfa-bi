@@ -330,7 +330,7 @@ class InventoryQueries:
 
     TOP_STOCK_VALUE = """
     SELECT
-        a.description,
+        a.description as "Description",
         a.stock as "CurrentStock",
         a.unit_price as "UnitPrice",
         a.stock * a.unit_price as "StockValue",
@@ -347,7 +347,7 @@ class InventoryQueries:
     SLOW_MOVING_ANALYSIS = """
     WITH InventoryAnalysis AS (
         SELECT
-            a.description,
+            a.description as "Description",
             a.stock as "CurrentStock",
             a.unit_price * a.stock as "StockValue",
             c.name as "Category",
@@ -402,7 +402,7 @@ class InventoryQueries:
     STOCK_VARIATION_OVER_TIME = """
     WITH MonthlyStockMovement AS (
         SELECT
-            a.id,
+            a.id as "Id",
             a.description as "ProductName",
             c.name as "Category",
             a.stock as "CurrentStock",
@@ -470,7 +470,7 @@ class InventoryQueries:
     STOCK_VELOCITY_SUMMARY = """
     WITH VelocityAnalysis AS (
         SELECT
-            a.id,
+            a.id as "Id",
             a.description as "ProductName",
             c.name as "Category",
             a.stock as "CurrentStock",
@@ -550,7 +550,7 @@ class InventoryQueries:
     OUT_OF_STOCK_ANALYSIS = """
     WITH OutOfStockAnalysis AS (
         SELECT
-            a.id,
+            a.id as "Id",
             a.description as "ProductName",
             a.unit_price as "UnitPrice",
             c.name as "Category",
@@ -660,7 +660,7 @@ class PurchaseQueries:
             a.stock * a.unit_price as "StockValue",
             c.name as "Category",
             s.name as "PreferredSupplier",
-            a.proveedor as "SupplierId",
+            a.supplier_id as "SupplierId",
             COALESCE(abc."ABCClass", 'C') as "ABCClass",
             COALESCE(abc."TotalRevenue", 0) as "AnnualRevenue",
             -- Demand calculations
@@ -682,7 +682,7 @@ class PurchaseQueries:
             {demand_days} as "DemandWindowDays"
         FROM articles a
         INNER JOIN categories c ON a.category_id = c.id
-        LEFT JOIN suppliers s ON a.proveedor::text = s.code::text
+        LEFT JOIN suppliers s ON a.supplier_id = s.id
         LEFT JOIN ABCClassification abc ON a.id = abc.id
         LEFT JOIN (
             SELECT
@@ -817,7 +817,7 @@ class PurchaseQueries:
             COUNT(DISTINCT a.id) as "ProductCount",
             SUM(a.stock * a.unit_price) as "CurrentStockValue"
         FROM suppliers s
-        LEFT JOIN articles a ON a.proveedor::text = s.code::text
+        LEFT JOIN articles a ON a.supplier_id = s.id
             AND a.is_discontinued = false
             AND a.deleted_at IS NULL
         GROUP BY s.id, s.name, s.code
