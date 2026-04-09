@@ -88,7 +88,14 @@
             <div class="card-body text-white">
                 <div class="d-flex justify-content-between align-items-start">
                     <div class="flex-grow-1">
-                        <h6 class="card-title mb-0" id="monthly-collections-label">{{ _('Collected This Month') }}</h6>
+                        <h6 class="card-title mb-0" id="monthly-collections-label">
+                            {{ _('To Collect This Month') }}
+                            <i class="bi bi-info-circle-fill ms-1"
+                               style="font-size: 0.75rem; cursor: help;"
+                               data-bs-toggle="tooltip"
+                               data-bs-placement="top"
+                               title="{{ _('Includes post-dated checks whose date falls in the current month (even if not yet deposited). The chart below shows only amounts cleared up to today.') }}"></i>
+                        </h6>
                         <h2 class="mb-2" id="monthly-collections">{{ _('Loading...') }}</h2>
                         <div class="mt-2" style="font-size: 0.85rem;">
                             <div class="d-flex justify-content-between align-items-center mb-1">
@@ -108,6 +115,30 @@
             </div>
         </div>
     </div>
+
+    <div class="col-xl col-lg-4 col-md-6 mb-3">
+        <div class="card metric-card h-100" style="background: linear-gradient(135deg, #fd7e14, #d35400);">
+            <div class="card-body text-white">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="card-title mb-0">
+                            {{ _('Checks in Portfolio') }}
+                            <i class="bi bi-info-circle-fill ms-1"
+                               style="font-size: 0.75rem; cursor: help;"
+                               data-bs-toggle="tooltip"
+                               data-bs-placement="top"
+                               title="{{ _('Post-dated checks already received but not yet cashed (payment date is in the future).') }}"></i>
+                        </h6>
+                        <h2 class="mb-0" id="checks-in-portfolio">{{ _('Loading...') }}</h2>
+                        <small class="opacity-75">{{ _('Pending to be cashed') }}</small>
+                    </div>
+                    <div class="opacity-75">
+                        <i class="bi bi-check2-square" style="font-size: 2rem;"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
 
 <!-- Charts Row -->
@@ -118,7 +149,12 @@
             <div class="card-header d-flex justify-content-between align-items-center">
                 <h5 class="mb-0">
                     <i class="bi bi-cash-coin"></i>
-                    {{ _('Monthly Payment Collections') }}
+                    {{ _('Monthly Payment Collections (cleared)') }}
+                    <i class="bi bi-info-circle-fill ms-1 text-muted"
+                       style="font-size: 0.75rem; cursor: help;"
+                       data-bs-toggle="tooltip"
+                       data-bs-placement="top"
+                       title="{{ _('Shows only amounts with payment date on or before today. Excludes post-dated checks that have not yet been cashed.') }}"></i>
                 </h5>
                 <div class="btn-group btn-group-sm" role="group">
                     <button type="button" class="btn btn-outline-primary active" onclick="loadCashFlowChart(6)">6M</button>
@@ -252,6 +288,10 @@ document.addEventListener('DOMContentLoaded', function() {
     loadDashboardData();
     loadCharts();
     loadCreditRiskTable();
+
+    // Initialize Bootstrap tooltips
+    const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]');
+    tooltipTriggerList.forEach(el => new bootstrap.Tooltip(el));
 });
 
 function loadDashboardData() {
@@ -311,22 +351,35 @@ function updateMetricCards(financial, inventory, sales) {
             if (data.status === 'success' && data.data) {
                 // Total
                 document.getElementById('monthly-collections').textContent = formatCurrency(data.data.TotalPayments, 'ARS');
-                
+
                 // Desglose por tipo
                 document.getElementById('cash-collections').textContent = formatCurrency(data.data.CashPayments, 'ARS');
                 document.getElementById('electronic-collections').textContent = formatCurrency(data.data.ElectronicPayments, 'ARS');
-                
-                // Actualizar etiqueta con mes actual
+
+                // Actualizar etiqueta con mes actual (mantener el icono de info)
                 const locale = document.documentElement.lang || 'es';
                 const currentMonth = new Date().toLocaleDateString(locale, { month: 'long' });
                 const monthLabel = document.getElementById('monthly-collections-label');
                 if (monthLabel) {
-                    const collectedInText = locale === 'es' ? 'Cobrado en' : 'Collected in';
-                    monthLabel.textContent = `${collectedInText} ${currentMonth.charAt(0).toUpperCase() + currentMonth.slice(1)}`;
+                    const prefix = locale === 'es' ? 'A cobrar en' : 'To collect in';
+                    const capitalizedMonth = currentMonth.charAt(0).toUpperCase() + currentMonth.slice(1);
+                    const infoIcon = monthLabel.querySelector('i.bi-info-circle-fill');
+                    monthLabel.textContent = `${prefix} ${capitalizedMonth} `;
+                    if (infoIcon) monthLabel.appendChild(infoIcon);
                 }
             }
         })
         .catch(error => console.error('Error loading monthly collections:', error));
+
+    // Cheques en cartera (post-dated checks pending to be cashed)
+    fetch('/financial/api/future-payments')
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success' && data.data) {
+                document.getElementById('checks-in-portfolio').textContent = formatCurrency(data.data.PaymentAmount, 'ARS');
+            }
+        })
+        .catch(error => console.error('Error loading future payments:', error));
 }
 
 function loadCharts() {

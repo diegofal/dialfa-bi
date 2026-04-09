@@ -117,6 +117,19 @@ def collected_monthly():
         logger.error(f"Monthly collections error: {e}")
         return jsonify({'error': str(e), 'status': 'error'}), 500
 
+@financial_bp.route('/api/future-payments')
+def future_payments():
+    """Get post-dated checks pending to be cashed (Cheques en cartera)"""
+    try:
+        data = current_app.financial_analytics.get_spisa_future_payments()
+        return jsonify({
+            'data': data,
+            'status': 'success'
+        })
+    except Exception as e:
+        logger.error(f"Future payments error: {e}")
+        return jsonify({'error': str(e), 'status': 'error'}), 500
+
 @financial_bp.route('/api/top-customers')
 def top_customers():
     """Get top customers by balance"""
