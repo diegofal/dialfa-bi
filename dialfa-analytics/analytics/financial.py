@@ -589,27 +589,36 @@ class FinancialAnalytics:
             return {'InvoiceAmount': 0}
     
     def get_spisa_collected_monthly(self):
-        """Get SPISA monthly collections (payments received this month) with breakdown by type"""
+        """Get SPISA monthly collections (payments received this month) with breakdown by status and type"""
         try:
             df = self.db.execute_query(self.queries.SPISA_COLLECTED_MONTHLY, 'SPISA')
             df = clean_dataframe(df)
             if not df.empty:
                 row = df.iloc[0]
+                total = float(row['TotalPayments'])
                 return {
-                    'TotalPayments': float(row['TotalPayments']),
+                    'TotalPayments': total,
+                    'ClearedPayments': float(row['ClearedPayments']),
+                    'PendingPayments': float(row['PendingPayments']),
                     'CashPayments': float(row['CashPayments']),
                     'ElectronicPayments': float(row['ElectronicPayments']),
                     'TransactionCount': int(row['TransactionCount']),
+                    'ClearedCount': int(row['ClearedCount']),
+                    'PendingCount': int(row['PendingCount']),
                     'CashCount': int(row['CashCount']),
                     'ElectronicCount': int(row['ElectronicCount']),
-                    'CashPercentage': (float(row['CashPayments']) / float(row['TotalPayments']) * 100) if float(row['TotalPayments']) > 0 else 0,
-                    'ElectronicPercentage': (float(row['ElectronicPayments']) / float(row['TotalPayments']) * 100) if float(row['TotalPayments']) > 0 else 0
+                    'CashPercentage': (float(row['CashPayments']) / total * 100) if total > 0 else 0,
+                    'ElectronicPercentage': (float(row['ElectronicPayments']) / total * 100) if total > 0 else 0
                 }
             return {
                 'TotalPayments': 0,
+                'ClearedPayments': 0,
+                'PendingPayments': 0,
                 'CashPayments': 0,
                 'ElectronicPayments': 0,
                 'TransactionCount': 0,
+                'ClearedCount': 0,
+                'PendingCount': 0,
                 'CashCount': 0,
                 'ElectronicCount': 0,
                 'CashPercentage': 0,
@@ -619,9 +628,13 @@ class FinancialAnalytics:
             self.logger.error(f"Error getting SPISA monthly collections: {e}")
             return {
                 'TotalPayments': 0,
+                'ClearedPayments': 0,
+                'PendingPayments': 0,
                 'CashPayments': 0,
                 'ElectronicPayments': 0,
                 'TransactionCount': 0,
+                'ClearedCount': 0,
+                'PendingCount': 0,
                 'CashCount': 0,
                 'ElectronicCount': 0,
                 'CashPercentage': 0,
