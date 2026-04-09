@@ -99,12 +99,12 @@
                         <h2 class="mb-2" id="monthly-collections">{{ _('Loading...') }}</h2>
                         <div class="mt-2" style="font-size: 0.85rem;">
                             <div class="d-flex justify-content-between align-items-center mb-1">
-                                <span class="opacity-75"><i class="bi bi-cash"></i> {{ _('Cash') }}</span>
-                                <strong id="cash-collections">-</strong>
+                                <span class="opacity-75"><i class="bi bi-check-circle"></i> {{ _('Collected') }}</span>
+                                <strong id="cleared-collections">-</strong>
                             </div>
                             <div class="d-flex justify-content-between align-items-center">
-                                <span class="opacity-75"><i class="bi bi-bank"></i> {{ _('Electronic') }}</span>
-                                <strong id="electronic-collections">-</strong>
+                                <span class="opacity-75"><i class="bi bi-hourglass-split"></i> {{ _('Pending') }}</span>
+                                <strong id="pending-collections">-</strong>
                             </div>
                         </div>
                     </div>
@@ -344,17 +344,17 @@ function updateMetricCards(financial, inventory, sales) {
         })
         .catch(error => console.error('Error loading today billing:', error));
     
-    // Cobranzas del mes actual desde SPISA con desglose por tipo
+    // Cobranzas del mes actual desde SPISA con desglose cobrado/pendiente
     fetch('/financial/api/collected-monthly')
         .then(response => response.json())
         .then(data => {
             if (data.status === 'success' && data.data) {
-                // Total
+                // Total del mes (cobrado + pendiente)
                 document.getElementById('monthly-collections').textContent = formatCurrency(data.data.TotalPayments, 'ARS');
 
-                // Desglose por tipo
-                document.getElementById('cash-collections').textContent = formatCurrency(data.data.CashPayments, 'ARS');
-                document.getElementById('electronic-collections').textContent = formatCurrency(data.data.ElectronicPayments, 'ARS');
+                // Desglose cobrado / pendiente
+                document.getElementById('cleared-collections').textContent = formatCurrency(data.data.ClearedPayments, 'ARS');
+                document.getElementById('pending-collections').textContent = formatCurrency(data.data.PendingPayments, 'ARS');
 
                 // Actualizar etiqueta con mes actual (mantener el icono de info)
                 const locale = document.documentElement.lang || 'es';

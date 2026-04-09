@@ -160,9 +160,13 @@ class FinancialQueries:
     SPISA_COLLECTED_MONTHLY = """
     SELECT
         COALESCE(SUM(payment_amount), 0) as "TotalPayments",
+        COALESCE(SUM(CASE WHEN payment_date <= NOW() THEN payment_amount ELSE 0 END), 0) as "ClearedPayments",
+        COALESCE(SUM(CASE WHEN payment_date > NOW() THEN payment_amount ELSE 0 END), 0) as "PendingPayments",
         COALESCE(SUM(CASE WHEN type = 1 THEN payment_amount ELSE 0 END), 0) as "CashPayments",
         COALESCE(SUM(CASE WHEN type = 0 THEN payment_amount ELSE 0 END), 0) as "ElectronicPayments",
         COUNT(*) as "TransactionCount",
+        COUNT(CASE WHEN payment_date <= NOW() THEN 1 END) as "ClearedCount",
+        COUNT(CASE WHEN payment_date > NOW() THEN 1 END) as "PendingCount",
         COUNT(CASE WHEN type = 1 THEN 1 END) as "CashCount",
         COUNT(CASE WHEN type = 0 THEN 1 END) as "ElectronicCount"
     FROM sync_transactions t
