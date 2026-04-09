@@ -538,8 +538,10 @@ class FinancialAnalytics:
             self.logger.error(f"Error getting SPISA balances: {e}")
             return []
 
+    @cache.cached(timeout=get_cache_timeout('billing_monthly'), key_prefix='financial_future_payments')
     def get_spisa_future_payments(self):
-        """Get SPISA future payments exactly as in Retool"""
+        """Get SPISA future payments (post-dated checks pending to be cashed)"""
+        self.logger.info("Executing get_spisa_future_payments (cache miss or expired)")
         try:
             df = self.db.execute_query(self.queries.SPISA_FUTURE_PAYMENTS, 'SPISA')
             df = clean_dataframe(df)
