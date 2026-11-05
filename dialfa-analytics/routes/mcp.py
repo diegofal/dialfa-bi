@@ -315,9 +315,14 @@ def t_cobranzas(args):
 
 def t_deuda(args):
     cliente = _str(args, "cliente")
-    x = cb.deuda(_q(), cliente, _bool(args, "solo_vencida"))
+    solo_vencida = _bool(args, "solo_vencida")
+    x = cb.deuda(_q(), cliente, solo_vencida)
     if cliente and not x["clientes"]:
-        return _sin_cliente(cliente), x
+        todos = cb.deuda(_q(), cliente)["clientes"] if solo_vencida else []
+        if not todos:   # no existe (con solo_vencida, la lista vacía puede ser sólo que no debe nada vencido)
+            return _sin_cliente(cliente), x
+        return " ".join("%s no tiene nada vencido (saldo %s)." % (c["cliente"], plata(c["saldo"])) for c in todos) + \
+            " " + _al(x["datos_al"]).strip("()").capitalize() + ".", x
     no_cierra = [c["cliente"] for c in x["clientes"] if c["no_cierra"]]
     if cliente:
         lineas = ["%s debe %s, de los cuales %s están vencidos." % (c["cliente"], plata(c["saldo"]), plata(c["vencido"]))

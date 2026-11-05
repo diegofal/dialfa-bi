@@ -195,3 +195,36 @@ def test_rango_malo():
     assert cb.rango("2026-02", None, None) == (date(2026, 2, 1), date(2026, 2, 28))
     with pytest.raises(ValueError):
         cb.rango("2026-13", None, None)
+
+
+# Codex en PR #1: la cartera de cheques es sólo de cheques y echeqs
+TRANSF_A_FECHA = {"id": "p10", "fecha": date(2026, 11, 5), "cliente": "GRAMABI", "libro": 1,
+                  "recibo": "TRANSFERENCIA ELECTRONICA", "banco": None, "importe": 500.0}
+EFECTIVO_A_FECHA = {"id": "p11", "fecha": date(2026, 11, 9), "cliente": "MARTI", "libro": 0,
+                    "recibo": "Efectivo", "banco": None, "importe": 70.0}
+OTRO_A_FECHA = {"id": "p12", "fecha": date(2026, 11, 10), "cliente": "MARTI", "libro": 0,
+                "recibo": "94", "banco": "Santander", "importe": 30.0}
+
+
+def test_cheques_en_cartera_solo_cheques_y_echeqs():
+    q = falsa(**{cb.SQL_CARTERA: PAGOS + [TRANSF_A_FECHA, EFECTIVO_A_FECHA, OTRO_A_FECHA]})
+    d = cb.cheques_en_cartera(q, hoy=HOY)
+    assert [c["id"] for c in d["cheques"]] == ["p7", "p8"]
+    assert d["n"] == 2 and d["total"] == 2736931.78
+    assert {c["medio"] for c in d["cheques"]} <= {"cheque", "echeq"}
+    # la cuenta corriente sigue mostrando todo lo que tiene fecha futura (§10.1: "pagos con fecha > hoy")
+    cc = cb.cuenta_corriente(q, "2026-10-01", "2026-11-04", hoy=HOY)
+    assert {"p10", "p11", "p12"} <= {r["id"] for r in cc["cartera"]}
+
+
+def test_tarjeta_de_cartera_del_dashboard_solo_cheques():
+    from analytics.financial import FinancialAnalytics
+    q = falsa(**{cb.SQL_CARTERA: PAGOS + [TRANSF_A_FECHA]})
+    fa = FinancialAnalytics(None, consulta_ro=q)
+    cb_hoy = cb.hoy_ar
+    try:
+        cb.hoy_ar = lambda: HOY
+        assert fa.get_cheques_en_cartera()["PaymentAmount"] == 2736931.78
+        assert fa.get_cheques_en_cartera()["Count"] == 2
+    finally:
+        cb.hoy_ar = cb_hoy

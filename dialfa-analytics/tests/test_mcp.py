@@ -268,3 +268,26 @@ def test_texto_plurales_periodos_y_plata():
     assert mcp_mod._periodo("2025-12-01", "2026-11-04") == "del 1/12/2025 al 4/11/2026"
     assert mcp_mod.plata(132012855.93) == "$132,0 millones"
     assert mcp_mod.plata(1510.5) == "$1.510" and mcp_mod.plata(88308.96, usd=True) == "US$88.309"
+
+
+# ------------------------------------------------------------------ revisión de Codex en PR #1
+def test_brief_no_avisa_una_transferencia_a_fecha_como_cheque(client, app):
+    from test_cobranzas import TRANSF_A_FECHA
+    app.consulta_ro.respuestas[cb.SQL_CARTERA] = PAGOS + [TRANSF_A_FECHA]
+    sc = call(client, "brief")["structuredContent"]
+    assert "2026-11-05" not in [i["due"] for i in sc["items"] if i["kind"] == "cheques"]
+    assert _ok(call(client, "cheques_en_cartera"))["n"] == 2
+
+
+def test_deuda_solo_vencida_de_un_cliente_sin_vencido_dice_que_existe(client):
+    res = call(client, "deuda", {"cliente": "BRICAVAL", "solo_vencida": True})
+    sc = _ok(res)
+    texto = res["content"][0]["text"]
+    assert sc["clientes"] == []
+    assert "No hay ningún cliente" not in texto
+    assert "BRICAVAL" in texto and "nada vencido" in texto
+
+
+def test_deuda_solo_vencida_de_un_cliente_que_no_existe(client):
+    res = call(client, "deuda", {"cliente": "Nadie", "solo_vencida": True})
+    assert "No hay ningún cliente" in res["content"][0]["text"]

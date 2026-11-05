@@ -41,7 +41,9 @@ class DatabaseManager:
                 server=self.config.DB_SERVER, database=self.config.XERP_DB,
                 user=self.config.DB_USER, password=self.config.DB_PASSWORD
             ).replace('Connection Timeout=30;', f'Connection Timeout={XERP_TIMEOUT_S};')
+            # timeout= in connect() only bounds the login; conn.timeout bounds each query (pyodbc: 0 = none)
             with pyodbc.connect(cadena, timeout=XERP_TIMEOUT_S) as conn:
+                conn.timeout = XERP_TIMEOUT_S
                 conn.cursor().execute("SELECT 1").fetchone()
             estado = "ok"
         except Exception as e:

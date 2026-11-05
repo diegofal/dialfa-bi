@@ -17,7 +17,7 @@ wins over a partial one, so "Marti" is not also "MARTIN SA").
 |---|---|---|
 | `cobranzas` | `mes` or `desde, hasta` (default: this month); `cliente?` | `{desde, hasta, total, n, por_medio:{efectivo, cheque, echeq, transferencia, retencion, otro}, por_cliente:[{cliente, total, n}], datos_al, fuente}`: payments dated in the range **and up to today** |
 | `deuda` | `cliente?, solo_vencida?` | `{total, vencido, a_vencer, clientes:[{cliente, libros, saldo, vencido, no_cierra}], datos_al, fuente}` |
-| `cheques_en_cartera` | `cliente?` | `{total, n, cheques:[R], datos_al, fuente}`: payments dated after today (up to the legal 360 days, below) |
+| `cheques_en_cartera` | `cliente?` | `{total, n, cheques:[R], datos_al, fuente}`: cheques and echeqs (`medio` cheque/echeq) dated after today, up to the legal 360 days (below). A future-dated transfer or cash payment is not a cheque: it stays in `cuenta_corriente.cartera` only |
 | `cuenta_corriente` | `desde, hasta, cliente?` | `{desde, hasta, datos_al, fuente, recibos:[R], facturas:[{id, fecha, cliente, libro, numero, importe}], cartera:[R]}` |
 | `clientes` | `buscar?` | `{clientes:[{cliente, libros}], datos_al, fuente}` |
 | `calidad` | none | `{ultimo_sync, sync_ok, errores:[{cliente, archivo, mensaje}], xerp: "ok" \| "no responde" \| "no configurado", datos_al, fuente}` |

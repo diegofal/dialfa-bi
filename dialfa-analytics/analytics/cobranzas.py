@@ -29,7 +29,8 @@ GRUPOS = ("efectivo", "cheques", "transferencias", "retenciones", "otros")
 # cartera sino un error de tipeo en la planilla (el 04/11/2026: un pago de PATIÑO CONVAL con fecha 12/04/2975). No se
 # cuenta en la cartera y se avisa en calidad y en el brief.
 PLAZO_MAX_CHEQUE_DIAS = 360
-FECHA_IMPOSIBLE = "Pago con fecha"   # cómo empieza el mensaje de esos errores en calidad.errores
+FECHA_IMPOSIBLE = "Pago con fecha"
+MEDIOS_CHEQUE = ("cheque", "echeq")   # lo único que es "cheque en cartera"; una transferencia a fecha no lo es   # cómo empieza el mensaje de esos errores en calidad.errores
 
 SQL_DATOS_AL = "SELECT max(end_date) AS fin FROM sync_runs WHERE NOT has_error"
 SQL_ULTIMO_SYNC = ("SELECT end_date AS fin, has_error AS con_error FROM sync_runs "
@@ -289,9 +290,10 @@ def deuda(q, cliente=None, solo_vencida=False):
 
 
 def cheques_en_cartera(q, cliente=None, hoy=None):
-    """Pagos ya recibidos con fecha futura (cheques y echeqs a fecha), hasta hoy + PLAZO_MAX_CHEQUE_DIAS."""
+    """Cheques y echeqs ya recibidos con fecha futura, hasta hoy + PLAZO_MAX_CHEQUE_DIAS. Un pago a fecha con otro
+    medio (transferencia, efectivo, otro) no es un cheque: sigue en cuenta_corriente.cartera, no acá."""
     hoy = hoy or hoy_ar()
-    cheques = _cartera(q, hoy, _filtro(q, cliente))
+    cheques = [r for r in _cartera(q, hoy, _filtro(q, cliente)) if r["medio"] in MEDIOS_CHEQUE]
     return {"total": _total(cheques), "n": len(cheques), "cheques": cheques, "datos_al": datos_al(q),
             "fuente": FUENTE_PAGOS}
 
