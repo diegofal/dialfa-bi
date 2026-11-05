@@ -24,7 +24,8 @@ from analytics.cobranzas import medio_de_pago
     ("Transferencia electronica", None, ("transferencia", None)),
     ("TRANSF ELECT", None, ("transferencia", None)),
     ("TRANSFERENCIA", None, ("transferencia", None)),
-    ("TRASFERENCIA ELECTRONICA", None, ("otro", None)),  # "trasf" no es "transf": el contrato dice otro
+    ("TRASFERENCIA ELECTRONICA", None, ("transferencia", None)),  # la falta de ortografía vista en la base
+    ("Trasf elect", None, ("transferencia", None)),
     ("Otro", None, ("otro", None)),
     ("EFT", None, ("otro", None)),
     (None, None, ("otro", None)),

@@ -40,9 +40,8 @@ doesn't exist answers the normal shape, empty, with a text that says so.
   It is **not** cash/electronic. A customer in both books is the same customer and is added up.
 - **Payment medium**, one definition (`cobranzas.medio_de_pago(recibo, banco)`), used by the MCP and the dashboard,
   in order: contains "efectivo" → `efectivo`; "retenc" → `retencion`; "echeq"/"e-cheq" → `echeq` + the last number of
-  3+ digits; "transf" → `transferencia`; only digits (3+) → `cheque` + that number; else `otro`. Seen in the base:
-  "TRASFERENCIA ELECTRONICA" (3 receipts, $836.583,90 in October 2026) is `otro` under this rule, as are 1–2 digit
-  numbers ("94"). Withholdings (`retencion`) are tax certificates, not money.
+  3+ digits; "transf" or "trasf" → `transferencia` (the misspelling "TRASFERENCIA ELECTRONICA" is in the
+  spreadsheets); only digits (3+) → `cheque` + that number; else `otro` (e.g. 1–2 digit numbers like "94"). Withholdings (`retencion`) are tax certificates, not money.
 - **Cheques more than 360 days ahead are not in the portfolio.** A deferred cheque (or echeq) is payable at most 360
   days after issue (Ley 24.452, art. 54). A payment dated after today + 360 days is a typo in the spreadsheet (on
   04/11/2026: PATIÑO CONVAL, "68", dated 12/04/2975, $392.739,62). It is left out of `cheques_en_cartera` and of

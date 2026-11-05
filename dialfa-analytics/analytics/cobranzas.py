@@ -73,8 +73,8 @@ _DIGITOS = re.compile(r"\d{3,}")
 
 def medio_de_pago(recibo, banco=None):
     """(medio, número) de un pago según lo escrito en la planilla (§10.1). En orden: contiene "efectivo" → efectivo;
-    "retenc" → retencion; "echeq" o "e-cheq" → echeq con el último número de 3 o más dígitos; "transf" →
-    transferencia; sólo dígitos (3 o más) → cheque con ese número; si no, otro. `banco` no decide el medio (un cheque
+    "retenc" → retencion; "echeq" o "e-cheq" → echeq con el último número de 3 o más dígitos; "transf" o
+    "trasf" (la falta de ortografía de las planillas: "TRASFERENCIA ELECTRONICA") → transferencia; sólo dígitos (3 o más) → cheque con ese número; si no, otro. `banco` no decide el medio (un cheque
     es "6932" con banco "Nación"); está en la firma para que quien llama no tenga que saberlo."""
     r = (recibo or "").strip().lower()
     if "efectivo" in r:
@@ -84,7 +84,7 @@ def medio_de_pago(recibo, banco=None):
     if "echeq" in r or "e-cheq" in r:
         nums = _DIGITOS.findall(r)
         return "echeq", (nums[-1] if nums else None)
-    if "transf" in r:
+    if "transf" in r or "trasf" in r:
         return "transferencia", None
     if re.fullmatch(r"\d{3,}", r):
         return "cheque", r
