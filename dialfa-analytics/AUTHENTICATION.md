@@ -19,14 +19,20 @@ The Dialfa Analytics Dashboard now includes a complete authentication and author
 ### Admin
 - Full access to all dashboards and features
 - Can view all financial, inventory, and sales data
-- Username: `admin`
-- Password: `Admin123!`
 
-### User
-- Standard access to dashboards
-- Can view reports and analytics
-- Username: `user`
-- Password: `User123!`
+There is a single user, the **admin**, and it comes only from the environment (Railway variables).
+No username or password lives in the code:
+
+| Variable | Value |
+|----------|-------|
+| `ADMIN_USERNAME` | the login name |
+| `ADMIN_PASSWORD_HASH` | a Werkzeug password hash, e.g. `scrypt:32768:8:1$<salt>$<hash>` |
+
+Generate the hash with `python scripts/admin_hash.py` (asks for the password without echo and prints the hash).
+Without both variables there is **no admin**: the app still starts, logs
+`Sin usuario admin: faltan las variables ...` at startup, and every login is refused with
+`Login rechazado: no hay usuario admin configurado (...)` in the log. A plain password pasted into
+`ADMIN_PASSWORD_HASH` is refused the same way.
 
 ## How It Works
 
@@ -58,7 +64,9 @@ All main application routes are protected:
 
 Public routes (no authentication required):
 - `/auth/login` - Login page
-- `/api/health` - Health check endpoint
+- `/api/health` - Health check endpoint (Railway's deploy healthcheck): always HTTP 200 while the app answers;
+  reports `database` (SPISA Postgres: `connected` / `disconnected` / `not configured`) and `xerp`
+  (`ok` / `no responde` / `no configurado`)
 
 ### 4. Authorization Decorators
 
@@ -111,41 +119,17 @@ class User(UserMixin):
     full_name: str
 ```
 
-Currently, users are stored in-memory in the `USERS` dictionary. This can be migrated to a database in the future.
+The admin is built from `ADMIN_USERNAME` / `ADMIN_PASSWORD_HASH` on every lookup (see "User Roles"); there are
+no other users. Moving users to a database is future work.
 
-## Adding New Users
+## Changing the Admin Password
 
-To add a new user, edit `auth/models.py`:
-
-```python
-from werkzeug.security import generate_password_hash
-
-# Add to USERS dictionary
-USERS = {
-    'newuser': User(
-        id='3',
-        username='newuser',
-        password_hash=generate_password_hash('SecurePassword123!'),
-        role='user',
-        full_name='New User Name'
-    )
-}
-```
-
-## Changing User Passwords
-
-To change a password, update the password_hash:
-
-```python
-from werkzeug.security import generate_password_hash
-
-# In auth/models.py
-USERS['admin'].password_hash = generate_password_hash('NewPassword123!')
-```
+Run `python scripts/admin_hash.py`, put the printed hash in the `ADMIN_PASSWORD_HASH` Railway variable and redeploy.
+Never commit a password or a hash to the repo.
 
 ## Security Best Practices
 
-✅ **Passwords are hashed** using Werkzeug's `pbkdf2:sha256`  
+✅ **Passwords are hashed** using Werkzeug's default (`scrypt`)  
 ✅ **Sessions are encrypted** with SECRET_KEY  
 ✅ **CSRF protection** enabled (Flask default)  
 ✅ **Login attempts are logged** for security monitoring  
@@ -217,19 +201,9 @@ For API endpoints, authentication is handled automatically by Flask-Login. If ac
 
 ## Testing Credentials
 
-For testing purposes:
-
-**Admin Account:**
-- Username: `admin`
-- Password: `Admin123!`
-- Full Name: Administrator
-- Role: admin
-
-**Regular User Account:**
-- Username: `user`
-- Password: `User123!`
-- Full Name: Regular User
-- Role: user
+There are no built-in credentials. Locally, set `ADMIN_USERNAME` and `ADMIN_PASSWORD_HASH` (from
+`scripts/admin_hash.py`) in your environment or `.env`, then log in with that username and the password you hashed.
+The automated tests (`tests/test_admin.py`) generate a random password per run.
 
 ---
 

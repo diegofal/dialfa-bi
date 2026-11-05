@@ -23,7 +23,7 @@ from analytics.sales import SalesAnalytics
 from analytics.purchase import PurchaseAnalytics
 
 # Import authentication
-from auth.models import get_user_by_id
+from auth.models import get_user_by_id, admin_problem
 
 # Import routes
 from routes.dashboard import dashboard_bp
@@ -53,6 +53,10 @@ def create_app():
     login_manager.login_message = 'Please log in to access this page.'
     login_manager.login_message_category = 'warning'
     
+    admin_problem_now = admin_problem()
+    if admin_problem_now:
+        app.logger.warning(f"Sin usuario admin: {admin_problem_now}. El login va a rechazar a todos.")
+
     @login_manager.user_loader
     def load_user(user_id):
         """Load user by ID for Flask-Login"""
@@ -150,23 +154,27 @@ def create_app():
             app.logger.error(f"Error rendering dashboard: {e}")
             return render_template('error.html', error=str(e)), 500
     
+    def _estado(probe, if_failed):
+        try:
+            return probe()
+        except Exception as e:
+            app.logger.warning(f"Health probe {getattr(probe, '__name__', probe)} failed: {type(e).__name__}")
+            return if_failed
+
     @app.route('/api/health')
     def health_check():
-        """Health check endpoint"""
-        try:
-            db_status = db_manager.test_connection()
-            return jsonify({
-                'status': 'healthy',
-                'timestamp': datetime.now().isoformat(),
-                'database': 'connected' if db_status else 'disconnected',
-                'version': '1.0.0'
-            })
-        except Exception as e:
-            return jsonify({
-                'status': 'unhealthy',
-                'error': str(e),
-                'timestamp': datetime.now().isoformat()
-            }), 500
+        """Railway's deploy healthcheck: always 200 while the app answers. The databases are reported as they are
+        and never turn into a failed deploy (a down xERP must not block one).
+        database: SPISA Postgres "connected" | "disconnected" | "not configured" (real SELECT 1)
+        xerp: "ok" | "no responde" | "no configurado"
+        """
+        return jsonify({
+            'status': 'healthy',
+            'timestamp': datetime.now().isoformat(),
+            'database': _estado(db_manager.postgres_estado, 'disconnected'),
+            'xerp': _estado(db_manager.xerp_estado, 'no responde'),
+            'version': '1.0.0'
+        })
     
     @app.route('/api/system-info')
     def system_info():
