@@ -177,6 +177,16 @@ def test_cheques_clientes_calidad(client):
     assert sc["xerp"] == "no configurado" and len(sc["errores"]) == 3   # 2 de sync_errors + la fecha imposible
 
 
+def test_calidad_sin_probar_xerp(client, monkeypatch):
+    """Finanzas pide calidad {xerp: false}: abrir la conexión a Azure tardaba ~2 s y no usa ese dato."""
+    probadas = []
+    monkeypatch.setattr(client.application, "xerp_estado", lambda: probadas.append(1) or "ok")
+    sc = _ok(call(client, "calidad", {"xerp": False}))
+    assert sc["xerp"] == "no probado" and probadas == [] and len(sc["errores"]) == 3
+    assert _ok(call(client, "calidad"))["xerp"] == "ok" and probadas == [1]
+    assert call(client, "calidad", {"xerp": "quizás"})["isError"] is True
+
+
 def test_ventas_stock_ordenes(client):
     sc = _ok(call(client, "ventas", {"desde": "2026-07-01", "hasta": "2026-07-31"}))
     assert sc["filas"][0]["clave"] == "2026-07"

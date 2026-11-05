@@ -383,7 +383,9 @@ def t_clientes(args):
 
 
 def t_calidad(args):
-    x = cb.calidad(_q(), current_app.xerp_estado)
+    # xerp=false: no se prueba el SQL Server de Azure (abrir la conexión tarda ~2 s); Finanzas no lo usa
+    probar = args.get("xerp") is None or _bool(args, "xerp")
+    x = cb.calidad(_q(), current_app.xerp_estado if probar else (lambda: "no probado"))
     if x["ultimo_sync"]:
         sync = "El último sync de las planillas terminó el %s %s." % (
             _al(x["ultimo_sync"]).split(" al ", 1)[1].rstrip(")"), "sin error" if x["sync_ok"] else "CON ERROR")
@@ -581,7 +583,8 @@ TOOLS = [
     _tool("calidad", "¿Están al día los datos?",
           "Cuándo terminó el último sync de las planillas y si anduvo (sync_ok), las cuentas que no cierran en su "
           "planilla (errores) y si responde xERP, el SQL Server viejo de Azure (\"ok\", \"no responde\", \"no "
-          "configurado\")."),
+          "configurado\"). xerp: false para no probarlo (va \"no probado\"; probarlo tarda unos 2 s).",
+          {"xerp": {"type": "boolean", "description": "Probar xERP (por defecto true)."}}),
     _tool("ventas", "Ventas y márgenes",
           "Facturación del período (en vivo, sin anuladas, notas de crédito ni presupuestos) agrupada por mes, "
           "categoria o cliente. Cada fila: venta_usd (lista menos descuento), venta_ars, venta_costeada_usd (la parte "
