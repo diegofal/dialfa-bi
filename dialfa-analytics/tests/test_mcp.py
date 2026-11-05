@@ -291,3 +291,28 @@ def test_deuda_solo_vencida_de_un_cliente_sin_vencido_dice_que_existe(client):
 def test_deuda_solo_vencida_de_un_cliente_que_no_existe(client):
     res = call(client, "deuda", {"cliente": "Nadie", "solo_vencida": True})
     assert "No hay ningún cliente" in res["content"][0]["text"]
+
+
+# ------------------------------------------------------------------ revisión de Codex en PR #1, ronda 2
+def test_cuenta_corriente_texto_no_llama_cheque_a_una_transferencia(client, app):
+    from test_cobranzas import TRANSF_A_FECHA
+    app.consulta_ro.respuestas[cb.SQL_CARTERA] = [TRANSF_A_FECHA]
+    res = call(client, "cuenta_corriente", {"desde": "2026-10-01", "hasta": "2026-11-04"})
+    texto = res["content"][0]["text"]
+    assert len(res["structuredContent"]["cartera"]) == 1
+    assert "cheque" not in texto and "1 pago a fecha por $500" in texto
+
+
+def test_cuenta_corriente_texto_separa_cheques_de_otros_pagos_a_fecha(client, app):
+    from test_cobranzas import TRANSF_A_FECHA
+    app.consulta_ro.respuestas[cb.SQL_CARTERA] = PAGOS + [TRANSF_A_FECHA]
+    texto = call(client, "cuenta_corriente", {"desde": "2026-10-01", "hasta": "2026-11-04"})["content"][0]["text"]
+    assert "3 pagos a fecha por $2,7 millones" in texto and "2 cheques o echeqs por $2,7 millones" in texto
+
+
+def test_deuda_de_cliente_sin_fila_de_saldo_existe(client):
+    res = call(client, "deuda", {"cliente": "MARTIN SA"})
+    texto = res["content"][0]["text"]
+    assert "No hay ningún cliente" not in texto and "MARTIN SA no debe nada" in texto
+    texto = call(client, "deuda", {"cliente": "MARTIN SA", "solo_vencida": True})["content"][0]["text"]
+    assert "No hay ningún cliente" not in texto and "MARTIN SA no tiene nada vencido" in texto

@@ -102,7 +102,8 @@ def test_deuda_agrupa_por_nombre_y_marca_no_cierra():
     assert g == {"cliente": "GRAMABI", "libros": [0, 1], "saldo": 150.0, "vencido": 50.0, "no_cierra": False}
     b = next(c for c in d["clientes"] if c["cliente"] == "BRICAVAL")
     assert b["no_cierra"] is True and b["libros"] == [1]
-    assert [c["cliente"] for c in d["clientes"]] == ["MARTI", "GRAMABI", "BRICAVAL"]   # mayor saldo primero
+    # mayor saldo primero; los del catálogo sin fila de saldo, en 0
+    assert [c["cliente"] for c in d["clientes"]] == ["MARTI", "GRAMABI", "CAÑOSIDER", "MARTIN SA", "BRICAVAL"]
     assert d["total"] == round(16796584.37 + 150.0 - 371.46, 2)
     assert d["vencido"] == round(5481483.88 + 50.0, 2)
     assert d["a_vencer"] == round(d["total"] - d["vencido"], 2)
@@ -228,3 +229,13 @@ def test_tarjeta_de_cartera_del_dashboard_solo_cheques():
         assert fa.get_cheques_en_cartera()["Count"] == 2
     finally:
         cb.hoy_ar = cb_hoy
+
+
+# Codex en PR #1, ronda 2: un cliente del catálogo sin fila de saldo existe, con saldo 0
+def test_deuda_cliente_sin_fila_de_saldo_existe_con_saldo_cero():
+    d = cb.deuda(falsa(), cliente="MARTIN SA")   # está en sync_customers, no en sync_balances
+    assert d["clientes"] == [{"cliente": "MARTIN SA", "libros": [1], "saldo": 0.0, "vencido": 0.0, "no_cierra": False}]
+    assert (d["total"], d["vencido"]) == (0.0, 0.0)
+    todos = cb.deuda(falsa())
+    assert "MARTIN SA" in [c["cliente"] for c in todos["clientes"]]
+    assert todos["total"] == round(16796584.37 + 150.0 - 371.46, 2)   # sumar ceros no mueve el total

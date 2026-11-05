@@ -267,9 +267,14 @@ def _no_cierran(q):
 
 
 def deuda(q, cliente=None, solo_vencida=False):
-    """Saldo y vencido de cada cliente según su planilla (la foto del último sync), juntando sus dos libros. Los
-    totales son de los clientes devueltos."""
+    """Saldo y vencido de cada cliente según su planilla (la foto del último sync), juntando sus dos libros. Están
+    todos los clientes del catálogo (`sync_customers`): uno sin fila de saldo existe y debe 0. Los totales son de los
+    clientes devueltos."""
     por = defaultdict(lambda: {"saldo": 0.0, "vencido": 0.0, "libros": set()})
+    for f in q(SQL_CLIENTES):
+        x = por[(f["cliente"] or "").strip()]
+        if f.get("libro") is not None:
+            x["libros"].add(int(f["libro"]))
     for f in q(SQL_SALDOS):
         x = por[(f["cliente"] or "").strip()]
         x["saldo"] += float(f["saldo"] or 0)

@@ -283,11 +283,18 @@ def t_cuenta_corriente(args):
             cb._nombres(_q()), cliente):
         return _sin_cliente(cliente), x
     quien = " de %s" % _y(sorted({r["cliente"] for r in x["recibos"] + x["facturas"] + x["cartera"]})) if cliente else ""
-    texto = ("Cuenta corriente%s %s: %s por %s, %s por %s y %s en cartera por %s %s."
+    cheques = [r for r in x["cartera"] if r["medio"] in cb.MEDIOS_CHEQUE]
+    de_ellos = ""
+    if cheques and len(cheques) < len(x["cartera"]):
+        de_ellos = " (%s o echeqs por %s)" % (_n(len(cheques), "cheque"), plata(sum(r["importe"] for r in cheques)))
+    elif cheques:
+        de_ellos = " (todos cheques o echeqs)"
+    texto = ("Cuenta corriente%s %s: %s por %s, %s por %s y %s por %s%s %s."
              % (quien, _periodo(x["desde"], x["hasta"]), _n(len(x["recibos"]), "recibo"),
                 plata(sum(r["importe"] for r in x["recibos"])), _n(len(x["facturas"]), "factura"),
-                plata(sum(f["importe"] for f in x["facturas"])), _n(len(x["cartera"]), "cheque"),
-                plata(sum(r["importe"] for r in x["cartera"])), _al(x["datos_al"])))
+                plata(sum(f["importe"] for f in x["facturas"])),
+                _n(len(x["cartera"]), "pago a fecha", "pagos a fecha"),
+                plata(sum(r["importe"] for r in x["cartera"])), de_ellos, _al(x["datos_al"])))
     return texto, x
 
 
@@ -325,7 +332,9 @@ def t_deuda(args):
             " " + _al(x["datos_al"]).strip("()").capitalize() + ".", x
     no_cierra = [c["cliente"] for c in x["clientes"] if c["no_cierra"]]
     if cliente:
-        lineas = ["%s debe %s, de los cuales %s están vencidos." % (c["cliente"], plata(c["saldo"]), plata(c["vencido"]))
+        lineas = [("%s debe %s, de los cuales %s están vencidos." % (c["cliente"], plata(c["saldo"]),
+                                                                       plata(c["vencido"])))
+                  if c["saldo"] else "%s no debe nada (saldo %s)." % (c["cliente"], plata(0))
                   for c in x["clientes"]]
     else:
         con_vencido = [c for c in x["clientes"] if c["vencido"] > 0]

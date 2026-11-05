@@ -16,7 +16,7 @@ wins over a partial one, so "Marti" is not also "MARTIN SA").
 | Tool | Arguments | `structuredContent` |
 |---|---|---|
 | `cobranzas` | `mes` or `desde, hasta` (default: this month); `cliente?` | `{desde, hasta, total, n, por_medio:{efectivo, cheque, echeq, transferencia, retencion, otro}, por_cliente:[{cliente, total, n}], datos_al, fuente}`: payments dated in the range **and up to today** |
-| `deuda` | `cliente?, solo_vencida?` | `{total, vencido, a_vencer, clientes:[{cliente, libros, saldo, vencido, no_cierra}], datos_al, fuente}` |
+| `deuda` | `cliente?, solo_vencida?` | `{total, vencido, a_vencer, clientes:[{cliente, libros, saldo, vencido, no_cierra}], datos_al, fuente}`: every customer in `sync_customers` (one without a balance row owes 0) |
 | `cheques_en_cartera` | `cliente?` | `{total, n, cheques:[R], datos_al, fuente}`: cheques and echeqs (`medio` cheque/echeq) dated after today, up to the legal 360 days (below). A future-dated transfer or cash payment is not a cheque: it stays in `cuenta_corriente.cartera` only |
 | `cuenta_corriente` | `desde, hasta, cliente?` | `{desde, hasta, datos_al, fuente, recibos:[R], facturas:[{id, fecha, cliente, libro, numero, importe}], cartera:[R]}` |
 | `clientes` | `buscar?` | `{clientes:[{cliente, libros}], datos_al, fuente}` |
