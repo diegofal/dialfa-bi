@@ -34,8 +34,8 @@ python app.py
 
 **Steps:**
 1. On login page, enter:
-   - Username: `admin`
-   - Password: `Admin123!`
+   - Username: your `ADMIN_USERNAME`
+   - Password: the password you hashed into `ADMIN_PASSWORD_HASH` (`scripts/admin_hash.py`)
 2. Click "Sign In"
 
 **Expected Result:**
@@ -47,23 +47,15 @@ python app.py
   - Role: Admin
   - Logout option
 
-### ✅ Test 3: User Login
+### ✅ Test 3: No Admin Configured
 
 **Steps:**
-1. Logout if logged in
-2. On login page, enter:
-   - Username: `user`
-   - Password: `User123!`
-3. Click "Sign In"
+1. Start the app without `ADMIN_USERNAME` / `ADMIN_PASSWORD_HASH`
+2. Try to log in with anything
 
 **Expected Result:**
-- Redirect to main dashboard
-- Welcome message: "Welcome back, Regular User!"
-- Navbar shows user dropdown with:
-  - Name: "Regular User"
-  - No "Admin" badge
-  - Role: User
-  - Logout option
+- The app starts; the log says `Sin usuario admin: faltan las variables ...`
+- Login is refused ("Invalid username or password."); the log says `Login rechazado: no hay usuario admin configurado (...)`
 
 ### ✅ Test 4: Invalid Credentials
 
@@ -241,10 +233,10 @@ def test_login_required(client):
     assert '/auth/login' in rv.location
 
 def test_admin_login(client):
-    """Test admin login"""
+    """Test admin login (ADMIN_USERNAME=admin, ADMIN_PASSWORD_HASH from a test password set by a fixture)"""
     rv = client.post('/auth/login', data={
         'username': 'admin',
-        'password': 'Admin123!'
+        'password': TEST_PASSWORD
     }, follow_redirects=True)
     assert b'Administrator' in rv.data
     assert rv.status_code == 200
@@ -262,7 +254,7 @@ def test_logout(client):
     # First login
     client.post('/auth/login', data={
         'username': 'admin',
-        'password': 'Admin123!'
+        'password': TEST_PASSWORD
     })
     # Then logout
     rv = client.get('/auth/logout', follow_redirects=True)
@@ -279,16 +271,14 @@ pytest test_auth.py -v
 ### Password Hashing Verification
 
 ```python
-from werkzeug.security import check_password_hash
-from auth.models import USERS
+from auth.models import get_admin
 
-# Verify passwords are hashed
-admin = USERS['admin']
-print(f"Password hash: {admin.password_hash}")
-# Should output something like: pbkdf2:sha256:...
+# With ADMIN_USERNAME / ADMIN_PASSWORD_HASH set; the password never appears in code or logs
+admin = get_admin()
+assert admin.password_hash.startswith('scrypt:')
 
 # Verify password checking works
-assert admin.check_password('Admin123!')
+assert admin.check_password(TEST_PASSWORD)
 assert not admin.check_password('wrongpassword')
 ```
 
@@ -309,7 +299,7 @@ Test login performance:
 ab -n 100 -c 10 -p login.txt -T application/x-www-form-urlencoded http://localhost:5000/auth/login
 
 # login.txt contains:
-# username=admin&password=Admin123!
+# username=<ADMIN_USERNAME>&password=<a test password>
 ```
 
 ## Common Issues & Solutions

@@ -67,6 +67,8 @@ A comprehensive Python-based business intelligence dashboard for analyzing finan
    (`pocs/dialfa-bi/SPISA_PG_URL`, see jarvisx `tools/secrets`), so start it with
    `pocs-secrets run dialfa-bi python app.py`. It listens on 127.0.0.1 only; `DIALFA_HOST=0.0.0.0` shares it
    on the network on purpose, and the debugger is on only with `FLASK_DEBUG=true`.
+   Logging in needs `ADMIN_USERNAME` and `ADMIN_PASSWORD_HASH` (a hash from `python scripts/admin_hash.py`);
+   without them there is no admin and every login is refused. See `AUTHENTICATION.md`.
 
 4. **Open your browser**
    ```
@@ -81,12 +83,10 @@ A comprehensive Python-based business intelligence dashboard for analyzing finan
    ```
 
 2. **Configure database connection**
-   - Edit `config.py` if needed
-   - Default connection:
-     - Server: `dialfa.database.windows.net`
-     - User: `fp`
-     - Password: `Ab1234,,,`
-     - Databases: `SPISA`, `xERP`
+   - Everything comes from environment variables (see `config.py`); there are no default credentials:
+     - `SPISA_PG_URL`: the SPISA Postgres
+     - `DB_SERVER` (default `dialfa.database.windows.net`), `DB_USER`, `DB_PASSWORD`: Azure SQL (xERP);
+       without user/password xERP is "no configurado" and the app still starts
 
 3. **Test database connection**
    ```bash

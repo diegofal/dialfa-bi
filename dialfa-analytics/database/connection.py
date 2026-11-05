@@ -4,7 +4,7 @@ Database connection and query execution module
 import pandas as pd
 import logging
 import time
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, text
 from sqlalchemy.engine import URL
 from config import Config
 from database.readonly import url_pg
@@ -128,14 +128,23 @@ class DatabaseManager:
             self.logger.error(f"Scalar query execution failed: {e}")
             raise
 
+    def postgres_estado(self):
+        """"connected" | "disconnected" | "not configured" for the SPISA Postgres (SPISA_PG_URL), from a real
+        SELECT 1. Never raises: /api/health reports it, it doesn't fail on it."""
+        if not self.config.SPISA_PG_URL:
+            return "not configured"
+        return "connected" if self.test_connection() else "disconnected"
+
     def test_connection(self):
-        """Test database connectivity"""
+        """Test database connectivity (SPISA: Postgres when SPISA_PG_URL is set) with a real SELECT 1"""
         try:
             engine = self.get_sqlalchemy_engine('SPISA')
             with engine.connect() as conn:
-                conn.execute("SELECT 1")
-                return True
-        except:
+                # SQLAlchemy 2 refuses a plain string here: it has to be text()
+                conn.execute(text("SELECT 1")).scalar()
+            return True
+        except Exception as e:
+            self.logger.warning(f"SPISA no responde: {type(e).__name__}")
             return False
 
     def get_table_info(self, table_name, database='SPISA'):

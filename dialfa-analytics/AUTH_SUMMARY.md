@@ -8,16 +8,15 @@ A complete authentication and authorization system has been successfully impleme
 
 ### 1. Core Authentication System
 - **Flask-Login** integration for session management
-- **Werkzeug** password hashing (pbkdf2:sha256)
+- **Werkzeug** password hashing (scrypt, Werkzeug's default)
 - User model with role-based access control
 - Login/logout functionality
 
-### 2. User Accounts Created
+### 2. User Account
 
-| Username | Password | Role | Full Name |
-|----------|----------|------|-----------|
-| `admin` | `Admin123!` | admin | Administrator |
-| `user` | `User123!` | user | Regular User |
+One admin, configured only through environment variables (Railway): `ADMIN_USERNAME` and `ADMIN_PASSWORD_HASH`
+(a Werkzeug hash from `python scripts/admin_hash.py`). No credentials in the code; without the variables there is
+no admin and every login is refused (with a log line saying why). See `AUTHENTICATION.md`.
 
 ### 3. Protected Routes
 All application routes now require authentication:
@@ -73,9 +72,7 @@ python app.py
 ### Login
 1. Navigate to `http://localhost:5000/`
 2. You'll be redirected to login
-3. Use credentials:
-   - **Admin**: `admin` / `Admin123!`
-   - **User**: `user` / `User123!`
+3. Log in with your `ADMIN_USERNAME` and the password whose hash is in `ADMIN_PASSWORD_HASH`
 
 ### Testing
 Follow the comprehensive testing guide in `TESTING_AUTH.md`
