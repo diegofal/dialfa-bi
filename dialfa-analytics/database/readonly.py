@@ -3,15 +3,23 @@ dashboard de cobranzas: `q(sql, params) -> [dict]`.
 
 Dos cerrojos: cada conexión abre con `default_transaction_read_only=on` (la base rechaza cualquier escritura) y la
 función rechaza todo lo que no sea un único SELECT (o WITH … SELECT). Decimal llega como float.
+
+Sin transacción explícita (AUTOCOMMIT): la base está detrás del proxy público de Railway, a ~66 ms de ida y vuelta, y
+con transacción cada consulta eran cuatro viajes (el ping del pool, BEGIN, la consulta, ROLLBACK): 0,26 s. Así son dos.
+Sin ROLLBACK, un cambio de sesión (`set_config('default_transaction_read_only', 'off', false)`) quedaría en la conexión
+del pool (Codex, dialfa-bi #5); por eso el ping del pool es `SET SESSION default_transaction_read_only = on`: cada vez
+que se saca una conexión del pool el cerrojo vuelve a estar puesto, y si la conexión murió, el pool abre otra
+(DisconnectionError). Una consulta suelta corre en su propia transacción, que nace de sólo lectura.
 """
 import re
 import threading
 from decimal import Decimal
 
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, event, exc
 
 _SOLO_SELECT = re.compile(r"^\s*(SELECT|WITH)\b", re.IGNORECASE)
 _motores = {}
+SET_SOLO_LECTURA = "SET SESSION default_transaction_read_only = on"
 _lock = threading.Lock()
 
 
@@ -32,10 +40,23 @@ def _motor(url):
     with _lock:
         if url not in _motores:
             _motores[url] = create_engine(
-                url_pg(url), pool_pre_ping=True, pool_size=3, max_overflow=2, pool_recycle=1800,
+                url_pg(url), isolation_level="AUTOCOMMIT", pool_size=3, max_overflow=2, pool_recycle=1800,
                 connect_args={"connect_timeout": 10,
                               "options": "-c default_transaction_read_only=on -c statement_timeout=30000"})
+            event.listen(_motores[url], "checkout", _solo_lectura)
         return _motores[url]
+
+
+def _solo_lectura(dbapi_con, registro, proxy):
+    """El ping del pool: vuelve a poner el cerrojo de sólo lectura en la sesión. Si falla, la conexión no sirve."""
+    try:
+        cur = dbapi_con.cursor()
+        try:
+            cur.execute(SET_SOLO_LECTURA)
+        finally:
+            cur.close()
+    except Exception as e:   # noqa: BLE001  (el pool descarta la conexión y abre otra)
+        raise exc.DisconnectionError(str(e)) from e
 
 
 def _py(v):
