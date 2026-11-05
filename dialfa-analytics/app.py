@@ -33,7 +33,9 @@ from routes.sales import sales_bp
 from routes.purchase import purchase_bp
 from routes.retool_compat import retool_bp
 from routes.cache_admin import cache_admin_bp
+from routes.mcp import mcp_bp
 from auth.routes import auth_bp
+from database.readonly import consulta_solo_lectura
 
 def create_app():
     """Application factory pattern"""
@@ -123,6 +125,9 @@ def create_app():
     app.inventory_analytics = inventory_analytics
     app.sales_analytics = sales_analytics
     app.purchase_analytics = purchase_analytics
+    # MCP and the collections dashboard: read-only connection to the sales base, xERP status for `calidad`
+    app.consulta_ro = consulta_solo_lectura(Config.SPISA_PG_URL)
+    app.xerp_estado = db_manager.xerp_estado
     
     # Register blueprints
     app.register_blueprint(auth_bp, url_prefix='/auth')
@@ -133,6 +138,7 @@ def create_app():
     app.register_blueprint(sales_bp, url_prefix='/sales')
     app.register_blueprint(purchase_bp, url_prefix='/purchase')
     app.register_blueprint(retool_bp)
+    app.register_blueprint(mcp_bp)  # POST /mcp: bearer token (DIALFA_MCP_TOKENS), outside flask-login
     
     @app.route('/')
     @login_required

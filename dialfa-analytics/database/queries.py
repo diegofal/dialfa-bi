@@ -95,11 +95,7 @@ class FinancialQueries:
         EXTRACT(YEAR FROM payment_date)::int as "Year",
         EXTRACT(MONTH FROM payment_date)::int as "Month",
         SUM(payment_amount) as "ActualPayments",
-        SUM(CASE WHEN type = 1 THEN payment_amount ELSE 0 END) as "CashPayments",
-        SUM(CASE WHEN type = 0 THEN payment_amount ELSE 0 END) as "ElectronicPayments",
-        COUNT(*) as "TransactionCount",
-        COUNT(CASE WHEN type = 1 THEN 1 END) as "CashCount",
-        COUNT(CASE WHEN type = 0 THEN 1 END) as "ElectronicCount"
+        COUNT(*) as "TransactionCount"
     FROM sync_transactions
     WHERE payment_date >= NOW() - INTERVAL '{months} months'
     AND payment_date <= NOW()
@@ -162,13 +158,9 @@ class FinancialQueries:
         COALESCE(SUM(payment_amount), 0) as "TotalPayments",
         COALESCE(SUM(CASE WHEN payment_date <= NOW() THEN payment_amount ELSE 0 END), 0) as "ClearedPayments",
         COALESCE(SUM(CASE WHEN payment_date > NOW() THEN payment_amount ELSE 0 END), 0) as "PendingPayments",
-        COALESCE(SUM(CASE WHEN type = 1 THEN payment_amount ELSE 0 END), 0) as "CashPayments",
-        COALESCE(SUM(CASE WHEN type = 0 THEN payment_amount ELSE 0 END), 0) as "ElectronicPayments",
         COUNT(*) as "TransactionCount",
         COUNT(CASE WHEN payment_date <= NOW() THEN 1 END) as "ClearedCount",
-        COUNT(CASE WHEN payment_date > NOW() THEN 1 END) as "PendingCount",
-        COUNT(CASE WHEN type = 1 THEN 1 END) as "CashCount",
-        COUNT(CASE WHEN type = 0 THEN 1 END) as "ElectronicCount"
+        COUNT(CASE WHEN payment_date > NOW() THEN 1 END) as "PendingCount"
     FROM sync_transactions t
     WHERE EXTRACT(MONTH FROM payment_date)::int = EXTRACT(MONTH FROM NOW())::int
     AND EXTRACT(YEAR FROM payment_date)::int = EXTRACT(YEAR FROM NOW())::int

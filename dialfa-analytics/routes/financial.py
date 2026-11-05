@@ -119,9 +119,9 @@ def collected_monthly():
 
 @financial_bp.route('/api/future-payments')
 def future_payments():
-    """Get post-dated checks pending to be cashed (Cheques en cartera)"""
+    """Post-dated checks pending to be cashed (Cheques en cartera), both ledger books (analytics/cobranzas.py)"""
     try:
-        data = current_app.financial_analytics.get_spisa_future_payments()
+        data = current_app.financial_analytics.get_cheques_en_cartera()
         return jsonify({
             'data': data,
             'status': 'success'

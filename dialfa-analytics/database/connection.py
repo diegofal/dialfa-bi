@@ -1,22 +1,62 @@
 """
 Database connection and query execution module
 """
-import pyodbc
 import pandas as pd
 import logging
+import time
 from sqlalchemy import create_engine
 from sqlalchemy.engine import URL
 from config import Config
+
+XERP_TIMEOUT_S = 5       # calidad and the MCP brief ask; a dead server must not hang them
+XERP_CACHE_S = 60
+
+
+class XerpNoConfigurado(RuntimeError):
+    """DB_USER / DB_PASSWORD are not set: there is no Azure SQL Server to talk to."""
+
 
 class DatabaseManager:
     def __init__(self):
         self.config = Config()
         self.logger = logging.getLogger(__name__)
         self._pg_engine = None
+        self._xerp = (0.0, None)   # (when, status) of the last xerp_estado() probe
+
+    def _require_azure(self, database):
+        if not self.config.XERP_CONFIGURED:
+            raise XerpNoConfigurado(f"Azure SQL ({database}) no configurado: faltan DB_USER/DB_PASSWORD")
+
+    def xerp_estado(self):
+        """"ok" | "no responde" | "no configurado" for the Azure SQL Server (xERP), probed with a short timeout and
+        remembered for a minute."""
+        if not self.config.XERP_CONFIGURED:
+            return "no configurado"
+        cuando, estado = self._xerp
+        if estado and time.monotonic() - cuando < XERP_CACHE_S:
+            return estado
+        try:
+            import pyodbc
+            cadena = self.config.CONNECTION_STRING.format(
+                server=self.config.DB_SERVER, database=self.config.XERP_DB,
+                user=self.config.DB_USER, password=self.config.DB_PASSWORD
+            ).replace('Connection Timeout=30;', f'Connection Timeout={XERP_TIMEOUT_S};')
+            # timeout= in connect() only bounds the login; conn.timeout bounds each query (pyodbc: 0 = none)
+            with pyodbc.connect(cadena, timeout=XERP_TIMEOUT_S) as conn:
+                conn.timeout = XERP_TIMEOUT_S
+                conn.cursor().execute("SELECT 1").fetchone()
+            estado = "ok"
+        except Exception as e:
+            self.logger.warning(f"xERP no responde: {type(e).__name__}")
+            estado = "no responde"
+        self._xerp = (time.monotonic(), estado)
+        return estado
 
     def get_connection(self, database='SPISA'):
         """Get database connection"""
+        self._require_azure(database)
         try:
+            import pyodbc
             connection_string = self.config.CONNECTION_STRING.format(
                 server=self.config.DB_SERVER,
                 database=database,
@@ -48,6 +88,7 @@ class DatabaseManager:
                 return self._pg_engine
 
             # Default: Azure SQL Server (used for xERP and SPISA fallback)
+            self._require_azure(database)
             connection_url = URL.create(
                 "mssql+pyodbc",
                 username=self.config.DB_USER,
