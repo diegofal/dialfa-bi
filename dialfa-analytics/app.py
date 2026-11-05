@@ -317,7 +317,10 @@ if __name__ == '__main__':
     try:
         app = create_app()
         app.logger.info("Starting Dialfa Analytics Dashboard...")
-        app.run(host='0.0.0.0', port=5000, debug=True)
+        # Local only, debug only when asked: the Werkzeug debugger runs any code its page is sent, so on
+        # 0.0.0.0 it was code execution for anyone on the network. DIALFA_HOST=0.0.0.0 to share it on purpose.
+        app.run(host=os.environ.get('DIALFA_HOST', '127.0.0.1'), port=5000,
+                debug=os.environ.get('FLASK_DEBUG', 'false').lower() == 'true')
     except Exception as e:
         print(f"Failed to start application: {e}")
         traceback.print_exc()

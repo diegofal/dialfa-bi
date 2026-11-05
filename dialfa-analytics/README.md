@@ -63,6 +63,10 @@ A comprehensive Python-based business intelligence dashboard for analyzing finan
    ```bash
    python app.py
    ```
+   On Diego's PC the database URL is not in `.env`: it lives in Windows Credential Manager
+   (`pocs/dialfa-bi/SPISA_PG_URL`, see jarvisx `tools/secrets`), so start it with
+   `pocs-secrets run dialfa-bi python app.py`. It listens on 127.0.0.1 only; `DIALFA_HOST=0.0.0.0` shares it
+   on the network on purpose, and the debugger is on only with `FLASK_DEBUG=true`.
 
 4. **Open your browser**
    ```
