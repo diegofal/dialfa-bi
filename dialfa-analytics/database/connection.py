@@ -7,6 +7,7 @@ import time
 from sqlalchemy import create_engine
 from sqlalchemy.engine import URL
 from config import Config
+from database.readonly import url_pg
 
 XERP_TIMEOUT_S = 5       # calidad and the MCP brief ask; a dead server must not hang them
 XERP_CACHE_S = 60
@@ -84,7 +85,7 @@ class DatabaseManager:
             # Route SPISA queries to PostgreSQL if configured
             if database == 'SPISA' and self.config.SPISA_PG_URL:
                 if not self._pg_engine:
-                    self._pg_engine = create_engine(self.config.SPISA_PG_URL)
+                    self._pg_engine = create_engine(url_pg(self.config.SPISA_PG_URL))
                 return self._pg_engine
 
             # Default: Azure SQL Server (used for xERP and SPISA fallback)
