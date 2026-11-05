@@ -38,3 +38,15 @@ def test_solo_select_sigue():
         except ValueError:
             continue
         raise AssertionError(malo)
+
+
+def test_el_motor_va_sin_transaccion_y_en_solo_lectura(monkeypatch):
+    """AUTOCOMMIT ahorra BEGIN y ROLLBACK (dos viajes al proxy de Railway por consulta); el cerrojo de sólo lectura
+    sigue en las opciones de la conexión."""
+    from database import readonly
+    vistos = []
+    monkeypatch.setattr(readonly, "_motores", {})
+    monkeypatch.setattr(readonly, "create_engine", lambda url, **kw: vistos.append(kw) or object())
+    readonly._motor("postgresql://u@h/d")
+    assert vistos[0]["isolation_level"] == "AUTOCOMMIT"
+    assert "default_transaction_read_only=on" in vistos[0]["connect_args"]["options"]

@@ -43,4 +43,4 @@ ENV PORT=8000
 EXPOSE $PORT
 
 # Change to the dialfa-analytics directory and run gunicorn
-CMD cd dialfa-analytics && gunicorn --bind 0.0.0.0:$PORT --workers 4 --timeout 120 "app:create_app()"
+CMD cd dialfa-analytics && gunicorn --bind 0.0.0.0:$PORT --workers 4 --threads 4 --timeout 120 "app:create_app()"
