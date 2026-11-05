@@ -42,11 +42,42 @@ def test_solo_select_sigue():
 
 def test_el_motor_va_sin_transaccion_y_en_solo_lectura(monkeypatch):
     """AUTOCOMMIT ahorra BEGIN y ROLLBACK (dos viajes al proxy de Railway por consulta); el cerrojo de sólo lectura
-    sigue en las opciones de la conexión."""
+    sigue en las opciones de la conexión y se vuelve a poner cada vez que una conexión sale del pool."""
     from database import readonly
-    vistos = []
+    vistos, escuchas = [], []
     monkeypatch.setattr(readonly, "_motores", {})
     monkeypatch.setattr(readonly, "create_engine", lambda url, **kw: vistos.append(kw) or object())
-    readonly._motor("postgresql://u@h/d")
-    assert vistos[0]["isolation_level"] == "AUTOCOMMIT"
+    monkeypatch.setattr(readonly.event, "listen", lambda *a: escuchas.append(a))
+    motor = readonly._motor("postgresql://u@h/d")
+    assert vistos[0]["isolation_level"] == "AUTOCOMMIT" and "pool_pre_ping" not in vistos[0]
     assert "default_transaction_read_only=on" in vistos[0]["connect_args"]["options"]
+    assert escuchas == [(motor, "checkout", readonly._solo_lectura)]
+
+
+class _Con:
+    def __init__(self, falla=None):
+        self.sql, self.falla = [], falla
+
+    def cursor(self):
+        if self.falla:
+            raise self.falla
+        con = self
+        return type("Cur", (), {"execute": lambda s, sql: con.sql.append(sql), "close": lambda s: None})()
+
+
+def test_cada_conexion_sale_del_pool_con_el_cerrojo_puesto():
+    """Sin ROLLBACK, un set_config(..., false) quedaría en la sesión (Codex, dialfa-bi #5): se vuelve a poner."""
+    from database import readonly
+    con = _Con()
+    readonly._solo_lectura(con, None, None)
+    assert con.sql == ["SET SESSION default_transaction_read_only = on"]
+
+
+def test_una_conexion_muerta_se_descarta():
+    from sqlalchemy import exc
+    from database import readonly
+    try:
+        readonly._solo_lectura(_Con(falla=OSError("connection already closed")), None, None)
+    except exc.DisconnectionError:
+        return
+    raise AssertionError("debía levantar DisconnectionError")
