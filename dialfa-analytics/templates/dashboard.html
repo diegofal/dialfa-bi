@@ -102,6 +102,7 @@
                                 <span class="opacity-75"><i class="bi bi-check-circle"></i> {{ _('Collected') }}</span>
                                 <strong id="cleared-collections">-</strong>
                             </div>
+                            <div id="cleared-by-medium" class="opacity-75 mb-1" style="font-size: 0.75rem;"></div>
                             <div class="d-flex justify-content-between align-items-center">
                                 <span class="opacity-75"><i class="bi bi-hourglass-split"></i> {{ _('Pending') }}</span>
                                 <strong id="pending-collections">-</strong>
@@ -273,7 +274,10 @@ const i18n = {
     amount: "{{ _('Amount') }}",
     paymentCollections: "{{ _('Payment Collections') }}",
     cash: "{{ _('Cash') }}",
-    electronic: "{{ _('Electronic') }}",
+    checks: "{{ _('Checks and e-checks') }}",
+    transfers: "{{ _('Transfers') }}",
+    withholdings: "{{ _('Withholdings') }}",
+    other: "{{ _('Other') }}",
     total: "{{ _('Total') }}",
     historicalCashFlow: "{{ _('Historical Cash Flow') }}",
     noPaymentData: "{{ _('No payment data available') }}",
@@ -282,6 +286,16 @@ const i18n = {
     noCategoryData: "{{ _('No category data available') }}",
     monthlyRevenue: "{{ _('Monthly Revenue') }}"
 };
+
+// Real payment medium, derived from the receipt text (analytics/cobranzas.py), in a fixed order and color.
+// `type` is the customer's ledger book, not the medium. Categorical slots 1-5, validated for CVD separation.
+const PAYMENT_MEDIA = [
+    { key: 'efectivo', field: 'CashPayments', label: i18n.cash, color: '#2a78d6' },
+    { key: 'cheques', field: 'CheckPayments', label: i18n.checks, color: '#eb6834' },
+    { key: 'transferencias', field: 'TransferPayments', label: i18n.transfers, color: '#1baf7a' },
+    { key: 'retenciones', field: 'WithholdingPayments', label: i18n.withholdings, color: '#eda100' },
+    { key: 'otros', field: 'OtherPayments', label: i18n.other, color: '#e87ba4' }
+];
 
 // Load dashboard data when page loads
 document.addEventListener('DOMContentLoaded', function() {
@@ -356,6 +370,13 @@ function updateMetricCards(financial, inventory, sales) {
                 document.getElementById('cleared-collections').textContent = formatCurrency(data.data.ClearedPayments, 'ARS');
                 document.getElementById('pending-collections').textContent = formatCurrency(data.data.PendingPayments, 'ARS');
 
+                // Lo cobrado por medio de pago real (analytics/cobranzas.py), sólo los que tienen algo
+                const byMedium = data.data.ClearedByMedium || {};
+                document.getElementById('cleared-by-medium').textContent = PAYMENT_MEDIA
+                    .filter(m => byMedium[m.key])
+                    .map(m => `${m.label} ${formatCurrency(byMedium[m.key], 'ARS')}`)
+                    .join(' · ');
+
                 // Actualizar etiqueta con mes actual (mantener el icono de info)
                 const locale = document.documentElement.lang || 'es';
                 const currentMonth = new Date().toLocaleDateString(locale, { month: 'long' });
@@ -426,54 +447,26 @@ function createCashFlowChart(data) {
     try {
         const months = data.map(d => `${d.Year}-${d.Month.toString().padStart(2, '0')}`);
         
-        // Trace para Efectivo (Type 1)
-        const traceCash = {
+        // Una barra por mes, apilada por medio de pago real; la altura es el total cobrado
+        const traces = PAYMENT_MEDIA.map(m => ({
             x: months,
-            y: data.map(d => d.CashPayments || 0),
-            type: 'scatter',
-            mode: 'lines+markers',
-            name: i18n.cash,
-            line: { 
-                color: '#28a745',
-                width: 2.5
-            },
-            marker: {
-                size: 7,
-                color: '#28a745'
-            }
-        };
-        
-        // Trace para Transferencias/Cheques (Type 0)
-        const traceElectronic = {
+            y: data.map(d => d[m.field] || 0),
+            type: 'bar',
+            name: m.label,
+            marker: { color: m.color, line: { color: '#ffffff', width: 2 } },
+            hovertemplate: '%{fullData.name}: %{y:$,.0f}<extra></extra>'
+        }));
+        // Total en el tooltip (sin marca propia: la pila ya lo dibuja)
+        traces.push({
             x: months,
-            y: data.map(d => d.ElectronicPayments || 0),
+            y: data.map(d => d.ActualPayments || 0),
             type: 'scatter',
-            mode: 'lines+markers',
-            name: i18n.electronic,
-            line: { 
-                color: '#6f42c1',
-                width: 2.5
-            },
-            marker: {
-                size: 7,
-                color: '#6f42c1'
-            }
-        };
-        
-        // Trace para Total (opcional, como línea punteada de referencia)
-        const traceTotal = {
-            x: months,
-            y: data.map(d => d.ActualPayments),
-            type: 'scatter',
-            mode: 'lines',
+            mode: 'markers',
+            marker: { opacity: 0 },
             name: i18n.total,
-            line: { 
-                color: '#033663',
-                width: 1,
-                dash: 'dot'
-            },
-            opacity: 0.5
-        };
+            showlegend: false,
+            hovertemplate: i18n.total + ': %{y:$,.0f}<extra></extra>'
+        });
 
         const layout = {
             title: '',
@@ -484,7 +477,9 @@ function createCashFlowChart(data) {
             },
             yaxis: { 
                 title: i18n.amount + ' (ARS)',
-                tickformat: '$,.0f',
+                tickprefix: '$',
+                tickformat: '.3s',
+                automargin: true,
                 showgrid: true,
                 gridcolor: '#e9ecef'
             },
@@ -493,16 +488,19 @@ function createCashFlowChart(data) {
             paper_bgcolor: 'rgba(0,0,0,0)',
             legend: {
                 orientation: 'h',
+                traceorder: 'normal',
                 yanchor: 'bottom',
                 y: 1.02,
-                xanchor: 'right',
-                x: 1
+                xanchor: 'left',
+                x: 0
             },
-            hovermode: 'x unified'
+            hovermode: 'x unified',
+            barmode: 'stack',
+            bargap: 0.35
         };
 
-        Plotly.newPlot('cash-flow-chart', [traceCash, traceElectronic, traceTotal], layout, {responsive: true});
-        console.log('Cash flow chart created successfully with payment type breakdown');
+        Plotly.newPlot('cash-flow-chart', traces, layout, {responsive: true});
+        console.log('Cash flow chart created with the real payment medium breakdown');
     } catch (error) {
         console.error('Error creating cash flow chart:', error);
         document.getElementById('cash-flow-chart').innerHTML = '<div class="alert alert-danger">Error creating chart: ' + error.message + '</div>';
@@ -656,7 +654,7 @@ function loadCashFlowChart(months) {
     // Reload chart with new timeframe
     showLoading('cash-flow-chart');
     
-    fetch(`/financial/api/cash-flow?months=${months}`)
+    fetch(`/financial/api/cash-flow-history?months=${months}`)
         .then(response => response.json())
         .then(data => {
             if (data.status === 'success') {

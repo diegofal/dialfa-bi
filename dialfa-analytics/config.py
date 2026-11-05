@@ -7,10 +7,12 @@ from dotenv import load_dotenv
 load_dotenv()
 
 class Config:
-    # Database Configuration
+    # Azure SQL Server (xERP and the old SPISA). No default user or password: they come only from the
+    # environment (Railway variables). Without them xERP is "no configurado" and the app still starts.
     DB_SERVER = os.environ.get('DB_SERVER', 'dialfa.database.windows.net')
-    DB_USER = os.environ.get('DB_USER', 'fp')
-    DB_PASSWORD = os.environ.get('DB_PASSWORD', 'Ab1234,,,')
+    DB_USER = os.environ.get('DB_USER', '')
+    DB_PASSWORD = os.environ.get('DB_PASSWORD', '')
+    XERP_CONFIGURED = bool(DB_SERVER and DB_USER and DB_PASSWORD)
     SPISA_DB = os.environ.get('SPISA_DB', 'SPISA')
     XERP_DB = os.environ.get('XERP_DB', 'xERP')
 

@@ -8,13 +8,18 @@ from datetime import datetime, timedelta
 import logging
 from .utils import format_currency, calculate_growth_rate, calculate_risk_score, clean_dataframe
 from database.queries import FinancialQueries
+from database.readonly import consulta_solo_lectura
 from cache_config import cache, get_cache_timeout
+from config import Config
+from analytics import cobranzas
 
 class FinancialAnalytics:
     def __init__(self, db_manager, **kwargs):
         self.db = db_manager
         self.logger = logging.getLogger(__name__)
         self.queries = FinancialQueries()
+        # Collections by real payment medium (analytics/cobranzas.py, shared with /mcp), read-only
+        self.consulta_ro = kwargs.get('consulta_ro') or consulta_solo_lectura(Config.SPISA_PG_URL)
     
     @cache.cached(timeout=get_cache_timeout('executive_summary'), key_prefix='financial_exec_summary')
     def get_executive_summary(self):
@@ -65,44 +70,41 @@ class FinancialAnalytics:
             self.logger.error(f"Error in credit risk analysis: {e}")
             return []
     
-    @cache.cached(timeout=get_cache_timeout('cash_flow'), key_prefix='financial_cash_flow_%(months)s')
+    # memoize, not cached(key_prefix='..._%(months)s'): that prefix is never formatted, so 6M and 12M shared one entry
+    @cache.memoize(timeout=get_cache_timeout('cash_flow'))
     def get_cash_flow_history(self, months=12):
-        """Get historical cash flow data"""
+        """Monthly collections (payment date up to today) for the last `months` months, split by the real payment
+        medium written on the receipt (cobranzas.medio_de_pago), not by `type`, which is the customer's ledger book."""
         self.logger.info(f"Executing get_cash_flow_history for {months} months (cache miss or expired)")
         try:
-            query = self.queries.CASH_FLOW_FORECAST.format(months=months)
-            df = self.db.execute_query(query, 'SPISA')
-            df = clean_dataframe(df)
-            
-            if not df.empty:
-                # Sort by Year, Month for proper trend calculation
-                df = df.sort_values(['Year', 'Month'])
-                
-                # Calculate moving averages and trends
-                df['MovingAvg3'] = df['ActualPayments'].rolling(window=3, min_periods=1).mean()
-                df['MovingAvg6'] = df['ActualPayments'].rolling(window=6, min_periods=1).mean()
-                df['MonthOverMonth'] = df['ActualPayments'].pct_change() * 100
-                
-                # Replace NaN and inf values with 0 for JSON serialization
-                df = df.fillna(0)
-                df = df.replace([float('inf'), float('-inf')], 0)
-                
-                # Add formatted values
-                df['FormattedPayments'] = df['ActualPayments'].apply(lambda x: format_currency(x, '$', 'SPISA'))
-                df['FormattedMovingAvg'] = df['MovingAvg3'].apply(lambda x: format_currency(x, '$', 'SPISA'))
-                
-                # Create month-year label
-                df['MonthYear'] = df.apply(lambda x: f"{x['Year']}-{x['Month']:02d}", axis=1)
-                
-                # Sort again for display (most recent first or chronological)
-                df = df.sort_values(['Year', 'Month'])
-                
-                return df.to_dict('records')
-            return []
+            hoy = cobranzas.hoy_ar()
+            y, m = hoy.year, hoy.month - (months - 1)
+            while m < 1:
+                y, m = y - 1, m + 12
+            filas = cobranzas.por_mes_y_medio(self.consulta_ro, datetime(y, m, 1).date(), hoy=hoy)
+            if not filas:
+                return []
+            df = pd.DataFrame([{
+                'Year': int(f['mes'][:4]), 'Month': int(f['mes'][5:7]), 'MonthYear': f['mes'],
+                'ActualPayments': f['total'], 'TransactionCount': f['n'],
+                'CashPayments': f['grupos']['efectivo'], 'CheckPayments': f['grupos']['cheques'],
+                'TransferPayments': f['grupos']['transferencias'], 'WithholdingPayments': f['grupos']['retenciones'],
+                'OtherPayments': f['grupos']['otros'],
+                'CashCount': f['n_grupos']['efectivo'], 'CheckCount': f['n_grupos']['cheques'],
+                'TransferCount': f['n_grupos']['transferencias'], 'WithholdingCount': f['n_grupos']['retenciones'],
+                'OtherCount': f['n_grupos']['otros'],
+            } for f in filas])
+            df['MovingAvg3'] = df['ActualPayments'].rolling(window=3, min_periods=1).mean()
+            df['MovingAvg6'] = df['ActualPayments'].rolling(window=6, min_periods=1).mean()
+            df['MonthOverMonth'] = df['ActualPayments'].pct_change() * 100
+            df = df.fillna(0).replace([float('inf'), float('-inf')], 0)
+            df['FormattedPayments'] = df['ActualPayments'].apply(lambda x: format_currency(x, '$', 'SPISA'))
+            df['FormattedMovingAvg'] = df['MovingAvg3'].apply(lambda x: format_currency(x, '$', 'SPISA'))
+            return df.to_dict('records')
         except Exception as e:
             self.logger.error(f"Error in cash flow history: {e}")
             return []
-    
+
     def get_cash_flow_forecast(self, forecast_months=6):
         """Generate actual cash flow forecast using multiple algorithms"""
         try:
@@ -589,58 +591,34 @@ class FinancialAnalytics:
             return {'InvoiceAmount': 0}
     
     def get_spisa_collected_monthly(self):
-        """Get SPISA monthly collections (payments received this month) with breakdown by status and type"""
+        """This month's collections: collected up to today (by real payment medium) and post-dated within the month."""
         try:
-            df = self.db.execute_query(self.queries.SPISA_COLLECTED_MONTHLY, 'SPISA')
-            df = clean_dataframe(df)
-            if not df.empty:
-                row = df.iloc[0]
-                total = float(row['TotalPayments'])
-                return {
-                    'TotalPayments': total,
-                    'ClearedPayments': float(row['ClearedPayments']),
-                    'PendingPayments': float(row['PendingPayments']),
-                    'CashPayments': float(row['CashPayments']),
-                    'ElectronicPayments': float(row['ElectronicPayments']),
-                    'TransactionCount': int(row['TransactionCount']),
-                    'ClearedCount': int(row['ClearedCount']),
-                    'PendingCount': int(row['PendingCount']),
-                    'CashCount': int(row['CashCount']),
-                    'ElectronicCount': int(row['ElectronicCount']),
-                    'CashPercentage': (float(row['CashPayments']) / total * 100) if total > 0 else 0,
-                    'ElectronicPercentage': (float(row['ElectronicPayments']) / total * 100) if total > 0 else 0
-                }
+            d = cobranzas.mes_en_curso(self.consulta_ro)
             return {
-                'TotalPayments': 0,
-                'ClearedPayments': 0,
-                'PendingPayments': 0,
-                'CashPayments': 0,
-                'ElectronicPayments': 0,
-                'TransactionCount': 0,
-                'ClearedCount': 0,
-                'PendingCount': 0,
-                'CashCount': 0,
-                'ElectronicCount': 0,
-                'CashPercentage': 0,
-                'ElectronicPercentage': 0
+                'TotalPayments': d['total'],
+                'ClearedPayments': d['cobrado'],
+                'PendingPayments': d['pendiente'],
+                'TransactionCount': d['n_cobrado'] + d['n_pendiente'],
+                'ClearedCount': d['n_cobrado'],
+                'PendingCount': d['n_pendiente'],
+                # efectivo / cheques (cheques y echeqs) / transferencias / retenciones / otros
+                'ClearedByMedium': d['cobrado_por_grupo'],
+                'DataAsOf': d['datos_al'],
             }
         except Exception as e:
             self.logger.error(f"Error getting SPISA monthly collections: {e}")
-            return {
-                'TotalPayments': 0,
-                'ClearedPayments': 0,
-                'PendingPayments': 0,
-                'CashPayments': 0,
-                'ElectronicPayments': 0,
-                'TransactionCount': 0,
-                'ClearedCount': 0,
-                'PendingCount': 0,
-                'CashCount': 0,
-                'ElectronicCount': 0,
-                'CashPercentage': 0,
-                'ElectronicPercentage': 0
-            }
-    
+            return {'TotalPayments': 0, 'ClearedPayments': 0, 'PendingPayments': 0, 'TransactionCount': 0,
+                    'ClearedCount': 0, 'PendingCount': 0, 'ClearedByMedium': {g: 0 for g in cobranzas.GRUPOS}}
+
+    def get_cheques_en_cartera(self):
+        """Post-dated checks already received (both ledger books): the MCP's cheques_en_cartera."""
+        try:
+            d = cobranzas.cheques_en_cartera(self.consulta_ro)
+            return {'PaymentAmount': d['total'], 'Count': d['n'], 'DataAsOf': d['datos_al']}
+        except Exception as e:
+            self.logger.error(f"Error getting checks in portfolio: {e}")
+            return {'PaymentAmount': 0, 'Count': 0}
+
     @cache.cached(timeout=get_cache_timeout('expected_collections'), key_prefix='financial_expected_collections')
     def get_expected_collections(self):
         """Get expected collections based on invoice aging with probability adjustments"""

@@ -709,3 +709,15 @@ msgstr "Calcular"
 
 msgid "Coverage %"
 msgstr "% Cobertura"
+
+msgid "Checks and e-checks"
+msgstr "Cheques y echeqs"
+
+msgid "Transfers"
+msgstr "Transferencias"
+
+msgid "Withholdings"
+msgstr "Retenciones"
+
+msgid "Other"
+msgstr "Otros"

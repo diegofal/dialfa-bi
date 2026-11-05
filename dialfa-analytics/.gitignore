@@ -301,3 +301,8 @@ exports/*
 !exports/.gitkeep
 static/uploads/*
 !static/uploads/.gitkeep
+
+# Tests of the MCP and analytics (pytest): tracked, unlike the ad-hoc test_* scripts above
+!tests/
+!tests/**
+tests/**/__pycache__/
