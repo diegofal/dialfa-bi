@@ -19,15 +19,20 @@ class SinBase(RuntimeError):
     """SPISA_PG_URL no está configurada."""
 
 
-def _url(url):
-    return "postgresql://" + url[len("postgres://"):] if url.startswith("postgres://") else url
+def url_pg(url):
+    """La URL con el driver nombrado: `postgres://` y `postgresql://` van a `postgresql+psycopg2://` (el instalado).
+    SQLAlchemy 2.1 cambió el default a psycopg 3; un driver ya nombrado queda como está."""
+    for esquema in ("postgres://", "postgresql://"):
+        if url.startswith(esquema):
+            return "postgresql+psycopg2://" + url[len(esquema):]
+    return url
 
 
 def _motor(url):
     with _lock:
         if url not in _motores:
             _motores[url] = create_engine(
-                _url(url), pool_pre_ping=True, pool_size=3, max_overflow=2, pool_recycle=1800,
+                url_pg(url), pool_pre_ping=True, pool_size=3, max_overflow=2, pool_recycle=1800,
                 connect_args={"connect_timeout": 10,
                               "options": "-c default_transaction_read_only=on -c statement_timeout=30000"})
         return _motores[url]
